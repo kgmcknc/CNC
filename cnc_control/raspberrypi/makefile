@@ -12,10 +12,10 @@ OBJ = $(patsubst $(SRCDIR)/%.c,$(OUTDIR)/%.o,$(wildcard $(SRCDIR)/*.c))
 LIBS = wiringPi
 
 $(OUTDIR)/%.o: $(SRCDIR)/%.c $(DEPS)
-	$(CC) -c -o $@ $< $(CFLAGS) -lwiringPi
+	$(CC) -c -o $@ $< $(CFLAGS)
 
 $(PRJNAME): $(OBJ)
-	gcc -o $@ $^ $(CFLAGS)
+	gcc -o $@ $^ $(CFLAGS) -lwiringPi
 
 .PHONY: clean
 
