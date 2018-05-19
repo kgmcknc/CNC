@@ -23,7 +23,6 @@ int main(void) {
     
     init_system();
     
-<<<<<<< HEAD
     printf("Everything safe... Turning on driver\n");
 
     digitalWrite(DRIVER_POWER_RELAY, MOTOR_DRIVER_ON);
@@ -44,7 +43,7 @@ int main(void) {
 	}
 	delayMicroseconds(1000);
     }
-=======
+
     system_control_fork = fork();
     if(system_control_fork == 0){
 		control_socket = connect_unix_socket(CONTROL_SOCKET_PATH);
@@ -72,7 +71,6 @@ int main(void) {
 		shutdown_system();
 	}
     
->>>>>>> d542982c964397ac18637a567acefefdcda4c610
     return 0;
 }
 
