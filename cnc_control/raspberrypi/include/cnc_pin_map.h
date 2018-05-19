@@ -91,8 +91,8 @@
 #define ENDSTOP_HIT           HIGH
 #define ENDSTOP_OFF           LOW
 
-#define MOTOR_MOVE_R          LOW
-#define MOTOR_MOVE_L          HIGH
+#define MOTOR_MOVE_R          HIGH
+#define MOTOR_MOVE_L          LOW
 #define MOTOR_MOVE_F          LOW
 #define MOTOR_MOVE_B          HIGH
 

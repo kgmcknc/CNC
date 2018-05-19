@@ -13,13 +13,20 @@ int main(void) {
     digitalWrite(DRIVER_POWER_RELAY, MOTOR_DRIVER_ON);
     digitalWrite(DRIVER_SLEEP, MOTOR_RESET_OFF);
     digitalWrite(DRIVER_ENABLE, LOW);
+    char toggle = 0;
+    digitalWrite(L_MOTOR_DIR, MOTOR_MOVE_R);
+    digitalWrite(F_MOTOR_DIR, MOTOR_MOVE_F);
     for(;;){
-        /*if(digitalRead(R_END_STOP)){
-	    digitalWrite(DRIVER_ENABLE, MOTOR_ACTIVE);
+        if(toggle){
+	    digitalWrite(L_MOTOR_STP, HIGH);
+            digitalWrite(F_MOTOR_STP, HIGH);
+	    toggle = 0;
 	} else {
-	   digitalWrite(DRIVER_ENABLE, MOTOR_STANDBY);
-	}*/
-	delay(1000);
+	   toggle = 1;
+	   digitalWrite(L_MOTOR_STP, LOW);
+           digitalWrite(F_MOTOR_STP, LOW);
+	}
+	delayMicroseconds(1000);
     }
     return 0;
 }
