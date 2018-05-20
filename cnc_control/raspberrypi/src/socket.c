@@ -41,7 +41,8 @@ int create_unix_socket(char path[MAX_FILE_STRING]){
     printf("SOCKET PATH: %s\n", path);
     memset(&com_addr, 0, sizeof(com_addr));
     com_addr.sun_family = AF_UNIX;
-    strncpy(com_addr.sun_path, path, sizeof(com_addr.sun_path)-1);
+	com_addr.sun_path[0] = '\0';
+    strncpy(com_addr.sun_path+1, path, sizeof(path));
     printf("Doing Bind in Parent\n");
     if(bind(com_fd, (struct sockaddr*) &com_addr, sizeof(com_addr)) < 0){
         printf("Failed in Parent Bind\n");
