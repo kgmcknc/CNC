@@ -8,7 +8,7 @@ int main(int argc, char **argv) {
     printf("\nSetting Up WiringPi\n");
     wiringPiSetup();
     
-    init_control_gpio();
+    init_interface_gpio();
     
     printf("Everything safe... Turning on driver\n");
 
@@ -61,7 +61,7 @@ int main(int argc, char **argv) {
 		}
 		
 		kill(control_socket, SIGKILL);
-		disable_control_gpio();
+		disable_interface_gpio();
 	}
     
     return 0;

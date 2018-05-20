@@ -3,7 +3,7 @@
 #include <stdlib.h>
 
 #include "socket.h"
-#include "control_gpio.h"
+#include "interface_gpio.h"
 
 void system_control(int control_socket);
 
