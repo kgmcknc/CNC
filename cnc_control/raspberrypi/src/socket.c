@@ -18,11 +18,11 @@ void system_control(int control_socket){
     char control_string[40];
     // parent will close system control child - don't ever exit
     while(!exit_system){
+		sleep(1);
         printf("test user input:\n");
 		scanf("%s", control_string);
         send(control_socket, control_string, sizeof(control_string), 0);
     }
-    
 }
 
 int create_unix_socket(char path[MAX_FILE_STRING]){
@@ -41,7 +41,7 @@ int create_unix_socket(char path[MAX_FILE_STRING]){
     printf("SOCKET PATH: %s\n", path);
     memset(&com_addr, 0, sizeof(com_addr));
     com_addr.sun_family = AF_UNIX;
-	com_addr.sun_path[0] = '\0';
+	com_addr.sun_path[0] = 0x00;
     strncpy(com_addr.sun_path+1, path, sizeof(path));
     printf("Doing Bind in Parent\n");
     if(bind(com_fd, (struct sockaddr*) &com_addr, sizeof(com_addr)) < 0){
@@ -61,19 +61,22 @@ int create_unix_socket(char path[MAX_FILE_STRING]){
         printf("Failed in Parent Accept\n");
         return -1;
     }
+    printf("Finished Create\n");
     return com_socket;
 }
 
 int connect_unix_socket(char path[MAX_FILE_STRING]){
-    // connect to unix_socket as client
+    // connect to un//ix_socket as client
     int com_fd, com_socket, com_len, com_opt = 1;
     struct sockaddr_un com_addr;
     com_socket = socket(AF_UNIX, SOCK_STREAM, 0);
     memset(&com_addr, 0, sizeof(com_addr));
     com_addr.sun_family = AF_UNIX;
-    strncpy(com_addr.sun_path, path, sizeof(com_addr.sun_path)-1);
+    com_addr.sun_path[0] = 0x00;
+    strncpy(com_addr.sun_path+1, path, sizeof(path));
     printf("Doing Connect in Listener\n");
     connect(com_socket, (struct sockaddr *)&com_addr, sizeof(com_addr));
+    printf("Finished Connect\n");
     return com_socket;
 }
 

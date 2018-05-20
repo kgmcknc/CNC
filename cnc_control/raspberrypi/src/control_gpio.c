@@ -1,7 +1,7 @@
 #include "main.h"
 
 
-void init_cnc_gpio(void){
+void init_control_gpio(void){
     printf("Initializing System and Setting GPIO\n");
     pinMode(DRIVER_POWER_RELAY, OUTPUT);
     digitalWrite(DRIVER_POWER_RELAY, MOTOR_DRIVER_OFF);
@@ -43,7 +43,7 @@ void init_cnc_gpio(void){
     
 }
 
-void disable_cnc_gpio(void){
+void disable_control_gpio(void){
 	printf("Setting GPIO To Safe Default For Shutdown\n");
 	digitalWrite(DRIVER_POWER_RELAY, MOTOR_DRIVER_OFF);
 	digitalWrite(DRIVER_ENABLE, MOTOR_STANDBY);
