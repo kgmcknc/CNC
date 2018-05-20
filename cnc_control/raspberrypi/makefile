@@ -14,7 +14,7 @@ LIBS = wiringPi
 $(OUTDIR)/%.o: $(SRCDIR)/%.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-$(PRJNAME): $(OBJ)
+cnc_control: $(OBJ)
 	gcc -o $@ $^ $(CFLAGS) -lwiringPi
 
 .PHONY: clean
