@@ -102,54 +102,56 @@ void move(char move_string[200]){
 void process_calibration(void){
 	switch(calibration_state){
 		case 0 :
-			printf("Cal 0 Moving Left\n");
+			printf("Cal 0 Moving Left and Towards\n");
 			cur_dyn.x_dir = MOTOR_MOVE_L;
 			cur_dyn.x_total = NORNAL_SPEED;
-			cur_dyn.y_total = 0;
+			cur_dyn.y_dir = MOTOR_MOVE_T;
+			cur_dyn.y_total = NORNAL_SPEED;
 			calibration_state = 1;
 			break;
 		case 1 :
 			if(cur_pos.x_l_stop == ENDSTOP_HIT){
-				printf("Hit Left End, Moving Right\n");
+				if(cur_dyn.x_total) printf("Hit Left End\n");
 				cur_pos.x = 0;
+				cur_dyn.x_total = 0;
+			}
+			if(cur_pos.y_c_stop == ENDSTOP_HIT){
+				if(cur_dyn.y_total) printf("Hit Close End\n");
+				cur_pos.y = 0;
+				cur_dyn.y_total = 0;
+			}
+			if((cur_dyn.x_total == 0) && (cur_dyn.y_total == 0)){
+				printf("Moving Right and Away\n");
 				cur_dyn.x_dir = MOTOR_MOVE_R;
 				cur_dyn.x_total = NORNAL_SPEED;
+				cur_dyn.y_dir = MOTOR_MOVE_A;
+				cur_dyn.y_total = NORNAL_SPEED;
 				calibration_state = 2;
 			}
 			break;
 		case 2 :
 			if(cur_pos.x_r_stop == ENDSTOP_HIT){
-				printf("Hit Right End. Moving Towards\n");
+				if(cur_dyn.x_total) printf("Hit Right End\n");
 				w_size.x = cur_pos.x;
 				w_size.x_calibrated = 1;
 				cur_dyn.x_total = 0;
+			}
+			if(cur_pos.y_f_stop == ENDSTOP_HIT){
+				if(cur_dyn.y_total) printf("Hit Far End\n");
+				w_size.y = cur_pos.y;
+				w_size.y_calibrated = 1;
+				cur_dyn.y_total = 0;
+			}
+			if((cur_dyn.x_total == 0) && (cur_dyn.y_total == 0)){
+				printf("Finished - Move to Left and Towards to Middle\n");
+				cur_dyn.x_dir = MOTOR_MOVE_L;
+				cur_dyn.x_total = NORNAL_SPEED;
 				cur_dyn.y_dir = MOTOR_MOVE_T;
 				cur_dyn.y_total = NORNAL_SPEED;
 				calibration_state = 3;
 			}
 			break;
 		case 3 :
-			if(cur_pos.y_c_stop == ENDSTOP_HIT){
-				printf("Hit Close End. Moving Away\n");
-				cur_pos.y = 0;
-				cur_dyn.y_dir = MOTOR_MOVE_A;
-				cur_dyn.y_total = NORNAL_SPEED;
-				calibration_state = 4;
-			}
-			break;
-		case 4 :
-			if(cur_pos.y_f_stop == ENDSTOP_HIT){
-				printf("Hit Far End. Move To Middle\n");
-				w_size.y = cur_pos.y;
-				w_size.y_calibrated = 1;
-				cur_dyn.x_total = NORNAL_SPEED;
-				cur_dyn.x_dir = MOTOR_MOVE_L;
-				cur_dyn.y_total = NORNAL_SPEED;
-				cur_dyn.y_dir = MOTOR_MOVE_T;
-				calibration_state = 5;
-			}
-			break;
-		case 5 :
 			if(cur_pos.x <= (w_size.x/2)){
 				cur_dyn.x_total = 0;
 			}
