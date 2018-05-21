@@ -1,6 +1,7 @@
 #include <wiringPi.h>
 #include "cnc_pin_map.h"
 
+#define NORNAL_SPEED 50
 
 void process_motors(void);
 void reset_motor_state(void);

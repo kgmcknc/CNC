@@ -77,22 +77,22 @@ void move(char move_string[200]){
 		cur_dyn.z_total = 0;
 	} else {
 		if(dir == 'l'){
-			cur_dyn.x_total = 50;
+			cur_dyn.x_total = NORNAL_SPEED;
 			cur_dyn.x_dir = MOTOR_MOVE_L;
 			printf("Moving Left\n");
 		}
 		if(dir == 'r'){
-			cur_dyn.x_total = 50;
+			cur_dyn.x_total = NORNAL_SPEED;
 			cur_dyn.x_dir = MOTOR_MOVE_R;
 			printf("Moving Right\n");
 		}
 		if(dir == 't'){
-			cur_dyn.y_total = 50;
+			cur_dyn.y_total = NORNAL_SPEED;
 			cur_dyn.y_dir = MOTOR_MOVE_T;
 			printf("Moving Towards\n");
 		}
 		if(dir == 'a'){
-			cur_dyn.y_total = 50;
+			cur_dyn.y_total = NORNAL_SPEED;
 			cur_dyn.y_dir = MOTOR_MOVE_A;
 			printf("Moving Away\n");
 		}
@@ -104,16 +104,16 @@ void process_calibration(void){
 		case 0 :
 			printf("Cal 0 Moving Left\n");
 			cur_dyn.x_dir = MOTOR_MOVE_L;
-			cur_dyn.x_total = 50;
+			cur_dyn.x_total = NORNAL_SPEED;
 			cur_dyn.y_total = 0;
 			calibration_state = 1;
 			break;
-		case 1 : 
+		case 1 :
 			if(cur_pos.x_l_stop == ENDSTOP_HIT){
 				printf("Hit Left End, Moving Right\n");
 				cur_pos.x = 0;
 				cur_dyn.x_dir = MOTOR_MOVE_R;
-				cur_dyn.x_total = 50;
+				cur_dyn.x_total = NORNAL_SPEED;
 				calibration_state = 2;
 			}
 			break;
@@ -124,36 +124,45 @@ void process_calibration(void){
 				w_size.x_calibrated = 1;
 				cur_dyn.x_total = 0;
 				cur_dyn.y_dir = MOTOR_MOVE_T;
-				cur_dyn.y_total = 50;
+				cur_dyn.y_total = NORNAL_SPEED;
 				calibration_state = 3;
 			}
 			break;
-		case 3 : 
+		case 3 :
 			if(cur_pos.y_c_stop == ENDSTOP_HIT){
 				printf("Hit Close End. Moving Away\n");
 				cur_pos.y = 0;
 				cur_dyn.y_dir = MOTOR_MOVE_A;
-				cur_dyn.y_total = 50;
+				cur_dyn.y_total = NORNAL_SPEED;
 				calibration_state = 4;
 			}
 			break;
-		case 4 : 
+		case 4 :
 			if(cur_pos.y_f_stop == ENDSTOP_HIT){
-				printf("Hit Far End. Stopping\n");
+				printf("Hit Far End. Move To Middle\n");
 				w_size.y = cur_pos.y;
 				w_size.y_calibrated = 1;
-				cur_dyn.y_total = 0;
+				cur_dyn.x_total = NORNAL_SPEED;
+				cur_dyn.x_dir = MOTOR_MOVE_L;
+				cur_dyn.y_total = NORNAL_SPEED;
 				cur_dyn.y_dir = MOTOR_MOVE_T;
 				calibration_state = 5;
 			}
 			break;
-		case 5 : 
-			printf("Done Calibartion\n");
-			printf("X: %d, Y: %d\n", w_size.x, w_size.y);
-			calibrate_system();
-			calibration_state = 0;
+		case 5 :
+			if(cur_pos.x <= (w_size.x/2)){
+				cur_dyn.x_total = 0;
+			}
+			if(cur_pos.y <= (w_size.y/2)){
+				cur_dyn.y_total = 0;
+			}
+			if((cur_dyn.x_total == 0) && (cur_dyn.y_total == 0)){
+				printf("Done Calibration\n");
+				printf("X: %lu, Y: %lu\n", w_size.x, w_size.y);
+				calibrate_system();
+				calibration_state = 0;
+			}
 			break;
-		
 		default :
 		
 			break;

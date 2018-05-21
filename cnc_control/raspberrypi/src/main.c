@@ -35,8 +35,8 @@ int main(int argc, char **argv) {
 			delayMicroseconds(1);
 		}
 		
-		kill(control_socket, SIGKILL);
 		disable_control_gpio();
+		kill(control_socket, SIGKILL);
 	}
     
     return 0;
