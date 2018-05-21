@@ -1,6 +1,7 @@
 
 #include "main.h"
 
+
 int main(int argc, char **argv) {
     printf("\n----------------------------------------\n");
     printf("\nStarting CNC Controller\n");
@@ -9,28 +10,7 @@ int main(int argc, char **argv) {
     wiringPiSetup();
     
     init_control_gpio();
-    
-    printf("Everything safe... Turning on driver\n");
 
-    /*digitalWrite(DRIVER_POWER_RELAY, MOTOR_DRIVER_ON);
-    digitalWrite(DRIVER_SLEEP, MOTOR_RESET_OFF);
-    digitalWrite(DRIVER_ENABLE, LOW);
-    char toggle = 0;
-    digitalWrite(L_MOTOR_DIR, MOTOR_MOVE_R);
-    digitalWrite(F_MOTOR_DIR, MOTOR_MOVE_F);
-    for(;;){
-        if(toggle){
-	    digitalWrite(L_MOTOR_STP, HIGH);
-            digitalWrite(F_MOTOR_STP, HIGH);
-	    toggle = 0;
-	} else {
-	   toggle = 1;
-	   digitalWrite(L_MOTOR_STP, LOW);
-           digitalWrite(F_MOTOR_STP, LOW);
-	}
-	delayMicroseconds(1000);
-    }
-*/
     system_control_fork = fork();
     if(system_control_fork == 0){
 		printf("Forked... In child process\n");
@@ -42,22 +22,17 @@ int main(int argc, char **argv) {
 		unix_sockets[active_unix] = create_unix_socket(CONTROL_SOCKET_PATH);
 		active_unix = active_unix + 1;
 		
-		//digitalWrite(DRIVER_POWER_RELAY, MOTOR_DRIVER_ON);
-		//digitalWrite(DRIVER_SLEEP, MOTOR_RESET_OFF);
-		//digitalWrite(DRIVER_ENABLE, LOW);
-		for(;;){
+		while(quit_system == 0){
 			socket_handler();
 			if(command_ready){
 				printf("Got %s\n", system_command);
+				control_functions();
 			} else {
 				
 			}
-			/*if(digitalRead(R_END_STOP)){
-				digitalWrite(DRIVER_ENABLE, MOTOR_ACTIVE);
-			} else {
-			   digitalWrite(DRIVER_ENABLE, MOTOR_STANDBY);
-			}*/
-		delay(1000);
+			if(calibration_running) process_calibration();
+			process_motors();
+			delayMicroseconds(1);
 		}
 		
 		kill(control_socket, SIGKILL);
@@ -66,4 +41,45 @@ int main(int argc, char **argv) {
     
     return 0;
 }
+
+void system_control(int control_socket){
+    int exit_system = 0;
+    char control_string[40];
+    // parent will close system control child - don't ever exit
+    while(!exit_system){
+		sleep(1);
+        print_control_menu();
+		scanf("%s", control_string);
+		if(control_string[0] == 'm'){
+			printf("Type direction to move and how many steps\n");
+			printf("Example: \"r1000\" then press enter\n");
+			printf("Or enter 0 to stop movement: ");
+			printf("\n");
+			scanf("%s", control_string+1);
+		}
+		if(control_string[0] == 's'){
+			printf("Type String to Send and Press Enter: ");
+			printf("\n");
+			scanf("%s", control_string+1);
+		}
+        send(control_socket, control_string, sizeof(control_string), 0);
+    }
+}
+
+void print_control_menu(void){
+	printf("\n\n");
+	printf("<<--------------------------->>\n");
+	printf("<<--User Input Options------->>\n");
+	printf("<<--------------------------->>\n");
+	printf("<<--q : Shutdown and Quit---->>\n");
+	printf("<<--e : Enable Gpio --------->>\n");
+	printf("<<--d : Disable Gpio -------->>\n");
+	printf("<<--m : Move Axis ----------->>\n");
+	printf("<<--d : Calibrate Motors ---->>\n");
+	printf("<<--s : Send Spi String ----->>\n");
+	printf("<<--r : Receive Spi String -->>\n");
+	printf("<<--------------------------->>\n");
+	printf("\nType Input and Press Enter: ");
+}
+
 

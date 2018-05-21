@@ -41,12 +41,12 @@
               NC - 05 | 06 - NC
      RED F/B DIR - 07 | 08 - NC
               NC - 09 | 10 - NC
-     RED F/B STP - 11 | 12 - LEFT GREEN (FRONT/MOTOR/CLOSE) END STOP
+     RED F/B STP - 11 | 12 - LEFT GREEN (CLOSE/FRONT/MOTOR) END STOP
      RED F/B MS2 - 13 | 14 - NC
      RED F/B MS1 - 15 | 16 - RED LEFT (LEFT MOTOR) END STOP
               NC - 17 | 18 - RED RIGHT (RIGHT) END STOP
               NC - 19 | 20 - NC
-              NC - 21 | 22 - RIGHT GREEN (BACK/FAR) END STOP
+              NC - 21 | 22 - RIGHT GREEN (AWAY/BACK/FAR) END STOP
               NC - 23 | 24 - NC
               NC - 25 | 26 - NC
               NC - 27 | 28 - NC
@@ -63,8 +63,8 @@
 #define DRIVER_SLEEP          28
 #define DRIVER_ENABLE         29
 
-#define F_END_STOP            01
-#define B_END_STOP            06
+#define C_END_STOP            01
+#define F_END_STOP            06
 #define L_END_STOP            04
 #define R_END_STOP            05
 
@@ -93,6 +93,6 @@
 
 #define MOTOR_MOVE_R          HIGH
 #define MOTOR_MOVE_L          LOW
-#define MOTOR_MOVE_F          HIGH
-#define MOTOR_MOVE_B          LOW
+#define MOTOR_MOVE_A          HIGH
+#define MOTOR_MOVE_T          LOW
 

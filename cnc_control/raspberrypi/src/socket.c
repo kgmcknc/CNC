@@ -13,18 +13,6 @@ char system_command[MAX_FUNCTION_STRING];
 
 #define handle_error(msg) do { perror(msg); exit(EXIT_FAILURE); } while(0)
 
-void system_control(int control_socket){
-    int exit_system = 0;
-    char control_string[40];
-    // parent will close system control child - don't ever exit
-    while(!exit_system){
-		sleep(1);
-        printf("test user input:\n");
-		scanf("%s", control_string);
-        send(control_socket, control_string, sizeof(control_string), 0);
-    }
-}
-
 int create_unix_socket(char path[MAX_FILE_STRING]){
     // Create a unix socket as a server
     int com_fd, com_socket, com_len, com_opt = 1;
