@@ -38,13 +38,15 @@ void process_motors(void){
 			cur_dyn.x = cur_dyn.x + 1;
 		} else {
 			if(cur_dyn.x >= cur_dyn.x_total){
-				motor_x_high();
-				cur_dyn.x = 0;
 				if(cur_dyn.x_dir == MOTOR_MOVE_L){
 					cur_pos.x = cur_pos.x - 1;
+					motor_x_left();
 				} else {
 					cur_pos.x = cur_pos.x + 1;
+					motor_x_right();
 				}
+				motor_x_high();
+				cur_dyn.x = 0;
 			} else {
 				cur_dyn.x = cur_dyn.x + 1;
 			}
@@ -57,13 +59,15 @@ void process_motors(void){
 			cur_dyn.y = cur_dyn.y + 1;
 		} else {
 			if(cur_dyn.y >= cur_dyn.y_total){
-				motor_y_high();
-				cur_dyn.y = 0;
 				if(cur_dyn.y_dir == MOTOR_MOVE_T){
+					motor_y_toward();
 					cur_pos.y = cur_pos.y - 1;
 				} else {
+					motor_y_away();
 					cur_pos.y = cur_pos.y + 1;
 				}
+				motor_y_high();
+				cur_dyn.y = 0;
 			} else {
 				cur_dyn.y = cur_dyn.y + 1;
 			}
@@ -74,18 +78,18 @@ void process_motors(void){
 
 void check_x_endstop(void){
 	if(digitalRead(L_END_STOP)){
-		printf("Hit Left Stop!\n");
 		cur_pos.x_l_stop = ENDSTOP_HIT;
 		if(cur_dyn.x_dir == MOTOR_MOVE_L){
+			if(cur_dyn.x_total) printf("Hit Left Stop!\n");
 			cur_dyn.x_total = 0;
 		}
 	} else {
 		cur_pos.x_l_stop = ENDSTOP_OFF;
 	}
 	if(digitalRead(R_END_STOP)){
-		printf("Hit Right Stop!\n");
 		cur_pos.x_r_stop = ENDSTOP_HIT;
 		if(cur_dyn.x_dir == MOTOR_MOVE_R){
+			if(cur_dyn.x_total) printf("Hit Right Stop!\n");
 			cur_dyn.x_total = 0;
 		}
 	} else {
@@ -95,18 +99,18 @@ void check_x_endstop(void){
 
 void check_y_endstop(void){
 	if(digitalRead(F_END_STOP)){
-		printf("Hit Far Stop!\n");
 		cur_pos.y_f_stop = ENDSTOP_HIT;
 		if(cur_dyn.y_dir == MOTOR_MOVE_A){
+			if(cur_dyn.y_total) printf("Hit Far Stop!\n");
 			cur_dyn.y_total = 0;
 		}
 	} else {
 		cur_pos.y_f_stop = ENDSTOP_OFF;
 	}
 	if(digitalRead(C_END_STOP)){
-		printf("Hit Close Stop!\n");
 		cur_pos.y_c_stop = ENDSTOP_HIT;
 		if(cur_dyn.y_dir == MOTOR_MOVE_T){
+			if(cur_dyn.y_total) printf("Hit Close Stop!\n");
 			cur_dyn.y_total = 0;
 		}
 	} else {
@@ -177,6 +181,19 @@ void disable_control_gpio(void){
     digitalWrite(F_MOTOR_MS2, LOW);
     digitalWrite(F_MOTOR_MS1, LOW);
     printf("GPIO Safe... Quitting System\n");
+}
+
+void motor_x_left(void){
+	digitalWrite(L_MOTOR_DIR, MOTOR_MOVE_L);
+}
+void motor_x_right(void){
+	digitalWrite(L_MOTOR_DIR, MOTOR_MOVE_R);
+}
+void motor_y_toward(void){
+	digitalWrite(F_MOTOR_DIR, MOTOR_MOVE_T);
+}
+void motor_y_away(void){
+	digitalWrite(F_MOTOR_DIR, MOTOR_MOVE_A);
 }
 
 void motor_x_high(void){

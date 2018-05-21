@@ -113,6 +113,7 @@ void process_calibration(void){
 				printf("Hit Left End, Moving Right\n");
 				cur_pos.x = 0;
 				cur_dyn.x_dir = MOTOR_MOVE_R;
+				cur_dyn.x_total = 50;
 				calibration_state = 2;
 			}
 			break;
@@ -132,6 +133,7 @@ void process_calibration(void){
 				printf("Hit Close End. Moving Away\n");
 				cur_pos.y = 0;
 				cur_dyn.y_dir = MOTOR_MOVE_A;
+				cur_dyn.y_total = 50;
 				calibration_state = 4;
 			}
 			break;
