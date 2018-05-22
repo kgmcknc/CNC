@@ -2,9 +2,12 @@
 
 struct m_position beg_pos, cur_pos, end_pos;
 
-struct m_dynamics beg_dyn, cur_dyn, end_dyn;
+struct m_movement beg_mov, cur_mov, end_mov;
 
 struct w_area w_size;
+
+char system_calibrated = 0;
+char motors_enabled = 0;
 
 void reset_motor_state(void){
 	cur_pos.x = 0;
@@ -16,9 +19,23 @@ void reset_motor_state(void){
 	cur_pos.z = 0;
 	cur_pos.z_b_stop = 0;
 	cur_pos.z_t_stop = 0;
+	
+	cur_mov.x_act = 0;
+	cur_mov.x_count = 0;
+	cur_mov.x_dir = 0;
+	cur_mov.x_total = 0;
+	cur_mov.y_act = 0;
+	cur_mov.y_count = 0;
+	cur_mov.y_dir = 0;
+	cur_mov.y_total = 0;
+	cur_mov.z_act = 0;
+	cur_mov.z_count = 0;
+	cur_mov.z_dir = 0;
+	cur_mov.z_total = 0;
 }
 
 void reset_area_state(void){
+	system_calibrated = 0;
 	w_size.x = 0;
 	w_size.x_calibrated = 0;
 	w_size.y = 0;
@@ -27,18 +44,63 @@ void reset_area_state(void){
 	w_size.z_calibrated = 0;
 }
 
+void process_motion(void){
+	if(system_calibrated){
+		if(cur_mov.x_act == 0){
+			if(cur_pos.x != end_pos.x){
+				cur_mov.x_act = 1;
+				if(end_pos.x > cur_pos.x){
+					cur_mov.x_dir = MOTOR_MOVE_R;
+				} else {
+					cur_mov.x_dir = MOTOR_MOVE_L;
+				}
+			}
+		} else {
+			if(cur_mov.x_dir == MOTOR_MOVE_R){
+				if(cur_pos.x >= end_pos.x){
+					cur_mov.x_act = 0;
+				}
+			} else {
+				if(cur_pos.x <= end_pos.x){
+					cur_mov.x_act = 0;
+				}
+			}
+		}
+		if(cur_mov.y_act == 0){
+			if(cur_pos.y != end_pos.y){
+				cur_mov.y_act = 1;
+				if(end_pos.y > cur_pos.y){
+					cur_mov.y_dir = MOTOR_MOVE_A;
+				} else {
+					cur_mov.y_dir = MOTOR_MOVE_T;
+				}
+			}
+		} else {
+			if(cur_mov.y_dir == MOTOR_MOVE_A){
+				if(cur_pos.y >= end_pos.y){
+					cur_mov.y_act = 0;
+				}
+			} else {
+				if(cur_pos.y <= end_pos.y){
+					cur_mov.y_act = 0;
+				}
+			}
+		}
+	}
+}
+
 void process_motors(void){
 	check_x_endstop();
 	check_y_endstop();
 	check_z_endstop();
 	
-	if(cur_dyn.x_total > 0){
-		if(cur_dyn.x == 0){
+	if(cur_mov.x_act && (cur_mov.x_total > 0)){
+		if(cur_mov.x_count == 0){
 			motor_x_low();
-			cur_dyn.x = cur_dyn.x + 1;
+			cur_mov.x_count = cur_mov.x_count + 1;
 		} else {
-			if(cur_dyn.x >= cur_dyn.x_total){
-				if(cur_dyn.x_dir == MOTOR_MOVE_L){
+			if(cur_mov.x_count >= cur_mov.x_total){
+				if(cur_mov.x_dir == MOTOR_MOVE_L){
 					cur_pos.x = cur_pos.x - 1;
 					motor_x_left();
 				} else {
@@ -46,20 +108,20 @@ void process_motors(void){
 					motor_x_right();
 				}
 				motor_x_high();
-				cur_dyn.x = 0;
+				cur_mov.x_count = 0;
 			} else {
-				cur_dyn.x = cur_dyn.x + 1;
+				cur_mov.x_count = cur_mov.x_count + 1;
 			}
 		}
 	}
 	
-	if(cur_dyn.y_total > 0){
-		if(cur_dyn.y == 0){
+	if(cur_mov.y_act && (cur_mov.y_total > 0)){
+		if(cur_mov.y_count == 0){
 			motor_y_low();
-			cur_dyn.y = cur_dyn.y + 1;
+			cur_mov.y_count = cur_mov.y_count + 1;
 		} else {
-			if(cur_dyn.y >= cur_dyn.y_total){
-				if(cur_dyn.y_dir == MOTOR_MOVE_T){
+			if(cur_mov.y_count >= cur_mov.y_total){
+				if(cur_mov.y_dir == MOTOR_MOVE_T){
 					motor_y_toward();
 					cur_pos.y = cur_pos.y - 1;
 				} else {
@@ -67,9 +129,9 @@ void process_motors(void){
 					cur_pos.y = cur_pos.y + 1;
 				}
 				motor_y_high();
-				cur_dyn.y = 0;
+				cur_mov.y_count = 0;
 			} else {
-				cur_dyn.y = cur_dyn.y + 1;
+				cur_mov.y_count = cur_mov.y_count + 1;
 			}
 		}
 	}
@@ -79,18 +141,20 @@ void process_motors(void){
 void check_x_endstop(void){
 	if(digitalRead(L_END_STOP)){
 		cur_pos.x_l_stop = ENDSTOP_HIT;
-		if(cur_dyn.x_dir == MOTOR_MOVE_L){
-			if(cur_dyn.x_total) printf("Hit Left Stop!\n");
-			cur_dyn.x_total = 0;
+		if(cur_mov.x_dir == MOTOR_MOVE_L){
+			if(cur_mov.x_total) printf("Hit Left Stop!\n");
+			cur_mov.x_total = 0;
+			cur_mov.x_act = 0;
 		}
 	} else {
 		cur_pos.x_l_stop = ENDSTOP_OFF;
 	}
 	if(digitalRead(R_END_STOP)){
 		cur_pos.x_r_stop = ENDSTOP_HIT;
-		if(cur_dyn.x_dir == MOTOR_MOVE_R){
-			if(cur_dyn.x_total) printf("Hit Right Stop!\n");
-			cur_dyn.x_total = 0;
+		if(cur_mov.x_dir == MOTOR_MOVE_R){
+			if(cur_mov.x_total) printf("Hit Right Stop!\n");
+			cur_mov.x_total = 0;
+			cur_mov.x_act = 0;
 		}
 	} else {
 		cur_pos.x_r_stop = ENDSTOP_OFF;
@@ -100,18 +164,20 @@ void check_x_endstop(void){
 void check_y_endstop(void){
 	if(digitalRead(F_END_STOP)){
 		cur_pos.y_f_stop = ENDSTOP_HIT;
-		if(cur_dyn.y_dir == MOTOR_MOVE_A){
-			if(cur_dyn.y_total) printf("Hit Far Stop!\n");
-			cur_dyn.y_total = 0;
+		if(cur_mov.y_dir == MOTOR_MOVE_A){
+			if(cur_mov.y_total) printf("Hit Far Stop!\n");
+			cur_mov.y_total = 0;
+			cur_mov.y_act = 0;
 		}
 	} else {
 		cur_pos.y_f_stop = ENDSTOP_OFF;
 	}
 	if(digitalRead(C_END_STOP)){
 		cur_pos.y_c_stop = ENDSTOP_HIT;
-		if(cur_dyn.y_dir == MOTOR_MOVE_T){
-			if(cur_dyn.y_total) printf("Hit Close Stop!\n");
-			cur_dyn.y_total = 0;
+		if(cur_mov.y_dir == MOTOR_MOVE_T){
+			if(cur_mov.y_total) printf("Hit Close Stop!\n");
+			cur_mov.y_total = 0;
+			cur_mov.y_act = 0;
 		}
 	} else {
 		cur_pos.y_c_stop = ENDSTOP_OFF;

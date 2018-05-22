@@ -31,6 +31,7 @@ int main(int argc, char **argv) {
 				
 			}
 			if(calibration_running) process_calibration();
+			process_motion();
 			process_motors();
 			delayMicroseconds(1);
 		}
@@ -50,17 +51,29 @@ void system_control(int control_socket){
 		sleep(1);
         print_control_menu();
 		scanf("%s", control_string);
-		if(control_string[0] == 'm'){
-			printf("Type direction to move and how many steps\n");
-			printf("Example: \"r1000\" then press enter\n");
-			printf("Or enter 0 to stop movement: ");
-			printf("\n");
-			scanf("%s", control_string+1);
-		}
-		if(control_string[0] == 's'){
-			printf("Type String to Send and Press Enter: ");
-			printf("\n");
-			scanf("%s", control_string+1);
+		switch(control_string[0]) {
+			case 's' :
+				printf("Type String to Send and Press Enter: ");
+				printf("\n");
+				scanf("%s", control_string+1);
+				break;
+			case 'm' :
+				printf("Type direction to move, how many steps and speed\n");
+				printf("Example: \"r.1000.50\" then press enter\n");
+				printf("Or enter 0 to stop movement: ");
+				printf("\n");
+				scanf("%s", control_string+1);
+				break;
+			case 'g' :
+				printf("Type coordinates to move to and what max speed\n");
+				printf("X.Y.Xperiod.Yperiod\n");
+				printf("Example: \"x2454.y4222.50.50\" then press enter\n");
+				printf("Or enter c0.c0.Xper.Yper to go to Center: ");
+				printf("\n");
+				scanf("%s", control_string+1);
+				break;
+			default :
+				break;
 		}
         send(control_socket, control_string, sizeof(control_string), 0);
     }
@@ -75,9 +88,11 @@ void print_control_menu(void){
 	printf("<<--e : Enable Gpio --------->>\n");
 	printf("<<--d : Disable Gpio -------->>\n");
 	printf("<<--m : Move Axis ----------->>\n");
+	printf("<<--g : Go To --------------->>\n");
 	printf("<<--d : Calibrate Motors ---->>\n");
 	printf("<<--s : Send Spi String ----->>\n");
 	printf("<<--r : Receive Spi String -->>\n");
+	printf("<<--p : Print System Info --->>\n");
 	printf("<<--------------------------->>\n");
 	printf("\nType Input and Press Enter: ");
 }
