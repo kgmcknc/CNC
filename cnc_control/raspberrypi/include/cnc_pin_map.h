@@ -78,6 +78,16 @@
 #define F_MOTOR_MS2           02
 #define F_MOTOR_MS1           03
 
+#define UR_MOTOR_STP          23
+#define UR_MOTOR_DIR          22
+#define UR_MOTOR_MS2          24
+#define UR_MOTOR_MS1          25
+
+#define UL_MOTOR_STP          00
+#define UL_MOTOR_DIR          07
+#define UL_MOTOR_MS2          02
+#define UL_MOTOR_MS1          03
+
 // value defines for pins
 #define MOTOR_DRIVER_OFF      HIGH
 #define MOTOR_DRIVER_ON       LOW
@@ -95,4 +105,5 @@
 #define MOTOR_MOVE_L          LOW
 #define MOTOR_MOVE_A          HIGH
 #define MOTOR_MOVE_T          LOW
-
+#define MOTOR_MOVE_U          HIGH
+#define MOTOR_MOVE_D          LOW

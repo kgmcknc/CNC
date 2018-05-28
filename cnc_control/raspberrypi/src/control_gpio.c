@@ -1,37 +1,46 @@
 #include "main.h"
 
-struct m_position beg_pos, cur_pos, end_pos;
+struct system_state system_status;
 
-struct m_movement beg_mov, cur_mov, end_mov;
+struct machine_position start_position, current_position, end_position;
 
-struct w_area w_size;
+struct motor_movement current_move, next_move;
+
+struct work_area w_size;
 
 char system_calibrated = 0;
 char motors_enabled = 0;
 
 void reset_motor_state(void){
-	cur_pos.x = 0;
-	cur_pos.x_l_stop = 0;
-	cur_pos.x_r_stop = 0;
-	cur_pos.y = 0;
-	cur_pos.y_c_stop = 0;
-	cur_pos.y_f_stop = 0;
-	cur_pos.z = 0;
-	cur_pos.z_b_stop = 0;
-	cur_pos.z_t_stop = 0;
+	current_position.x = 0;
+	current_position.x_l_stop = 0;
+	current_position.x_r_stop = 0;
+	current_position.y = 0;
+	current_position.y_c_stop = 0;
+	current_position.y_f_stop = 0;
+	current_position.z = 0;
+	current_position.z_b_stop = 0;
+	current_position.z_t_stop = 0;
 	
-	cur_mov.x_act = 0;
-	cur_mov.x_count = 0;
-	cur_mov.x_dir = 0;
-	cur_mov.x_total = 0;
-	cur_mov.y_act = 0;
-	cur_mov.y_count = 0;
-	cur_mov.y_dir = 0;
-	cur_mov.y_total = 0;
-	cur_mov.z_act = 0;
-	cur_mov.z_count = 0;
-	cur_mov.z_dir = 0;
-	cur_mov.z_total = 0;
+	current_move.x_act = 0;
+	current_move.x_period_count = 0;
+	current_move.x_dir = 0;
+	current_move.y_act = 0;
+	current_move.y_period_count = 0;
+	current_move.y_dir = 0;
+	current_move.z_act = 0;
+	current_move.z_period_count = 0;
+	current_move.z_dir = 0;
+	
+	next_move.x_act = 0;
+	next_move.x_period_count = 0;
+	next_move.x_dir = 0;
+	next_move.y_act = 0;
+	next_move.y_period_count = 0;
+	next_move.y_dir = 0;
+	next_move.z_act = 0;
+	next_move.z_period_count = 0;
+	next_move.z_dir = 0;
 }
 
 void reset_area_state(void){
@@ -45,148 +54,233 @@ void reset_area_state(void){
 }
 
 void process_motion(void){
-	if(system_calibrated){
-		if(cur_mov.x_act == 0){
-			if(cur_pos.x != end_pos.x){
-				cur_mov.x_act = 1;
-				if(end_pos.x > cur_pos.x){
-					cur_mov.x_dir = MOTOR_MOVE_R;
-				} else {
-					cur_mov.x_dir = MOTOR_MOVE_L;
-				}
+
+	check_x_endstop();
+	check_y_endstop();
+	check_z_endstop();
+	
+	if(current_move.x_act == 0){
+		if(current_position.x != end_position.x){
+			if(end_position.x > current_position.x){
+				current_move.x_dir = MOTOR_MOVE_R;
+			} else {
+				current_move.x_dir = MOTOR_MOVE_L;
+			}
+			next_move.x_act = 1;
+		}
+	} else {
+		if(current_move.x_dir == MOTOR_MOVE_R){
+			if(current_position.x >= end_position.x){
+				current_move.x_act = 0;
+				next_move.x_act = 0;
+				current_move.x_period_count = 0;
 			}
 		} else {
-			if(cur_mov.x_dir == MOTOR_MOVE_R){
-				if(cur_pos.x >= end_pos.x){
-					cur_mov.x_act = 0;
-				}
-			} else {
-				if(cur_pos.x <= end_pos.x){
-					cur_mov.x_act = 0;
-				}
+			if(current_position.x <= end_position.x){
+				current_move.x_act = 0;
+				next_move.x_act = 0;
+				current_move.x_period_count = 0;
 			}
 		}
-		if(cur_mov.y_act == 0){
-			if(cur_pos.y != end_pos.y){
-				cur_mov.y_act = 1;
-				if(end_pos.y > cur_pos.y){
-					cur_mov.y_dir = MOTOR_MOVE_A;
-				} else {
-					cur_mov.y_dir = MOTOR_MOVE_T;
-				}
+	}
+	if(current_move.y_act == 0){
+		if(current_position.y != end_position.y){
+			if(end_position.y > current_position.y){
+				current_move.y_dir = MOTOR_MOVE_A;
+			} else {
+				current_move.y_dir = MOTOR_MOVE_T;
+			}
+			next_move.y_act = 1;
+		}
+	} else {
+		if(current_move.y_dir == MOTOR_MOVE_A){
+			if(current_position.y >= end_position.y){
+				current_move.y_act = 0;
+				next_move.y_act = 0;
+				current_move.y_period_count = 0;
 			}
 		} else {
-			if(cur_mov.y_dir == MOTOR_MOVE_A){
-				if(cur_pos.y >= end_pos.y){
-					cur_mov.y_act = 0;
-				}
+			if(current_position.y <= end_position.y){
+				current_move.y_act = 0;
+				next_move.y_act = 0;
+				current_move.y_period_count = 0;
+			}
+		}
+	}
+	if(current_move.z_act == 0){
+		if(current_position.z != end_position.z){
+			if(end_position.z > current_position.z){
+				current_move.z_dir = MOTOR_MOVE_U;
 			} else {
-				if(cur_pos.y <= end_pos.y){
-					cur_mov.y_act = 0;
-				}
+				current_move.z_dir = MOTOR_MOVE_D;
+			}
+			next_move.z_act = 1;
+		}
+	} else {
+		if(current_move.z_dir == MOTOR_MOVE_U){
+			if(current_position.z >= end_position.z){
+				current_move.z_act = 0;
+				next_move.z_act = 0;
+				current_move.z_period_count = 0;
+			}
+		} else {
+			if(current_position.z <= end_position.z){
+				current_move.z_act = 0;
+				next_move.z_act = 0;
+				current_move.z_period_count = 0;
 			}
 		}
 	}
 }
 
 void process_motors(void){
-	check_x_endstop();
-	check_y_endstop();
-	check_z_endstop();
-	
-	if(cur_mov.x_act && (cur_mov.x_total > 0)){
-		if(cur_mov.x_count == 0){
-			motor_x_low();
-			cur_mov.x_count = cur_mov.x_count + 1;
+	if(current_move.x_act){
+		if(current_move.x_period_count == 0){
+			system_status.get_new_move = 1;
+			motor_x_high();
+			current_move.x_high = 1;
+			current_move.x_dir = next_move.x_dir;
+			current_move.x_period_count = next_move.x_period_count;
+			current_move.x_act = next_move.x_act;
+			if(current_move.x_dir == MOTOR_MOVE_R){
+				current_position.x = current_position.x + 1;
+			} else {
+				current_position.x = current_position.x - 1;
+			}
 		} else {
-			if(cur_mov.x_count >= cur_mov.x_total){
-				if(cur_mov.x_dir == MOTOR_MOVE_L){
-					cur_pos.x = cur_pos.x - 1;
-					motor_x_left();
-				} else {
-					cur_pos.x = cur_pos.x + 1;
+			if(current_move.x_high){
+				motor_x_low();
+				if(current_move.x_dir == MOTOR_MOVE_R){
 					motor_x_right();
-				}
-				motor_x_high();
-				cur_mov.x_count = 0;
-			} else {
-				cur_mov.x_count = cur_mov.x_count + 1;
-			}
-		}
-	}
-	
-	if(cur_mov.y_act && (cur_mov.y_total > 0)){
-		if(cur_mov.y_count == 0){
-			motor_y_low();
-			cur_mov.y_count = cur_mov.y_count + 1;
-		} else {
-			if(cur_mov.y_count >= cur_mov.y_total){
-				if(cur_mov.y_dir == MOTOR_MOVE_T){
-					motor_y_toward();
-					cur_pos.y = cur_pos.y - 1;
 				} else {
-					motor_y_away();
-					cur_pos.y = cur_pos.y + 1;
+					motor_x_left();
 				}
-				motor_y_high();
-				cur_mov.y_count = 0;
-			} else {
-				cur_mov.y_count = cur_mov.y_count + 1;
+				current_move.x_high = 0;
 			}
+			current_move.x_period_count = current_move.x_period_count - 1;
+		}
+	} else {
+		if(next_move.x_act){
+			current_move.x_dir = next_move.x_dir;
+			current_move.x_period_count = next_move.x_period_count;
+			current_move.x_act = next_move.x_act;
 		}
 	}
 	
+	if(current_move.y_act){
+		if(current_move.y_period_count == 0){
+			motor_y_high();
+			system_status.get_new_move = 1;
+			current_move.y_high = 1;
+			current_move.y_dir = next_move.y_dir;
+			current_move.y_period_count = next_move.y_period_count;
+			current_move.y_act = next_move.y_act;
+			if(current_move.y_dir == MOTOR_MOVE_A){
+				current_position.y = current_position.y + 1;
+			} else {
+				current_position.y = current_position.y - 1;
+			}
+		} else {
+			if(current_move.y_high){
+				motor_y_low();
+				if(current_move.y_dir == MOTOR_MOVE_A){
+					motor_y_away();
+				} else {
+					motor_y_toward();
+				}
+				current_move.y_high = 0;
+			}
+			current_move.y_period_count = current_move.y_period_count - 1;
+		}
+	} else {
+		if(next_move.y_act){
+			current_move.y_dir = next_move.y_dir;
+			current_move.y_period_count = next_move.y_period_count;
+			current_move.y_act = next_move.y_act;
+		}
+	}
+	
+	if(current_move.z_act){
+		if(current_move.z_period_count == 0){
+			motor_zr_high();
+			motor_zl_high();
+			system_status.get_new_move = 1;
+			current_move.z_high = 1;
+			current_move.z_dir = next_move.z_dir;
+			current_move.z_period_count = next_move.z_period_count;
+			current_move.z_act = next_move.z_act;
+			if(current_move.z_dir == MOTOR_MOVE_U){
+				current_position.z = current_position.z + 1;
+			} else {
+				current_position.z = current_position.z - 1;
+			}
+		} else {
+			if(current_move.z_high){
+				motor_zr_low();
+				motor_zl_low();
+				if(current_move.z_dir == MOTOR_MOVE_U){
+					motor_z_up();
+				} else {
+					motor_z_down();
+				}
+				current_move.z_high = 0;
+			}
+			current_move.z_period_count = current_move.z_period_count - 1;
+		}
+	} else {
+		if(next_move.z_act){
+			current_move.z_dir = next_move.z_dir;
+			current_move.z_period_count = next_move.z_period_count;
+			current_move.z_act = next_move.z_act;
+		}
+	}
 }
 
 void check_x_endstop(void){
 	if(digitalRead(L_END_STOP)){
-		cur_pos.x_l_stop = ENDSTOP_HIT;
-		if(cur_mov.x_dir == MOTOR_MOVE_L){
-			if(cur_mov.x_total) printf("Hit Left Stop!\n");
-			cur_mov.x_total = 0;
-			cur_mov.x_act = 0;
+		current_position.x_l_stop = ENDSTOP_HIT;
+		if(current_move.x_dir == MOTOR_MOVE_L){
+			if(current_move.x_act) printf("Hit Left Stop!\n");
+			current_move.x_act = 0;
 		}
 	} else {
-		cur_pos.x_l_stop = ENDSTOP_OFF;
+		current_position.x_l_stop = ENDSTOP_OFF;
 	}
 	if(digitalRead(R_END_STOP)){
-		cur_pos.x_r_stop = ENDSTOP_HIT;
-		if(cur_mov.x_dir == MOTOR_MOVE_R){
-			if(cur_mov.x_total) printf("Hit Right Stop!\n");
-			cur_mov.x_total = 0;
-			cur_mov.x_act = 0;
+		current_position.x_r_stop = ENDSTOP_HIT;
+		if(current_move.x_dir == MOTOR_MOVE_R){
+			if(current_move.x_act) printf("Hit Right Stop!\n");
+			current_move.x_act = 0;
 		}
 	} else {
-		cur_pos.x_r_stop = ENDSTOP_OFF;
+		current_position.x_r_stop = ENDSTOP_OFF;
 	}
 }
 
 void check_y_endstop(void){
 	if(digitalRead(F_END_STOP)){
-		cur_pos.y_f_stop = ENDSTOP_HIT;
-		if(cur_mov.y_dir == MOTOR_MOVE_A){
-			if(cur_mov.y_total) printf("Hit Far Stop!\n");
-			cur_mov.y_total = 0;
-			cur_mov.y_act = 0;
+		current_position.y_f_stop = ENDSTOP_HIT;
+		if(current_move.y_dir == MOTOR_MOVE_A){
+			if(current_move.y_act) printf("Hit Far Stop!\n");
+			current_move.y_act = 0;
 		}
 	} else {
-		cur_pos.y_f_stop = ENDSTOP_OFF;
+		current_position.y_f_stop = ENDSTOP_OFF;
 	}
 	if(digitalRead(C_END_STOP)){
-		cur_pos.y_c_stop = ENDSTOP_HIT;
-		if(cur_mov.y_dir == MOTOR_MOVE_T){
-			if(cur_mov.y_total) printf("Hit Close Stop!\n");
-			cur_mov.y_total = 0;
-			cur_mov.y_act = 0;
+		current_position.y_c_stop = ENDSTOP_HIT;
+		if(current_move.y_dir == MOTOR_MOVE_T){
+			if(current_move.y_act) printf("Hit Close Stop!\n");
+			current_move.y_act = 0;
 		}
 	} else {
-		cur_pos.y_c_stop = ENDSTOP_OFF;
+		current_position.y_c_stop = ENDSTOP_OFF;
 	}
 }
 
 void check_z_endstop(void){
-	cur_pos.z_t_stop = 1;
-	cur_pos.z_b_stop = 1;
+	current_position.z_t_stop = 0;
+	current_position.z_b_stop = 0;
 }
 
 void init_control_gpio(void){
@@ -216,12 +310,12 @@ void init_control_gpio(void){
     digitalWrite(DRIVER_SLEEP, MOTOR_RESET_ON);
     
     digitalWrite(L_MOTOR_STP, LOW);
-    digitalWrite(L_MOTOR_DIR, MOTOR_MOVE_R);
+    digitalWrite(L_MOTOR_DIR, MOTOR_MOVE_L);
     digitalWrite(L_MOTOR_MS2, LOW);
     digitalWrite(L_MOTOR_MS1, LOW);
 
     digitalWrite(F_MOTOR_STP, LOW);
-    digitalWrite(F_MOTOR_DIR, MOTOR_MOVE_A);
+    digitalWrite(F_MOTOR_DIR, MOTOR_MOVE_T);
     digitalWrite(F_MOTOR_MS2, LOW);
     digitalWrite(F_MOTOR_MS1, LOW);
 	
@@ -261,6 +355,14 @@ void motor_y_toward(void){
 void motor_y_away(void){
 	digitalWrite(F_MOTOR_DIR, MOTOR_MOVE_A);
 }
+void motor_z_up(void){
+	digitalWrite(UR_MOTOR_DIR, MOTOR_MOVE_U);
+	digitalWrite(UL_MOTOR_DIR, MOTOR_MOVE_U);
+}
+void motor_z_down(void){
+	digitalWrite(UR_MOTOR_DIR, MOTOR_MOVE_D);
+	digitalWrite(UL_MOTOR_DIR, MOTOR_MOVE_D);
+}
 
 void motor_x_high(void){
 	digitalWrite(L_MOTOR_STP, HIGH);
@@ -273,4 +375,16 @@ void motor_y_high(void){
 }
 void motor_y_low(void){
 	digitalWrite(F_MOTOR_STP, LOW);
+}
+void motor_zr_high(void){
+	digitalWrite(UR_MOTOR_STP, HIGH);
+}
+void motor_zr_low(void){
+	digitalWrite(UR_MOTOR_STP, LOW);
+}
+void motor_zl_high(void){
+	digitalWrite(UL_MOTOR_STP, HIGH);
+}
+void motor_zl_low(void){
+	digitalWrite(UL_MOTOR_STP, LOW);
 }
