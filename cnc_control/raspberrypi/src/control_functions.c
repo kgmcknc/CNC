@@ -165,30 +165,38 @@ void go_to(char move_string[200]){
 	unsigned int x_period, y_period;
 	sscanf(move_string, "%c%c%lu.%c%lu.%u.%u", &cmd, &x_axis, &x_pos, &y_axis, &y_pos, &x_period, &y_period);
 	printf("Going To: Axis: %c, Pos: %lu, Speed: %d, Axis: %c, Pos: %lu, Speed: %d\n", x_axis, x_pos, x_period, y_axis, y_pos, y_period);
-	if(system_calibrated){
-		if(x_axis == 'c'){
-			end_position.x = w_size.x/2;
-		} else {
-			end_position.x = x_pos;
-		}
-		if(y_axis == 'c'){
-			end_position.y = w_size.y/2;
-		} else {
-			end_position.y = y_pos;
-		}
-		if(x_period > 0){
-			next_move.x_period_count = x_period;
-		} else {
-			next_move.x_period_count = NORMAL_SPEED;
-		}
-		if(y_period > 0){
-			next_move.y_period_count = y_period;
-		} else {
-			next_move.y_period_count = NORMAL_SPEED;
-		}
+	if(x_axis == 'c'){
+		end_position.x = w_size.x/2;
 	} else {
-		printf("Calibrate System Before Moving\n");
+		end_position.x = x_pos;
 	}
+	if(y_axis == 'c'){
+		end_position.y = w_size.y/2;
+	} else {
+		end_position.y = y_pos;
+	}
+	if(x_period > 0){
+		next_move.x_period_count = x_period;
+	} else {
+		next_move.x_period_count = NORMAL_SPEED;
+	}
+	if(y_period > 0){
+		next_move.y_period_count = y_period;
+	} else {
+		next_move.y_period_count = NORMAL_SPEED;
+	}
+	if(end_position.x > current_position.x){
+		next_move.x_dir = MOTOR_MOVE_R;
+	} else {
+		next_move.x_dir = MOTOR_MOVE_L;
+	}
+	if(end_position.y > current_position.y){
+		next_move.y_dir = MOTOR_MOVE_A;
+	} else {
+		next_move.y_dir = MOTOR_MOVE_T;
+	}
+	next_move.x_act = 1;
+	next_move.y_act = 1;
 }
 
 void process_calibration(void){
@@ -201,19 +209,27 @@ void process_calibration(void){
 			next_move.y_dir = MOTOR_MOVE_T;
 			next_move.y_period_count = NORMAL_SPEED;
 			next_move.y_act = 1;
+			current_position.x = 200000;
+			end_position.x = 0;
+			current_position.y = 200000;
+			end_position.y = 0;
 			calibration_state = 1;
 			break;
 		case 1 :
 			if(current_position.x_l_stop == ENDSTOP_HIT){
 				if(current_move.x_act) printf("Hit Left End\n");
 				current_position.x = 0;
+				end_position.x = 0;
 				current_move.x_act = 0;
+				next_move.x_act = 0;
 				current_move.x_period_count = 0;
 			}
 			if(current_position.y_c_stop == ENDSTOP_HIT){
 				if(current_move.y_act) printf("Hit Close End\n");
 				current_position.y = 0;
+				end_position.y = 0;
 				current_move.y_act = 0;
+				next_move.y_act = 0;
 				current_move.y_period_count = 0;
 			}
 			if((current_move.x_act == 0) && (current_move.y_act == 0)){
@@ -224,6 +240,8 @@ void process_calibration(void){
 				next_move.y_dir = MOTOR_MOVE_A;
 				next_move.y_period_count = NORMAL_SPEED;
 				next_move.y_act = 1;
+				end_position.x = 200000;
+				end_position.y = 200000;
 				calibration_state = 2;
 			}
 			break;
@@ -232,7 +250,9 @@ void process_calibration(void){
 				if(current_move.x_act) printf("Hit Right End\n");
 				w_size.x = current_position.x;
 				w_size.x_calibrated = 1;
+				end_position.x = current_position.x;
 				current_move.x_act = 0;
+				next_move.x_act = 0;
 				current_move.x_period_count = 0;
 			}
 			if(current_position.y_f_stop == ENDSTOP_HIT){
@@ -240,6 +260,8 @@ void process_calibration(void){
 				w_size.y = current_position.y;
 				w_size.y_calibrated = 1;
 				current_move.y_act = 0;
+				end_position.y = current_position.y;
+				next_move.y_act = 0;
 				current_move.y_period_count = 0;
 			}
 			if((current_move.x_act == 0) && (current_move.y_act == 0)){
@@ -260,10 +282,12 @@ void process_calibration(void){
 			if(current_position.x <= (w_size.x/2)){
 				current_move.x_period_count = 0;
 				current_move.x_act = 0;
+				next_move.x_act = 0;
 			}
 			if(current_position.y <= (w_size.y/2)){
 				current_move.y_period_count = 0;
 				current_move.y_act = 0;
+				next_move.y_act = 0;
 			}
 			if((current_move.x_act == 0) && (current_move.y_act == 0)){
 				printf("Done Calibration\n");

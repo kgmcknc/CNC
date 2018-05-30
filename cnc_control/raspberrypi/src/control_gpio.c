@@ -242,6 +242,7 @@ void check_x_endstop(void){
 		if(current_move.x_dir == MOTOR_MOVE_L){
 			if(current_move.x_act) printf("Hit Left Stop!\n");
 			current_move.x_act = 0;
+			next_move.x_act = 0;
 		}
 	} else {
 		current_position.x_l_stop = ENDSTOP_OFF;
@@ -251,6 +252,7 @@ void check_x_endstop(void){
 		if(current_move.x_dir == MOTOR_MOVE_R){
 			if(current_move.x_act) printf("Hit Right Stop!\n");
 			current_move.x_act = 0;
+			next_move.x_act = 0;
 		}
 	} else {
 		current_position.x_r_stop = ENDSTOP_OFF;
@@ -263,6 +265,7 @@ void check_y_endstop(void){
 		if(current_move.y_dir == MOTOR_MOVE_A){
 			if(current_move.y_act) printf("Hit Far Stop!\n");
 			current_move.y_act = 0;
+			next_move.y_act = 0;
 		}
 	} else {
 		current_position.y_f_stop = ENDSTOP_OFF;
@@ -272,6 +275,7 @@ void check_y_endstop(void){
 		if(current_move.y_dir == MOTOR_MOVE_T){
 			if(current_move.y_act) printf("Hit Close Stop!\n");
 			current_move.y_act = 0;
+			next_move.y_act = 0;
 		}
 	} else {
 		current_position.y_c_stop = ENDSTOP_OFF;
