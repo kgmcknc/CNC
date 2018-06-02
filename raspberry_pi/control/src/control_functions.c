@@ -91,68 +91,86 @@ void move(char move_string[200]){
 	} else {
 		if(dir == 'l'){
 			if(move_speed > 0){
-				next_move.x_period_count = move_speed;
+				current_move.x_period = move_speed;
 			} else {
-				next_move.x_period_count = NORMAL_SPEED;
+				current_move.x_period = NORMAL_SPEED;
 			}
+			current_move.x_current_period = START_SPEED;
 			end_position.x = current_position.x - move_count;
-			next_move.x_dir = MOTOR_MOVE_L;
-			next_move.x_act = 1;
+			current_move.x_move = move_count;
+			current_move.x_move_count = move_count;
+			current_move.x_dir = MOTOR_MOVE_L;
+			current_move.x_act = 1;
 			printf("Moving Left\n");
 		}
 		if(dir == 'r'){
 			if(move_speed > 0){
-				next_move.x_period_count = move_speed;
+				current_move.x_period = move_speed;
 			} else {
-				next_move.x_period_count = NORMAL_SPEED;
+				current_move.x_period = NORMAL_SPEED;
 			}
+			current_move.x_current_period = START_SPEED;
 			end_position.x = current_position.x + move_count;
-			next_move.x_dir = MOTOR_MOVE_R;
-			next_move.x_act = 1;
+			current_move.x_move = move_count;
+			current_move.x_move_count = move_count;
+			current_move.x_dir = MOTOR_MOVE_R;
+			current_move.x_act = 1;
 			printf("Moving Right\n");
 		}
 		if(dir == 't'){
 			if(move_speed > 0){
-				next_move.y_period_count = move_speed;
+				current_move.y_period = move_speed;
 			} else {
-				next_move.y_period_count = NORMAL_SPEED;
+				current_move.y_period = NORMAL_SPEED;
 			}
+			current_move.y_current_period = START_SPEED;
 			end_position.y = current_position.y - move_count;
-			next_move.y_dir = MOTOR_MOVE_T;
-			next_move.y_act = 1;
+			current_move.y_move = move_count;
+			current_move.y_move_count = move_count;
+			current_move.y_dir = MOTOR_MOVE_T;
+			current_move.y_act = 1;
 			printf("Moving Towards\n");
 		}
 		if(dir == 'a'){
 			if(move_speed > 0){
-				next_move.y_period_count = move_speed;
+				current_move.y_period = move_speed;
 			} else {
-				next_move.y_period_count = NORMAL_SPEED;
+				current_move.y_period = NORMAL_SPEED;
 			}
+			current_move.y_current_period = START_SPEED;
 			end_position.y = current_position.y + move_count;
-			next_move.y_dir = MOTOR_MOVE_A;
-			next_move.y_act = 1;
+			current_move.y_move = move_count;
+			current_move.y_move_count = move_count;
+			current_move.y_dir = MOTOR_MOVE_A;
+			current_move.y_act = 1;
 			printf("Moving Away\n");
 		}
 		if(dir == 'u'){
 			if(move_speed > 0){
-				next_move.z_period_count = move_speed;
+				current_move.z_period = move_speed;
 			} else {
-				next_move.z_period_count = NORMAL_SPEED;
+				current_move.z_period = NORMAL_SPEED;
 			}
+			current_move.z_current_period = START_SPEED;
 			end_position.z = current_position.z + move_count;
-			next_move.z_dir = MOTOR_MOVE_U;
-			next_move.z_act = 1;
+			current_move.z_move = move_count;
+			current_move.z_move_count = move_count;
+			current_move.z_dir = MOTOR_MOVE_U;
+			current_move.z_act = 1;
 			printf("Moving Up\n");
 		}
 		if(dir == 'd'){
 			if(move_speed > 0){
-				next_move.z_period_count = move_speed;
+				current_move.z_period = move_speed;
 			} else {
-				next_move.z_period_count = NORMAL_SPEED;
+				current_move.z_period = NORMAL_SPEED;
 			}
+			current_move.z_current_period = START_SPEED;
 			end_position.z = current_position.z - move_count;
-			next_move.z_dir = MOTOR_MOVE_D;
-			next_move.z_act = 1;
+			current_move.z_move = move_count;
+			current_move.z_move_count = move_count;
+			current_move.z_dir = MOTOR_MOVE_D;
+			current_move.z_act = 1;
 			printf("Moving Down\n");
 		}
 	}
@@ -176,42 +194,54 @@ void go_to(char move_string[200]){
 		end_position.y = y_pos;
 	}
 	if(x_period > 0){
-		next_move.x_period_count = x_period;
+		current_move.x_period = x_period;
 	} else {
-		next_move.x_period_count = NORMAL_SPEED;
+		current_move.x_period = NORMAL_SPEED;
 	}
+	current_move.x_current_period = START_SPEED;
 	if(y_period > 0){
-		next_move.y_period_count = y_period;
+		current_move.y_period = y_period;
 	} else {
-		next_move.y_period_count = NORMAL_SPEED;
+		current_move.y_period = NORMAL_SPEED;
 	}
+	current_move.y_current_period = START_SPEED;
 	if(end_position.x > current_position.x){
-		next_move.x_dir = MOTOR_MOVE_R;
+		current_move.x_dir = MOTOR_MOVE_R;
+		current_move.x_move = end_position.x - current_position.x;
+		current_move.x_move_count = current_move.x_move;
 	} else {
-		next_move.x_dir = MOTOR_MOVE_L;
+		current_move.x_dir = MOTOR_MOVE_L;
+		current_move.x_move = current_position.x - end_position.x;
+		current_move.x_move_count = current_move.x_move;
 	}
 	if(end_position.y > current_position.y){
-		next_move.y_dir = MOTOR_MOVE_A;
+		current_move.y_dir = MOTOR_MOVE_A;
+		current_move.y_move = end_position.y - current_position.y;
+		current_move.y_move_count = current_move.y_move;
 	} else {
-		next_move.y_dir = MOTOR_MOVE_T;
+		current_move.y_dir = MOTOR_MOVE_T;
+		current_move.y_move = current_position.y - end_position.y;
+		current_move.y_move_count = current_move.y_move;
 	}
-	next_move.x_act = 1;
-	next_move.y_act = 1;
+	current_move.x_act = 1;
+	current_move.y_act = 1;
 }
 
 void process_calibration(void){
 	switch(calibration_state){
 		case 0 :
 			printf("Cal 0 Moving Left and Towards\n");
-			next_move.x_dir = MOTOR_MOVE_L;
-			next_move.x_period_count = NORMAL_SPEED;
-			next_move.x_act = 1;
-			next_move.y_dir = MOTOR_MOVE_T;
-			next_move.y_period_count = NORMAL_SPEED;
-			next_move.y_act = 1;
+			current_move.x_dir = MOTOR_MOVE_L;
+			current_move.x_period = NORMAL_SPEED;
+			current_move.x_act = 1;
+			current_move.y_dir = MOTOR_MOVE_T;
+			current_move.y_period = NORMAL_SPEED;
+			current_move.y_act = 1;
 			current_position.x = 200000;
+			current_move.x_move = 200000;
 			end_position.x = 0;
 			current_position.y = 200000;
+			current_move.y_move = 200000;
 			end_position.y = 0;
 			calibration_state = 1;
 			break;
@@ -221,27 +251,27 @@ void process_calibration(void){
 				current_position.x = 0;
 				end_position.x = 0;
 				current_move.x_act = 0;
-				next_move.x_act = 0;
-				current_move.x_period_count = 0;
+				current_move.x_period = 0;
 			}
 			if(current_position.y_c_stop == ENDSTOP_HIT){
 				if(current_move.y_act) printf("Hit Close End\n");
 				current_position.y = 0;
 				end_position.y = 0;
 				current_move.y_act = 0;
-				next_move.y_act = 0;
-				current_move.y_period_count = 0;
+				current_move.y_period = 0;
 			}
 			if((current_move.x_act == 0) && (current_move.y_act == 0)){
 				printf("Moving Right and Away\n");
-				next_move.x_dir = MOTOR_MOVE_R;
-				next_move.x_period_count = NORMAL_SPEED;
-				next_move.x_act = 1;
-				next_move.y_dir = MOTOR_MOVE_A;
-				next_move.y_period_count = NORMAL_SPEED;
-				next_move.y_act = 1;
+				current_move.x_dir = MOTOR_MOVE_R;
+				current_move.x_period = NORMAL_SPEED;
+				current_move.x_act = 1;
+				current_move.y_dir = MOTOR_MOVE_A;
+				current_move.y_period = NORMAL_SPEED;
+				current_move.y_act = 1;
 				end_position.x = 200000;
 				end_position.y = 200000;
+				current_move.x_move = 200000;
+				current_move.y_move = 200000;
 				calibration_state = 2;
 			}
 			break;
@@ -252,8 +282,7 @@ void process_calibration(void){
 				w_size.x_calibrated = 1;
 				end_position.x = current_position.x;
 				current_move.x_act = 0;
-				next_move.x_act = 0;
-				current_move.x_period_count = 0;
+				current_move.x_period = 0;
 			}
 			if(current_position.y_f_stop == ENDSTOP_HIT){
 				if(current_move.y_act) printf("Hit Far End\n");
@@ -261,33 +290,32 @@ void process_calibration(void){
 				w_size.y_calibrated = 1;
 				current_move.y_act = 0;
 				end_position.y = current_position.y;
-				next_move.y_act = 0;
-				current_move.y_period_count = 0;
+				current_move.y_period = 0;
 			}
 			if((current_move.x_act == 0) && (current_move.y_act == 0)){
 				printf("Finished - Move to Left and Towards to Middle\n");
 				system_calibrated = 1;
-				next_move.x_period_count = NORMAL_SPEED;
-				next_move.y_period_count = NORMAL_SPEED;
-				next_move.x_dir = MOTOR_MOVE_L;
-				next_move.y_dir = MOTOR_MOVE_T;
+				current_move.x_period = NORMAL_SPEED;
+				current_move.y_period = NORMAL_SPEED;
+				current_move.x_dir = MOTOR_MOVE_L;
+				current_move.y_dir = MOTOR_MOVE_T;
 				end_position.x = w_size.x/2;
-				next_move.x_act = 1;
+				current_move.x_act = 1;
 				end_position.y = w_size.y/2;
-				next_move.y_act = 1;
+				current_move.y_act = 1;
 				calibration_state = 3;
+				current_move.x_move = current_position.x - end_position.x;
+				current_move.y_move = current_position.y - end_position.y;
 			}
 			break;
 		case 3 :
 			if(current_position.x <= (w_size.x/2)){
-				current_move.x_period_count = 0;
+				current_move.x_period = 0;
 				current_move.x_act = 0;
-				next_move.x_act = 0;
 			}
 			if(current_position.y <= (w_size.y/2)){
-				current_move.y_period_count = 0;
+				current_move.y_period = 0;
 				current_move.y_act = 0;
-				next_move.y_act = 0;
 			}
 			if((current_move.x_act == 0) && (current_move.y_act == 0)){
 				printf("Done Calibration\n");
@@ -338,9 +366,9 @@ void receive_spi_string(void){
 void print_system_info(void){
 	printf("\n\n<<------ SYSTEM INFO ------>>\n");
 	printf("\n<<-- Motor Enable: %d, System Calibration: %d-->\n", motors_enabled, system_calibrated);
-	printf("\n<<-- Cur X Pos: %lu, End X Pos: %lu, Speed: %u, Active: %u -->\n", current_position.x, end_position.x, current_move.x_period_count, current_move.x_act);
-	printf("\n<<-- Cur Y Pos: %lu, End Y Pos: %lu, Speed: %u, Active: %u -->\n", current_position.y, end_position.y, current_move.y_period_count, current_move.y_act);
-	printf("\n<<-- Cur Z Pos: %lu, End Z Pos: %lu, Speed: %u, Active: %u -->\n", current_position.z, end_position.z, current_move.z_period_count, current_move.z_act);
+	printf("\n<<-- Cur X Pos: %lu, End X Pos: %lu, Period: %u, Speed: %u, Active: %u -->\n", current_position.x, end_position.x, current_move.x_period, current_move.x_current_period, current_move.x_act);
+	printf("\n<<-- Cur Y Pos: %lu, End Y Pos: %lu, Period: %u, Speed: %u, Active: %u -->\n", current_position.y, end_position.y, current_move.y_period, current_move.y_current_period, current_move.y_act);
+	printf("\n<<-- Cur Z Pos: %lu, End Z Pos: %lu, Period: %u, Speed: %u, Active: %u -->\n", current_position.z, end_position.z, current_move.z_period, current_move.z_current_period, current_move.z_act);
 	printf("\n<<-- Work Area Size X: %lu, Y: %lu-->\n", w_size.x, w_size.y);
 }
 

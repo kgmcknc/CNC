@@ -1,6 +1,7 @@
 
 #include "main.h"
 
+char idle = 0;
 
 int main(int argc, char **argv) {
     printf("\n----------------------------------------\n");
@@ -10,6 +11,8 @@ int main(int argc, char **argv) {
     wiringPiSetup();
     
     init_control_gpio();
+    reset_motor_state();
+    reset_area_state();
 
     system_control_fork = fork();
     if(system_control_fork == 0){
@@ -30,7 +33,9 @@ int main(int argc, char **argv) {
 			} else {
 				
 			}
+			
 			if(calibration_running) process_calibration();
+			process_instruction();
 			process_motion();
 			process_motors();
 			delayMicroseconds(1);

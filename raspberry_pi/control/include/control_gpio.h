@@ -2,10 +2,13 @@
 #include "cnc_pin_map.h"
 
 #define NORMAL_SPEED 50
-#define START_SPEED 1000
+#define START_SPEED 500
+#define FASTEST_SPEED 2
+#define PERIOD_RAMP 5
 
 void process_motors(void);
 void process_motion(void);
+void process_instruction(void);
 void reset_motor_state(void);
 void reset_area_state(void);
 void init_control_gpio(void);
@@ -43,19 +46,34 @@ extern struct machine_position start_position, current_position, end_position;
 
 struct motor_movement {
 	unsigned int x_period_count;
+	unsigned long int x_move_count;
+	unsigned long int x_move;
+	unsigned int x_period;
+	unsigned int x_current_period;
+	unsigned int x_next_period;
 	char x_high;
 	char x_act;
 	char x_dir;
 	unsigned int y_period_count;
+	unsigned int y_period;
+	unsigned int y_current_period;
+	unsigned int y_next_period;
+	unsigned long int y_move_count;
+	unsigned long int y_move;
 	char y_high;
 	char y_act;
 	char y_dir;
 	unsigned int z_period_count;
+	unsigned int z_period;
+	unsigned int z_current_period;
+	unsigned int z_next_period;
+	unsigned long int z_move_count;
+	unsigned long int z_move;
 	char z_high;
 	char z_act;
 	char z_dir;
 };
-extern struct motor_movement current_move, next_move;
+extern struct motor_movement current_move;
 
 struct work_area {
 	unsigned long int x;

@@ -4,7 +4,7 @@ struct system_state system_status;
 
 struct machine_position start_position, current_position, end_position;
 
-struct motor_movement current_move, next_move;
+struct motor_movement current_move;
 
 struct work_area w_size;
 
@@ -12,35 +12,43 @@ char system_calibrated = 0;
 char motors_enabled = 0;
 
 void reset_motor_state(void){
-	current_position.x = 0;
+	current_position.x = 100000;
 	current_position.x_l_stop = 0;
 	current_position.x_r_stop = 0;
-	current_position.y = 0;
+	current_position.y = 100000;
 	current_position.y_c_stop = 0;
 	current_position.y_f_stop = 0;
-	current_position.z = 0;
+	current_position.z = 100000;
 	current_position.z_b_stop = 0;
 	current_position.z_t_stop = 0;
 	
 	current_move.x_act = 0;
 	current_move.x_period_count = 0;
+	current_move.x_period = 0;
+	current_move.x_current_period = 0;
+	current_move.x_next_period = 0;
+	current_move.x_move_count = 0;
+	current_move.x_move = 0;
 	current_move.x_dir = 0;
+	
 	current_move.y_act = 0;
 	current_move.y_period_count = 0;
+	current_move.y_move_count = 0;
+	current_move.y_move = 0;
+	current_move.y_period = 0;
+	current_move.y_current_period = 0;
+	current_move.y_next_period = 0;
 	current_move.y_dir = 0;
+	
 	current_move.z_act = 0;
 	current_move.z_period_count = 0;
+	current_move.z_period = 0;
+	current_move.z_current_period = 0;
+	current_move.z_next_period = 0;
+	current_move.z_move_count = 0;
+	current_move.z_move = 0;
 	current_move.z_dir = 0;
 	
-	next_move.x_act = 0;
-	next_move.x_period_count = 0;
-	next_move.x_dir = 0;
-	next_move.y_act = 0;
-	next_move.y_period_count = 0;
-	next_move.y_dir = 0;
-	next_move.z_act = 0;
-	next_move.z_period_count = 0;
-	next_move.z_dir = 0;
 }
 
 void reset_area_state(void){
@@ -59,75 +67,87 @@ void process_motion(void){
 	check_y_endstop();
 	check_z_endstop();
 	
-	if(current_move.x_act == 0){
-		if(current_position.x != end_position.x){
-			if(end_position.x > current_position.x){
-				current_move.x_dir = MOTOR_MOVE_R;
-			} else {
-				current_move.x_dir = MOTOR_MOVE_L;
-			}
-			next_move.x_act = 1;
-		}
-	} else {
-		if(current_move.x_dir == MOTOR_MOVE_R){
-			if(current_position.x >= end_position.x){
-				current_move.x_act = 0;
-				next_move.x_act = 0;
-				current_move.x_period_count = 0;
+	if(current_move.x_act && (current_move.x_move_count == 0)){
+		current_move.x_act = 0;
+		current_move.x_period_count = 0;
+	}
+	if(current_move.y_act && (current_move.y_move_count == 0)){
+		current_move.y_act = 0;
+		current_move.y_period_count = 0;
+	}
+	if(current_move.z_act && (current_move.z_move_count == 0)){
+		current_move.z_act = 0;
+		current_move.z_period_count = 0;
+	}
+}
+
+void process_instruction(void){
+	if(current_move.x_act){
+		if(current_move.x_move_count > (current_move.x_move - current_move.x_move_count)){
+			// speeding up
+			if(current_move.x_current_period > current_move.x_period){
+				if((current_move.x_current_period - PERIOD_RAMP) >= current_move.x_period){
+					current_move.x_next_period = current_move.x_current_period - PERIOD_RAMP;
+				} else {
+					current_move.x_next_period = current_move.x_period;
+				}
 			}
 		} else {
-			if(current_position.x <= end_position.x){
-				current_move.x_act = 0;
-				next_move.x_act = 0;
-				current_move.x_period_count = 0;
+			// slowing down
+			if(current_move.x_move_count <= ((START_SPEED - current_move.x_current_period)/PERIOD_RAMP)){
+				if(current_move.x_current_period < START_SPEED){
+					if((current_move.x_current_period + PERIOD_RAMP) <= START_SPEED){
+						current_move.x_next_period = current_move.x_current_period + PERIOD_RAMP;
+					} else {
+						current_move.x_next_period = START_SPEED;
+					}
+				}
 			}
 		}
 	}
-	if(current_move.y_act == 0){
-		if(current_position.y != end_position.y){
-			if(end_position.y > current_position.y){
-				current_move.y_dir = MOTOR_MOVE_A;
-			} else {
-				current_move.y_dir = MOTOR_MOVE_T;
-			}
-			next_move.y_act = 1;
-		}
-	} else {
-		if(current_move.y_dir == MOTOR_MOVE_A){
-			if(current_position.y >= end_position.y){
-				current_move.y_act = 0;
-				next_move.y_act = 0;
-				current_move.y_period_count = 0;
+	if(current_move.y_act){
+		if(current_move.y_move_count > (current_move.y_move - current_move.y_move_count)){
+			// speeding up
+			if(current_move.y_current_period > current_move.y_period){
+				if((current_move.y_current_period - PERIOD_RAMP) >= current_move.y_period){
+					current_move.y_next_period = current_move.y_current_period - PERIOD_RAMP;
+				} else {
+					current_move.y_next_period = current_move.y_period;
+				}
 			}
 		} else {
-			if(current_position.y <= end_position.y){
-				current_move.y_act = 0;
-				next_move.y_act = 0;
-				current_move.y_period_count = 0;
+			// slowing down
+			if(current_move.y_move_count <= ((START_SPEED - current_move.y_current_period)/PERIOD_RAMP)){
+				if(current_move.y_current_period < START_SPEED){
+					if((current_move.y_current_period + PERIOD_RAMP) <= START_SPEED){
+						current_move.y_next_period = current_move.y_current_period + PERIOD_RAMP;
+					} else {
+						current_move.y_next_period = START_SPEED;
+					}
+				}
 			}
 		}
 	}
-	if(current_move.z_act == 0){
-		if(current_position.z != end_position.z){
-			if(end_position.z > current_position.z){
-				current_move.z_dir = MOTOR_MOVE_U;
-			} else {
-				current_move.z_dir = MOTOR_MOVE_D;
-			}
-			next_move.z_act = 1;
-		}
-	} else {
-		if(current_move.z_dir == MOTOR_MOVE_U){
-			if(current_position.z >= end_position.z){
-				current_move.z_act = 0;
-				next_move.z_act = 0;
-				current_move.z_period_count = 0;
+	if(current_move.z_act){
+		if(current_move.z_move_count > (current_move.z_move - current_move.z_move_count)){
+			// speeding up
+			if(current_move.z_current_period > current_move.z_period){
+				if((current_move.z_current_period - PERIOD_RAMP) >= current_move.z_period){
+					current_move.z_next_period = current_move.z_current_period - PERIOD_RAMP;
+				} else {
+					current_move.z_next_period = current_move.z_period;
+				}
 			}
 		} else {
-			if(current_position.z <= end_position.z){
-				current_move.z_act = 0;
-				next_move.z_act = 0;
-				current_move.z_period_count = 0;
+			// slowing down
+			if(current_move.z_move_count <= ((START_SPEED - current_move.z_current_period)/PERIOD_RAMP)){
+				if(current_move.z_current_period < START_SPEED){
+					if((current_move.z_current_period + PERIOD_RAMP) <= START_SPEED){
+						current_move.z_next_period = current_move.z_current_period + PERIOD_RAMP;
+					} else {
+						current_move.z_next_period = START_SPEED;
+					}
+				}
 			}
 		}
 	}
@@ -139,9 +159,9 @@ void process_motors(void){
 			system_status.get_new_move = 1;
 			motor_x_high();
 			current_move.x_high = 1;
-			current_move.x_dir = next_move.x_dir;
-			current_move.x_period_count = next_move.x_period_count;
-			current_move.x_act = next_move.x_act;
+			current_move.x_period_count = current_move.x_next_period;
+			current_move.x_current_period = current_move.x_next_period;
+			current_move.x_move_count = current_move.x_move_count - 1;
 			if(current_move.x_dir == MOTOR_MOVE_R){
 				current_position.x = current_position.x + 1;
 			} else {
@@ -159,12 +179,6 @@ void process_motors(void){
 			}
 			current_move.x_period_count = current_move.x_period_count - 1;
 		}
-	} else {
-		if(next_move.x_act){
-			current_move.x_dir = next_move.x_dir;
-			current_move.x_period_count = next_move.x_period_count;
-			current_move.x_act = next_move.x_act;
-		}
 	}
 	
 	if(current_move.y_act){
@@ -172,9 +186,9 @@ void process_motors(void){
 			motor_y_high();
 			system_status.get_new_move = 1;
 			current_move.y_high = 1;
-			current_move.y_dir = next_move.y_dir;
-			current_move.y_period_count = next_move.y_period_count;
-			current_move.y_act = next_move.y_act;
+			current_move.y_period_count = current_move.y_next_period;
+			current_move.y_current_period = current_move.y_next_period;
+			current_move.y_move_count = current_move.y_move_count - 1;
 			if(current_move.y_dir == MOTOR_MOVE_A){
 				current_position.y = current_position.y + 1;
 			} else {
@@ -192,12 +206,6 @@ void process_motors(void){
 			}
 			current_move.y_period_count = current_move.y_period_count - 1;
 		}
-	} else {
-		if(next_move.y_act){
-			current_move.y_dir = next_move.y_dir;
-			current_move.y_period_count = next_move.y_period_count;
-			current_move.y_act = next_move.y_act;
-		}
 	}
 	
 	if(current_move.z_act){
@@ -206,9 +214,9 @@ void process_motors(void){
 			motor_zl_high();
 			system_status.get_new_move = 1;
 			current_move.z_high = 1;
-			current_move.z_dir = next_move.z_dir;
-			current_move.z_period_count = next_move.z_period_count;
-			current_move.z_act = next_move.z_act;
+			current_move.z_period_count = current_move.z_next_period;
+			current_move.z_current_period = current_move.z_next_period;
+			current_move.z_move_count = current_move.z_move_count - 1;
 			if(current_move.z_dir == MOTOR_MOVE_U){
 				current_position.z = current_position.z + 1;
 			} else {
@@ -227,12 +235,6 @@ void process_motors(void){
 			}
 			current_move.z_period_count = current_move.z_period_count - 1;
 		}
-	} else {
-		if(next_move.z_act){
-			current_move.z_dir = next_move.z_dir;
-			current_move.z_period_count = next_move.z_period_count;
-			current_move.z_act = next_move.z_act;
-		}
 	}
 }
 
@@ -242,7 +244,7 @@ void check_x_endstop(void){
 		if(current_move.x_dir == MOTOR_MOVE_L){
 			if(current_move.x_act) printf("Hit Left Stop!\n");
 			current_move.x_act = 0;
-			next_move.x_act = 0;
+			current_move.x_move_count = 0;
 		}
 	} else {
 		current_position.x_l_stop = ENDSTOP_OFF;
@@ -252,7 +254,7 @@ void check_x_endstop(void){
 		if(current_move.x_dir == MOTOR_MOVE_R){
 			if(current_move.x_act) printf("Hit Right Stop!\n");
 			current_move.x_act = 0;
-			next_move.x_act = 0;
+			current_move.x_move_count = 0;
 		}
 	} else {
 		current_position.x_r_stop = ENDSTOP_OFF;
@@ -265,7 +267,7 @@ void check_y_endstop(void){
 		if(current_move.y_dir == MOTOR_MOVE_A){
 			if(current_move.y_act) printf("Hit Far Stop!\n");
 			current_move.y_act = 0;
-			next_move.y_act = 0;
+			current_move.y_move_count = 0;
 		}
 	} else {
 		current_position.y_f_stop = ENDSTOP_OFF;
@@ -275,7 +277,7 @@ void check_y_endstop(void){
 		if(current_move.y_dir == MOTOR_MOVE_T){
 			if(current_move.y_act) printf("Hit Close Stop!\n");
 			current_move.y_act = 0;
-			next_move.y_act = 0;
+			current_move.y_move_count = 0;
 		}
 	} else {
 		current_position.y_c_stop = ENDSTOP_OFF;
