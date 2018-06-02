@@ -30,6 +30,7 @@ void reset_motor_state(void){
 	current_move.x_move_count = 0;
 	current_move.x_move = 0;
 	current_move.x_dir = 0;
+	current_move.x_arc = 0;
 	
 	current_move.y_act = 0;
 	current_move.y_period_count = 0;
@@ -39,6 +40,7 @@ void reset_motor_state(void){
 	current_move.y_current_period = 0;
 	current_move.y_next_period = 0;
 	current_move.y_dir = 0;
+	current_move.y_arc = 0;
 	
 	current_move.z_act = 0;
 	current_move.z_period_count = 0;
@@ -48,6 +50,7 @@ void reset_motor_state(void){
 	current_move.z_move_count = 0;
 	current_move.z_move = 0;
 	current_move.z_dir = 0;
+	current_move.z_arc = 0;
 	
 }
 

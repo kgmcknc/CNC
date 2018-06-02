@@ -63,8 +63,9 @@ void system_control(int control_socket){
 				scanf("%s", control_string+1);
 				break;
 			case 'm' :
-				printf("Type direction to move, how many steps and speed\n");
-				printf("Example: \"r.1000.50\" then press enter\n");
+				printf("Enter: \"type.xoffset.yoffset.zoffset.speed.arcradius\n");
+				printf("Type 0 is line, type 1 is arc. Speed is Max Speed\n");
+				printf("Example: \"0.1000.2000.3000.50.0\" then press enter\n");
 				printf("Or enter 0 to stop movement: ");
 				printf("\n");
 				scanf("%s", control_string+1);
