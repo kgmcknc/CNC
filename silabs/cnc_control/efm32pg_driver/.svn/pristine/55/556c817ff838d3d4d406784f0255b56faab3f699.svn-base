@@ -1,0 +1,48 @@
+/*
+ * sim3l1xx_sys_timer.h
+ *
+ *  Created on: Jun 29, 2012
+ *      Author: trampas.stern
+ */
+
+#ifndef SIM3L1XX_SYS_TIMER_H  // {
+#define SIM3L1XX_SYS_TIMER_H
+
+#include <stdint.h>
+#include <stdbool.h>
+
+
+typedef enum 
+{
+   EFM32GG_UserAlarm0,
+   EFM32GG_UserAlarm1,
+   EFM32GG_UserAlarm2
+
+} EFM32GG_UserAlarm_t;
+
+
+typedef uint32_t EFM32GG_SysTimerValue_t; //RPH: This needs to be a 24bit value!
+
+typedef bool (*EFM32GG_SysTimerCallbackFunction_t)(void);
+
+
+void                     EFM32GG_SysTimerInit(bool powerOnInit);
+bool                     EFM32GG_SysTimerRegisterCompareCallBackFunction(EFM32GG_UserAlarm_t alarm, EFM32GG_SysTimerCallbackFunction_t CallBackFunctionPtr);
+
+EFM32GG_SysTimerValue_t  EFM32GG__SysTimerRead(void);
+int                      EFM32GG__SysTimerSet(EFM32GG_SysTimerValue_t rtcCount);
+
+EFM32GG_SysTimerValue_t  EFM32GG__SysTimerReadAlarm0(void);
+EFM32GG_SysTimerValue_t  EFM32GG__SysTimerReadAlarm1(void);
+EFM32GG_SysTimerValue_t  EFM32GG__SysTimerReadAlarm2(void);
+
+void                     EFM32GG__SysTimerSetAlarm0(EFM32GG_SysTimerValue_t time);
+void                     EFM32GG__SysTimerSetAlarm1(EFM32GG_SysTimerValue_t time);
+void                     EFM32GG__SysTimerSetAlarm2(EFM32GG_SysTimerValue_t time);
+
+void                     EFM32GG__SysTimerDisableAlarm0(void);
+void                     EFM32GG__SysTimerDisableAlarm1(void);
+void                     EFM32GG__SysTimerDisableAlarm2(void);
+
+
+#endif /* SIM3L1XX_TIMER_H */

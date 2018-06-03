@@ -1,0 +1,178 @@
+/**
+ * @file sim3l1xx_watchdog.c
+ *
+ * @copyright 2013 by Sensus. All rights reserved.
+ *
+ */
+
+#include "prod_config.h"
+
+#include "sys_delay.h"
+#include "efm32gg.h"
+#include "efm32gg_watchdog.h"
+#include "arch_log.h"
+#include "sys_int.h"
+#include <assert.h>
+
+
+InterruptCallback WD_WarningCallBack = NULL;
+
+typedef enum
+{
+   eWATCHDOG_STOP              = 0,
+   eWATCHDOG_DISABLED          = 0x01,
+   eWATCHDOG_RESET_ENABLED     = 0x02,
+   eWATCHDOG_EARLY_ISR_ENABLED = 0x04
+
+} WATCHDOG_STATE_e;
+
+typedef struct
+{
+   WATCHDOG_STATE_e state;
+   uint32_t ThresholdRegister;
+
+} WatchdogState_s;
+
+WatchdogState_s gWatchdogState = {
+                                    .state = eWATCHDOG_STOP,
+                                    .ThresholdRegister = 0
+                                 };
+
+
+#ifdef ENABLE_WATCHDOG
+
+bool fWatchDogKickStatus = false;
+
+#endif // ENABLE_WATCHDOG
+
+/**
+ * This routine is used to stop the watchdog timer.  Calling
+ * restart will not re-enable the watch dog timer.  You must
+ * call init to re-enable the timer.
+ *
+ * Note:  This function is always enabled.
+ */
+void Efm32gg_WatchDogStop (void)
+{
+   gWatchdogState.state = eWATCHDOG_STOP;
+   WDOG->CTRL &= ~WDOG_CTRL_EN;
+}
+
+/**
+ * This function is used to temporarily disable the
+ * watchdog Timer.  This differs from the stop command in that
+ * if you call the reset function, the watch dog timer is
+ * restarted.
+ *
+ *
+ */
+void Efm32gg_WatchDogDisable(void)
+{
+#ifdef ENABLE_WATCHDOG
+   gWatchdogState.state = eWATCHDOG_DISABLED;
+   WDOG->CTRL &= ~WDOG_CTRL_EN;
+#endif
+}
+
+
+int Efm32gg_WatchDogInit(void)
+{
+#ifdef ENABLE_WATCHDOG
+   //RPH: No WD Early Warning in EFM32GG
+   //     Current WD timeout ~49k cycles. Best fit for EFM32GG 32k or 64k.
+   //watchDogMs = (LFOSC_CLOCK_FREQ * WATCHDOG_TIMEOUT_MS) / 1000UL;
+
+   gWatchdogState.state = eWATCHDOG_STOP;
+   gWatchdogState.ThresholdRegister = (0xD << _WDOG_CTRL_PERSEL_SHIFT); // Timeout period 32k cycles
+
+   WDOG->CTRL = WDOG_CTRL_CLKSEL_LFRCO |
+                gWatchdogState.ThresholdRegister |
+                WDOG_CTRL_EN;
+
+   gWatchdogState.state = eWATCHDOG_RESET_ENABLED;
+   return (0);
+#else
+
+  return(0);
+
+#endif // ENABLE_WATCHDOG
+
+}
+
+//kicks the proverbial dog
+int Efm32gg_WatchDogReset (bool kickHardware)
+{
+#ifdef ENABLE_WATCHDOG
+   if (gWatchdogState.state == eWATCHDOG_DISABLED)
+   {
+      Sys_IntFlags_t GlobalInterruptState;
+
+      GlobalInterruptState = Sys_IntDisable();
+
+      gWatchdogState.state = eWATCHDOG_RESET_ENABLED;
+
+      WDOG->CTRL = WDOG_CTRL_EN;
+
+      fWatchDogKickStatus = false;
+
+      Sys_IntEnable (GlobalInterruptState);
+
+   }
+   else if (gWatchdogState.state == eWATCHDOG_STOP)
+   {
+      Sys_IntFlags_t GlobalInterruptState;
+
+      GlobalInterruptState = Sys_IntDisable();
+
+      Efm32gg_WatchDogStop();
+      // Indicate that the Watchdog timer is not restarted.
+
+      Sys_IntEnable (GlobalInterruptState);
+      return (-1);
+   }
+   else
+   {
+#ifdef FLASHER_APPLICATION
+      // For the flasher routine, we will always kick the watch dog timer
+      // when called.
+      Sys_IntFlags_t GlobalInterruptState;
+
+      GlobalInterruptState = Sys_IntDisable();
+
+      fWatchDogKickStatus = false;
+
+      //now reset the counter for a fresh start
+      SI32_WDTIMER_A_reset_counter(SI32_WDTIMER_0);
+
+      // Allow the watchdog to be a reset source
+      SI32_RSTSRC_A_enable_watchdog_timer_reset_source(SI32_RSTSRC_0);
+
+      Sys_IntEnable (GlobalInterruptState);
+
+#else
+      if (true == kickHardware)
+      {
+         Sys_IntFlags_t GlobalInterruptState;
+
+         GlobalInterruptState = Sys_IntDisable();
+
+         fWatchDogKickStatus = false;
+
+         WDOG->CMD = WDOG_CMD_CLEAR;
+
+         Sys_IntEnable (GlobalInterruptState);
+      }
+      else
+      {
+         fWatchDogKickStatus = true;
+      }
+#endif
+   }
+   return (0);
+
+#else
+   // Indicate that the Watchdog timer is not restarted.
+   return (-1);
+
+#endif // ENABLE_WATCHDOG
+}

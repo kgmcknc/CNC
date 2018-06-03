@@ -1,0 +1,29 @@
+/**
+ * @file sim3l1xx_watchdog.h
+ *
+ * @copyright 2013 by Sensus. All rights reserved.
+ *
+ * Functions used by components for control of microprocessor watch dog timer.
+ *
+ */
+
+#ifndef SIM3L1XX_WATCHDOG_H // {
+#define SIM3L1XX_WATCHDOG_H
+
+#include <stdbool.h>
+
+#define WATCHDOG_TIMEOUT_MS                         (3000UL)    // WATCHDOG_TIMEOUT must be larger than WATCHDOG_SUPERVISORY_INT_TIMEOUT
+#define WATCHDOG_SUPERVISORY_INT_TIMEOUT_MS         (1998UL)
+
+
+
+#define MINIMUM_INFOMEM_REWRITE_TIME_SEC            (60)     // If a WD interrupt occurs within this time of the last NVMem
+
+typedef void (*InterruptCallback)(void);
+
+extern void Efm32gg_WatchDogDisable(void);
+extern int  Efm32gg_WatchDogInit(void);
+extern int  Efm32gg_WatchDogReset(bool kickHardware);
+extern void Efm32gg_WatchDogStop (void);
+
+#endif // SIM3L1XX_WATCHDOG_H }
