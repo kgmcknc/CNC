@@ -82,6 +82,7 @@ void move(char move_string[200]){
 	long int x_count, y_count, z_count;
 	unsigned int radius;
 	char input_count = 0;
+	long double ld_count;
 	input_count = sscanf(move_string, "%c%d.%ld.%ld.%ld.%u.%u", &cmd, &type, &x_count, &y_count, &z_count, &move_speed, &radius);
 	//printf("Count: %d, Moving: T: %d, x:%ld, y:%ld, z:%ld, speed:%u, radius:%u\n", input_count, type, x_count, y_count, z_count, move_speed, radius);
 	if((input_count < 7) || (!x_count && !y_count && !z_count)){
@@ -177,18 +178,24 @@ void move(char move_string[200]){
 			current_move.z_act = 1;
 			current_move.z_arc = type;
 		}
-		/*if(type == 0){
-			total_move = current_move.x_move + current_move.y_move + current_move.z_move;
-			current_move.x_period = current_move.x_period*current_move.x_move/total_move;
-			current_move.y_period = current_move.y_period*current_move.y_move/total_move;
-			current_move.z_period = current_move.z_period*current_move.z_move/total_move;
-			current_move.x_current_period = current_move.x_period;
-			current_move.y_current_period = current_move.y_period;
-			current_move.z_current_period = current_move.z_period;
+		if(type == 0){
+			current_move.line_count = sqrtl(current_move.x_move*current_move.x_move + current_move.y_move*current_move.y_move + current_move.z_move*current_move.z_move);
+			if(current_move.x_act){
+				if(current_move.x_move > 0) current_move.x_period = current_move.x_period*current_move.line_count/current_move.x_move;
+				current_move.x_current_period = current_move.x_period;
+			}
+			if(current_move.y_act){
+				if(current_move.y_move > 0) current_move.y_period = current_move.y_period*current_move.line_count/current_move.y_move;
+				current_move.y_current_period = current_move.y_period;
+			}
+			if(current_move.z_act){
+				if(current_move.z_move > 0) current_move.z_period = current_move.z_period*current_move.line_count/current_move.z_move;
+				current_move.z_current_period = current_move.z_period;
+			}
 			printf("X: %lu, Y: %lu, Z: %lu\n", current_move.x_period, current_move.y_period, current_move.z_period);
 		} else {
 			
-		}*/
+		}
 	}
 }
 

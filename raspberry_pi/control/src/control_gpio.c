@@ -51,7 +51,7 @@ void reset_motor_state(void){
 	current_move.z_move = 0;
 	current_move.z_dir = 0;
 	current_move.z_arc = 0;
-	
+	current_move.line_count = 0;
 }
 
 void reset_area_state(void){
@@ -94,6 +94,8 @@ void process_instruction(void){
 				} else {
 					current_move.x_next_period = current_move.x_period;
 				}
+			} else {
+				current_move.x_next_period = current_move.x_period;
 			}
 		} else {
 			// slowing down
@@ -104,7 +106,11 @@ void process_instruction(void){
 					} else {
 						current_move.x_next_period = START_SPEED;
 					}
+				} else {
+					current_move.x_next_period = START_SPEED;
 				}
+			} else {
+				current_move.x_next_period = current_move.x_period;
 			}
 		}
 	}
@@ -117,6 +123,8 @@ void process_instruction(void){
 				} else {
 					current_move.y_next_period = current_move.y_period;
 				}
+			} else {
+				current_move.y_next_period = current_move.y_period;
 			}
 		} else {
 			// slowing down
@@ -127,7 +135,11 @@ void process_instruction(void){
 					} else {
 						current_move.y_next_period = START_SPEED;
 					}
+				} else {
+					current_move.y_next_period = START_SPEED;
 				}
+			} else {
+				current_move.y_next_period = current_move.y_period;
 			}
 		}
 	}
@@ -140,6 +152,8 @@ void process_instruction(void){
 				} else {
 					current_move.z_next_period = current_move.z_period;
 				}
+			} else {
+				current_move.z_next_period = current_move.z_period;
 			}
 		} else {
 			// slowing down
@@ -150,7 +164,11 @@ void process_instruction(void){
 					} else {
 						current_move.z_next_period = START_SPEED;
 					}
+				} else {
+					current_move.z_next_period = START_SPEED;
 				}
+			} else {
+				current_move.z_next_period = current_move.z_period;
 			}
 		}
 	}

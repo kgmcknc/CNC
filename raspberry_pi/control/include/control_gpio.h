@@ -75,6 +75,7 @@ struct motor_movement {
 	char z_high;
 	char z_act;
 	char z_dir;
+	unsigned long int line_count;
 };
 extern struct motor_movement current_move;
 

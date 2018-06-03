@@ -9,13 +9,13 @@ CFLAGS=-I$(INCDIR)
 
 DEPS = $(wildcard $(INCDIR)/*.h)
 OBJ = $(patsubst $(SRCDIR)/%.c,$(OUTDIR)/%.o,$(wildcard $(SRCDIR)/*.c))
-LIBS = wiringPi
+LIBS = -lwiringPi -lm
 
 $(OUTDIR)/%.o: $(SRCDIR)/%.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 cnc_control: $(OBJ)
-	gcc -o $@ $^ $(CFLAGS) -lwiringPi
+	gcc -o $@ $^ $(CFLAGS) $(LIBS)
 
 .PHONY: clean
 
