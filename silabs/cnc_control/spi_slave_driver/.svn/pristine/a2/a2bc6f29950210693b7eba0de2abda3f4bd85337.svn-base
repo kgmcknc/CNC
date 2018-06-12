@@ -1,0 +1,99 @@
+/**
+ * @file spi_slave_driver.h
+ *
+ * @copyright 2015 by Sensus. All rights reserved.
+ *
+ *
+ *
+ */
+
+#ifndef SPI_SLAVE_DRIVER_H
+#define SPI_SLAVE_DRIVER_H
+
+#include "arch_device.h"
+#include "arch_system_time.h"
+
+#include "sys_gpio.h"
+
+typedef uint32_t SpiSlave_GpioDef_t;
+
+typedef enum
+{
+   SpiSlave_ErrorCode_None    =  0,
+   SpiSlave_ErrorCode_Busy    = -1,
+   SpiSlave_ErrorCode_Timeout = -2,
+
+} SpiSlave_ErrorCode_t;
+
+typedef void (*SpiSlave_CompleteCallback_t)(SpiSlave_ErrorCode_t errorCode, Arch_SystemTime_t timeStamp);
+
+
+typedef enum
+{
+   SpiSlave_Baud_Lowest  = 0,
+   SpiSlave_Baud_10kHz   = SpiSlave_Baud_Lowest,
+   SpiSlave_Baud_100kHz,
+   SpiSlave_Baud_200kHz,
+   SpiSlave_Baud_500kHz,
+   SpiSlave_Baud_1MHz,
+   SpiSlave_Baud_2MHz,
+   SpiSlave_Baud_3_25MHz,
+   SpiSlave_Baud_6_5MHz,
+   SpiSlave_Baud_Fastest = SpiSlave_Baud_6_5MHz
+
+} SpiSlave_BaudRate_t;
+
+typedef enum
+{
+   SpiSlave_DeviceId_0,                ///< Hardware Spi Interface 0
+   SpiSlave_NumberOfDevices,           ///< Number of Sported Spi Devices. (Must be last in list)
+}  SpiSlave_DeviceId_t;
+
+#define Spi_SettingPhaseChangeFirst               0
+#define Spi_SettingPhaseCaptureFirst              1
+#define Spi_SettingPhaseSampleLeading             0
+#define Spi_SettingPhaseSampleTrailing            1
+#define Spi_SettingPolarityInactiveLow            0
+#define Spi_SettingPolarityInactiveHigh           1
+#define Spi_SettingLsbFirst                       0
+#define Spi_SettingMsbFirst                       1
+#define Spi_Setting8BitData                       0
+#define Spi_Setting7BitData                       1
+
+typedef struct
+{
+    uint8_t ClockPhase:1;                     ///< 0 - Data changed on First Uclk  1 - Data captured on first Uclk
+    uint8_t ClockPolarity:1;                  ///< 0 - Inactive State Low          1 - Inactive State High
+    uint8_t DataDirection:1;                  ///< 0 - LSB First                   1 - MSB first
+    uint8_t DataLength:1;                     ///< 0 - 8 bits                      1 - 7 bits
+    uint8_t SpiReserved:4;
+
+} SpiSlave_Settings_t;
+
+
+typedef struct
+{
+   SpiSlave_DeviceId_t         Interface;              ///< Spi Interface to use
+   SpiSlave_BaudRate_t         BaudRate;               ///< Baud rate in Hz
+   SpiSlave_Settings_t         Settings;               ///< Used to configure the SPI Mode.
+   uint8_t *                   TxDataBufferPtr;        ///< Pointer to buffer of data to be transmitted.  Buffer has DataCount elements.
+   uint8_t *                   RxDataBufferPtr;        ///< Pointer to buffer of data received.  Buffer has DataCount elements.
+   uint16_t                    DataCount;              ///< Number of elements to be transmitted/received.  Expected number of SPI transactions.
+   SpiSlave_CompleteCallback_t CompleteCallbackFPtr;   ///< Transaction complete callback function pointer.  Called from ISR context.
+}  SpiSlave_Configuration_t;
+
+
+Arch_DeviceResult_t  SpiSlave_Init(SpiSlave_DeviceId_t deviceId);
+
+Arch_DeviceResult_t  SpiSlave_Open(Arch_DeviceHandle_t *dHandlePtr, SpiSlave_Configuration_t *configPtr);
+
+Arch_DeviceResult_t  SpiSlave_Close(Arch_DeviceHandle_t *dHandlePtr);
+
+Arch_DeviceResult_t SpiSlave_Enable(Arch_DeviceHandle_t *dHandlePtr);
+
+Arch_DeviceResult_t  SpiSlave_Release(SpiSlave_DeviceId_t deviceId);
+
+SpiSlave_ErrorCode_t SpiSlave_ErrorCode(Arch_DeviceHandle_t *dHandlePtr);
+
+#endif // SPI_SLAVE_DRIVER_H
+
