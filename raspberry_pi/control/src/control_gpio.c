@@ -4,7 +4,7 @@ struct system_state system_status;
 
 struct machine_position start_position, current_position, end_position;
 
-struct motor_movement current_move;
+struct motor_movement current_move, next_move;
 
 struct work_area w_size;
 
@@ -72,19 +72,34 @@ void process_motion(void){
 	
 	if(current_move.x_act && (current_move.x_move_count == 0)){
 		current_move.x_act = 0;
+		current_move.x_move = 0;
 		current_move.x_period_count = 0;
 	}
 	if(current_move.y_act && (current_move.y_move_count == 0)){
 		current_move.y_act = 0;
+		current_move.y_move = 0;
 		current_move.y_period_count = 0;
 	}
 	if(current_move.z_act && (current_move.z_move_count == 0)){
 		current_move.z_act = 0;
+		current_move.z_move = 0;
 		current_move.z_period_count = 0;
 	}
 }
 
 void process_instruction(void){
+	if(current_move.x_act && current_move.x_arc){
+		
+	}
+	if(current_move.y_act && current_move.y_arc){
+		
+	}
+	if(current_move.z_act && current_move.z_arc){
+		
+	}
+}
+
+void process_speed(void){
 	if(current_move.x_act){
 		if(current_move.x_move_count > (current_move.x_move - current_move.x_move_count)){
 			// speeding up

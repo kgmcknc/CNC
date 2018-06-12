@@ -9,6 +9,7 @@
 void process_motors(void);
 void process_motion(void);
 void process_instruction(void);
+void process_speed(void);
 void reset_motor_state(void);
 void reset_area_state(void);
 void init_control_gpio(void);
@@ -52,6 +53,7 @@ struct motor_movement {
 	unsigned int x_current_period;
 	unsigned int x_next_period;
 	char x_arc;
+	char x_arc_cw;
 	char x_high;
 	char x_act;
 	char x_dir;
@@ -62,6 +64,7 @@ struct motor_movement {
 	unsigned long int y_move_count;
 	unsigned long int y_move;
 	char y_arc;
+	char y_arc_cw;
 	char y_high;
 	char y_act;
 	char y_dir;
@@ -72,12 +75,13 @@ struct motor_movement {
 	unsigned long int z_move_count;
 	unsigned long int z_move;
 	char z_arc;
+	char z_arc_cw;
 	char z_high;
 	char z_act;
 	char z_dir;
 	unsigned long int line_count;
 };
-extern struct motor_movement current_move;
+extern struct motor_movement current_move, next_move;
 
 struct work_area {
 	unsigned long int x;

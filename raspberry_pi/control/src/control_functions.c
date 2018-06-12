@@ -80,23 +80,27 @@ void move(char move_string[200]){
 	unsigned int move_speed;
 	unsigned long int total_move;
 	long int x_count, y_count, z_count;
-	unsigned int radius;
+	long int radius;
 	char input_count = 0;
 	long double ld_count;
-	input_count = sscanf(move_string, "%c%d.%ld.%ld.%ld.%u.%u", &cmd, &type, &x_count, &y_count, &z_count, &move_speed, &radius);
+	input_count = sscanf(move_string, "%c%d.%ld.%ld.%ld.%u.%ld", &cmd, &type, &x_count, &y_count, &z_count, &move_speed, &radius);
 	//printf("Count: %d, Moving: T: %d, x:%ld, y:%ld, z:%ld, speed:%u, radius:%u\n", input_count, type, x_count, y_count, z_count, move_speed, radius);
 	if((input_count < 7) || (!x_count && !y_count && !z_count)){
 		printf("Stopping Movement\n");
 		current_move.x_period_count = 0;
 		current_move.x_act = 0;
+		current_move.x_move = 0;
 		current_move.y_period_count = 0;
 		current_move.y_act = 0;
+		current_move.y_move = 0;
 		current_move.z_period_count = 0;
 		current_move.z_act = 0;
+		current_move.z_move = 0;
 	} else {
 		if(x_count == 0){
 			current_move.x_period_count = 0;
 			current_move.x_act = 0;
+			current_move.x_move = 0;
 			printf("Stopped X\n");
 		} else {
 			if(x_count > 0){
@@ -125,6 +129,7 @@ void move(char move_string[200]){
 		if(y_count == 0){
 			current_move.y_period_count = 0;
 			current_move.y_act = 0;
+			current_move.y_move = 0;
 			printf("Stopped Y\n");
 		} else {
 			if(y_count > 0){
@@ -153,6 +158,7 @@ void move(char move_string[200]){
 		if(z_count == 0){
 			current_move.z_period_count = 0;
 			current_move.z_act = 0;
+			current_move.z_move = 0;
 			printf("Stopped Z\n");
 		} else {
 			if(z_count > 0){
@@ -180,6 +186,9 @@ void move(char move_string[200]){
 		}
 		if(type == 0){
 			current_move.line_count = sqrtl(current_move.x_move*current_move.x_move + current_move.y_move*current_move.y_move + current_move.z_move*current_move.z_move);
+			current_move.x_arc = 0;
+			current_move.y_arc = 0;
+			current_move.z_arc = 0;
 			if(current_move.x_act){
 				if(current_move.x_move > 0) current_move.x_period = current_move.x_period*current_move.line_count/current_move.x_move;
 				current_move.x_current_period = current_move.x_period;
@@ -194,7 +203,36 @@ void move(char move_string[200]){
 			}
 			printf("X: %lu, Y: %lu, Z: %lu\n", current_move.x_period, current_move.y_period, current_move.z_period);
 		} else {
-			
+			if(type && 1){
+				current_move.x_arc = 1;
+				if(radius > 0){
+					
+				} else {
+					
+				}
+			} else {
+				current_move.x_arc = 0;
+			}
+			if(type && 2){
+				current_move.y_arc = 1;
+				if(radius > 0){
+					
+				} else {
+					
+				}
+			} else {
+				current_move.y_arc = 0;
+			}
+			if(type && 4){
+				current_move.z_arc = 1;
+				if(radius > 0){
+					
+				} else {
+					
+				}
+			} else {
+				current_move.z_arc = 0;
+			}
 		}
 	}
 }

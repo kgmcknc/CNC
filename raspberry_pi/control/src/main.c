@@ -36,6 +36,7 @@ int main(int argc, char **argv) {
 			
 			if(calibration_running) process_calibration();
 			process_instruction();
+			process_speed();
 			process_motion();
 			process_motors();
 			delayMicroseconds(1);
