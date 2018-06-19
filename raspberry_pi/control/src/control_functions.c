@@ -80,10 +80,10 @@ void move(char move_string[200]){
 	unsigned int move_speed;
 	unsigned long int total_move;
 	long int x_count, y_count, z_count;
-	long int radius;
+	long int x_radius, y_radius, z_radius;
 	char input_count = 0;
 	long double ld_count;
-	input_count = sscanf(move_string, "%c%d.%ld.%ld.%ld.%u.%ld", &cmd, &type, &x_count, &y_count, &z_count, &move_speed, &radius);
+	input_count = sscanf(move_string, "%c%d.%ld.%ld.%ld.%u.%ld.%ld.%ld", &cmd, &type, &x_count, &y_count, &z_count, &move_speed, &x_radius, &y_radius, &z_radius);
 	//printf("Count: %d, Moving: T: %d, x:%ld, y:%ld, z:%ld, speed:%u, radius:%u\n", input_count, type, x_count, y_count, z_count, move_speed, radius);
 	if((input_count < 7) || (!x_count && !y_count && !z_count)){
 		printf("Stopping Movement\n");
@@ -205,7 +205,7 @@ void move(char move_string[200]){
 		} else {
 			if(type && 1){
 				current_move.x_arc = 1;
-				if(radius > 0){
+				if(x_radius > 0){
 					
 				} else {
 					
@@ -215,7 +215,7 @@ void move(char move_string[200]){
 			}
 			if(type && 2){
 				current_move.y_arc = 1;
-				if(radius > 0){
+				if(y_radius > 0){
 					
 				} else {
 					
@@ -225,7 +225,7 @@ void move(char move_string[200]){
 			}
 			if(type && 4){
 				current_move.z_arc = 1;
-				if(radius > 0){
+				if(z_radius > 0){
 					
 				} else {
 					
