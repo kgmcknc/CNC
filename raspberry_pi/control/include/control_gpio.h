@@ -52,6 +52,8 @@ struct motor_movement {
 	unsigned int x_period;
 	unsigned int x_current_period;
 	unsigned int x_next_period;
+	unsigned long int x_arc_center;
+	unsigned long int x_arc_radius;
 	char x_arc;
 	char x_arc_cw;
 	char x_high;
@@ -63,6 +65,8 @@ struct motor_movement {
 	unsigned int y_next_period;
 	unsigned long int y_move_count;
 	unsigned long int y_move;
+	unsigned long int y_arc_center;
+	unsigned long int y_arc_radius;
 	char y_arc;
 	char y_arc_cw;
 	char y_high;
@@ -74,6 +78,8 @@ struct motor_movement {
 	unsigned int z_next_period;
 	unsigned long int z_move_count;
 	unsigned long int z_move;
+	unsigned long int z_arc_center;
+	unsigned long int z_arc_radius;
 	char z_arc;
 	char z_arc_cw;
 	char z_high;

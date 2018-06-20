@@ -74,7 +74,6 @@ void calibrate_system(void){
 }
 
 void move(char move_string[200]){
-	char dir;
 	char cmd;
 	int type;
 	unsigned int move_speed;
@@ -82,8 +81,9 @@ void move(char move_string[200]){
 	long int x_count, y_count, z_count;
 	long int x_radius, y_radius, z_radius;
 	char input_count = 0;
+	char long_arc, dir;
 	long double ld_count;
-	input_count = sscanf(move_string, "%c%d.%ld.%ld.%ld.%u.%ld.%ld.%ld", &cmd, &type, &x_count, &y_count, &z_count, &move_speed, &x_radius, &y_radius, &z_radius);
+	input_count = sscanf(move_string, "%c%d.%ld.%ld.%ld.%u.%ld.%ld.%ld.%c.%c", &cmd, &type, &x_count, &y_count, &z_count, &move_speed, &x_radius, &y_radius, &z_radius, &dir, &long_arc);
 	//printf("Count: %d, Moving: T: %d, x:%ld, y:%ld, z:%ld, speed:%u, radius:%u\n", input_count, type, x_count, y_count, z_count, move_speed, radius);
 	if((input_count < 7) || (!x_count && !y_count && !z_count)){
 		printf("Stopping Movement\n");
@@ -203,35 +203,60 @@ void move(char move_string[200]){
 			}
 			printf("X: %lu, Y: %lu, Z: %lu\n", current_move.x_period, current_move.y_period, current_move.z_period);
 		} else {
-			if(type && 1){
-				current_move.x_arc = 1;
-				if(x_radius > 0){
-					
+			if(type == 1){
+				// clockwise
+				current_move.x_arc = (x_radius) ? 1 : 0;
+				current_move.y_arc = (y_radius) ? 1 : 0;
+				current_move.z_arc = (z_radius) ? 1 : 0;
+				current_move.x_arc_cw = 1;
+				current_move.y_arc_cw = 1;
+				current_move.z_arc_cw = 1;
+				// x end minus x current to see if positive or negative
+				// y end minus y current to see if positive or negative
+				// z end minus z current to see if positive or negative
+				// with rotation direciton, pos/minus axes, and short/long:
+				// find center of axes
+				if((end_position.x - current_position.x) > 0){
+					if(long_arc){
+						// center of y is up
+					} else {
+						// center of y is down
+					}
 				} else {
-					
+					if(long_arc){
+						// center of y is down
+					} else {
+						// center of y is up
+					}
+				}
+				if((end_position.y - current_position.y) > 0){
+					if(long_arc){
+						// center of x is left
+					} else {
+						// center of x is right
+					}
+				} else {
+					if(long_arc){
+						// center of x is right
+					} else {
+						// center of x is left
+					}
 				}
 			} else {
-				current_move.x_arc = 0;
-			}
-			if(type && 2){
-				current_move.y_arc = 1;
-				if(y_radius > 0){
-					
-				} else {
-					
+				if(type == 2){
+					// counter clockwise
+					current_move.x_arc = (x_radius) ? 1 : 0;
+					current_move.y_arc = (y_radius) ? 1 : 0;
+					current_move.z_arc = (z_radius) ? 1 : 0;
+					current_move.x_arc_cw = 0;
+					current_move.y_arc_cw = 0;
+					current_move.z_arc_cw = 0;
+					if(y_radius > 0){
+						
+					} else {
+						
+					}
 				}
-			} else {
-				current_move.y_arc = 0;
-			}
-			if(type && 4){
-				current_move.z_arc = 1;
-				if(z_radius > 0){
-					
-				} else {
-					
-				}
-			} else {
-				current_move.z_arc = 0;
 			}
 		}
 	}
