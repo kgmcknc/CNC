@@ -79,11 +79,16 @@ void move(char move_string[200]){
 	unsigned int move_speed;
 	unsigned long int total_move;
 	long int x_count, y_count, z_count;
-	long int x_radius, y_radius, z_radius;
+	long int x_center_offset = 0, y_center_offset = 0, z_center_offset = 0;
+	unsigned long int x_radius = 0, y_radius = 0, z_radius;
+	unsigned long int x_rad_2 = 0, y_rad_2 = 0, z_rad_2;
+	unsigned long int x_r_temp_1 = 0, y_r_temp_1 = 0, z_r_temp_1;
+	unsigned long int x_r_temp_2 = 0, y_r_temp_2 = 0, z_r_temp_2;
+	unsigned long int x_div = 0, y_div = 0;
 	char input_count = 0;
 	char long_arc, dir;
 	long double ld_count;
-	input_count = sscanf(move_string, "%c%d.%ld.%ld.%ld.%u.%ld.%ld.%ld.%c.%c", &cmd, &type, &x_count, &y_count, &z_count, &move_speed, &x_radius, &y_radius, &z_radius, &dir, &long_arc);
+	input_count = sscanf(move_string, "%c%d.%ld.%ld.%ld.%u.%ld.%ld.%ld.%c.%c", &cmd, &type, &x_count, &y_count, &z_count, &move_speed, &x_center_offset, &y_center_offset, &z_center_offset, &dir, &long_arc);
 	//printf("Count: %d, Moving: T: %d, x:%ld, y:%ld, z:%ld, speed:%u, radius:%u\n", input_count, type, x_count, y_count, z_count, move_speed, radius);
 	if((input_count < 7) || (!x_count && !y_count && !z_count)){
 		printf("Stopping Movement\n");
@@ -185,6 +190,7 @@ void move(char move_string[200]){
 			current_move.z_arc = type;
 		}
 		if(type == 0){
+			printf("Linear Move\n");
 			current_move.line_count = sqrtl(current_move.x_move*current_move.x_move + current_move.y_move*current_move.y_move + current_move.z_move*current_move.z_move);
 			current_move.x_arc = 0;
 			current_move.y_arc = 0;
@@ -203,61 +209,365 @@ void move(char move_string[200]){
 			}
 			printf("X: %lu, Y: %lu, Z: %lu\n", current_move.x_period, current_move.y_period, current_move.z_period);
 		} else {
-			if(type == 1){
-				// clockwise
-				current_move.x_arc = (x_radius) ? 1 : 0;
-				current_move.y_arc = (y_radius) ? 1 : 0;
-				current_move.z_arc = (z_radius) ? 1 : 0;
-				current_move.x_arc_cw = 1;
-				current_move.y_arc_cw = 1;
-				current_move.z_arc_cw = 1;
-				// x end minus x current to see if positive or negative
-				// y end minus y current to see if positive or negative
-				// z end minus z current to see if positive or negative
-				// with rotation direciton, pos/minus axes, and short/long:
-				// find center of axes
-				if((end_position.x - current_position.x) > 0){
-					if(long_arc){
-						// center of y is up
+			printf("Radial Move\n");
+			current_move.x_arc = 1;//(x_center_offset == 0) ? 0 : 1;
+			current_move.y_arc = 1;//(y_center_offset == 0) ? 0 : 1;
+			//current_move.z_arc = (z_center_offset == 0) ? 0 : 1;
+			current_move.x_arc_cw = (type == 1) ? 1 : 0;
+			current_move.y_arc_cw = (type == 1) ? 1 : 0;
+			//current_move.z_arc_cw = (type == 1) ? 1 : 0;
+			current_move.arc_period = move_speed;
+			// x end minus x current to see if positive or negative
+			// y end minus y current to see if positive or negative
+			// z end minus z current to see if positive or negative
+			// with rotation direciton, pos/minus axes, and short/long:
+			// find center of axes
+			// update move with new totals taking into account center
+			// remember way of doing move without doing sin/cos/sqrt
+			// (just look at total x move, y move etc) - in relation to start end and center
+			current_move.x_arc_center = current_position.x + x_center_offset;
+			current_move.y_arc_center = current_position.y + y_center_offset;
+			//current_move.z_arc_center = current_position.z + z_center_offset;
+			printf("center: %ld, %ld\n", current_move.x_arc_center, current_move.y_arc_center);
+			y_r_temp_2 = (end_position.y - current_move.y_arc_center)*(end_position.y - current_move.y_arc_center);
+			y_r_temp_1 = (current_position.y - current_move.y_arc_center)*(current_position.y - current_move.y_arc_center);
+			x_r_temp_2 = (end_position.x - current_move.x_arc_center)*(end_position.x - current_move.x_arc_center);
+			x_r_temp_1 = (current_position.x - current_move.x_arc_center)*(current_position.x - current_move.x_arc_center);
+			printf("Got Temps, %ld, %ld, %ld, %ld\n", y_r_temp_1, y_r_temp_2, x_r_temp_1,x_r_temp_2);
+			printf("offsets: %ld, %ld\n", x_center_offset, y_center_offset);
+			y_rad_2 = (y_r_temp_2 - y_r_temp_1);
+			y_div = ((x_r_temp_1*y_r_temp_2)-(x_r_temp_2*y_r_temp_1));
+			printf("ys: %lu, %lu\n", y_div, y_rad_2);
+			if((y_div == 0) || (y_rad_2 == 0)){
+				printf("y div 0\n");
+				y_rad_2 = x_center_offset*x_center_offset;
+				y_radius = x_center_offset;
+			} else {
+				printf("y div not 0\n");
+				y_rad_2 = y_rad_2 / y_div;
+				printf("y_rad: %lu\n", y_rad_2);
+				y_radius = sqrtl(y_rad_2);
+			}
+			current_move.y_arc_radius = y_radius;
+			printf("radius: %ld, %ld\n", y_radius, current_move.y_arc_radius);
+			
+			x_rad_2 = y_rad_2*x_r_temp_1;
+			if(y_rad_2 - y_r_temp_1){
+				printf("x div not 0\n");
+				x_rad_2 = x_rad_2/(y_rad_2 - y_r_temp_1);
+				x_radius = sqrtl(x_rad_2);	
+			} else {
+				printf("x div 0\n");
+				x_rad_2 = y_center_offset*y_center_offset;
+				x_radius = y_center_offset;
+			}
+			current_move.x_arc_radius = x_radius;
+			printf("Got Rads\n");
+			if(current_move.x_arc_cw){
+				if(current_position.y < current_move.y_arc_center){
+					// x dir left
+					current_move.x_dir = MOTOR_MOVE_L;
+					if(current_position.x < end_position.x){
+						if(end_position.y < current_move.y_arc_center){
+							printf("move all the way left and then all the way right, and then left to end\n");
+							current_move.x_move_count = current_position.x - (current_move.x_arc_center - current_move.x_arc_radius);
+							current_move.x_move_count = current_move.x_move_count + current_move.x_arc_radius + current_move.x_arc_radius;
+							current_move.x_move_count = current_move.x_move_count + (current_move.x_arc_center + current_move.x_arc_radius) - end_position.x;
+						} else {
+							printf("move all the way left and then right to end\n");
+							current_move.x_move_count = current_position.x - (current_move.x_arc_center - current_move.x_arc_radius);
+							current_move.x_move_count = current_move.x_move_count + (end_position.x - (current_move.x_arc_center - current_move.x_arc_radius));
+						}
 					} else {
-						// center of y is down
+						if(end_position.y < current_move.y_arc_center){
+							printf("move left to end\n");
+							current_move.x_move_count = current_position.x - end_position.x;
+						} else {
+							printf("move all the way left and then right to end\n");
+							current_move.x_move_count = current_position.x - (current_move.x_arc_center - current_move.x_arc_radius);
+							current_move.x_move_count = current_move.x_move_count + (end_position.x - (current_move.x_arc_center - current_move.x_arc_radius));
+						}
 					}
 				} else {
-					if(long_arc){
-						// center of y is down
+					if((current_position.y == current_move.y_arc_center) && (current_position.x > current_move.x_arc_center)){
+						// x dir left
+						current_move.x_dir = MOTOR_MOVE_L;
+						if(current_position.x < end_position.x){
+							if(end_position.y < current_move.y_arc_center){
+								printf("move all the way left and then all the way right, and then left to end\n");
+								current_move.x_move_count = current_position.x - (current_move.x_arc_center - current_move.x_arc_radius);
+								current_move.x_move_count = current_move.x_move_count + current_move.x_arc_radius + current_move.x_arc_radius;
+								current_move.x_move_count = current_move.x_move_count + (current_move.x_arc_center + current_move.x_arc_radius) - end_position.x;
+							} else {
+								printf("move all the way left and then right to end\n");
+								current_move.x_move_count = current_position.x - (current_move.x_arc_center - current_move.x_arc_radius);
+								current_move.x_move_count = current_move.x_move_count + (end_position.x - (current_move.x_arc_center - current_move.x_arc_radius));
+							}
+						} else {
+							if(end_position.y < current_move.y_arc_center){
+								printf("move left to end\n");
+								current_move.x_move_count = current_position.x - end_position.x;
+							} else {
+								printf("move all the way left and then right to end\n");
+								current_move.x_move_count = current_position.x - (current_move.x_arc_center - current_move.x_arc_radius);
+								current_move.x_move_count = current_move.x_move_count + (end_position.x - (current_move.x_arc_center - current_move.x_arc_radius));
+							}
+						}
 					} else {
-						// center of y is up
+						// x dir right
+						current_move.x_dir = MOTOR_MOVE_R;
+						if(current_position.x < end_position.x){
+							if(end_position.y < current_move.y_arc_center){
+								printf("move all the way to the right and then left to end\n");
+								current_move.x_move_count = (current_move.x_arc_center + current_move.x_arc_radius) - current_position.x;
+								current_move.x_move_count = current_move.x_move_count + (current_move.x_arc_center + current_move.x_arc_radius) - end_position.x;
+							} else {
+								printf("move all the way right to end\n");
+								current_move.x_move_count = end_position.x - current_position.x;
+							}
+						} else {
+							if(end_position.y < current_move.y_arc_center){
+								printf("move all the way to the right and then to the left to end\n");
+								current_move.x_move_count = (current_move.x_arc_center + current_move.x_arc_radius) - current_position.x;
+								current_move.x_move_count = current_move.x_move_count + (current_move.x_arc_center + current_move.x_arc_radius) - end_position.x;
+							} else {
+								printf("move all the way right and then all the way left and then right to end\n");
+								current_move.x_move_count = (current_move.x_arc_center + current_move.x_arc_radius) - current_position.x;
+								current_move.x_move_count = current_move.x_move_count + (current_move.x_arc_center + current_move.x_arc_radius);
+								current_move.x_move_count = current_move.x_move_count + end_position.x - (current_move.x_arc_center - current_move.x_arc_radius);
+							}
+						}
 					}
 				}
-				if((end_position.y - current_position.y) > 0){
-					if(long_arc){
-						// center of x is left
+				if(current_position.x < current_move.x_arc_center){
+					// y dir away/up
+					current_move.y_dir = MOTOR_MOVE_A;
+					if(current_position.y > end_position.y){
+						if(end_position.x < current_move.x_arc_center){
+							printf("move all the way up and then all the way down and then up to end\n");
+							current_move.y_move_count = (current_move.x_arc_center + current_move.y_arc_radius) - current_position.y;
+							current_move.y_move_count = current_move.y_move_count + (current_move.y_arc_radius + current_move.y_arc_radius);
+							current_move.y_move_count = current_move.y_move_count + (end_position.y - (current_move.y_arc_center - current_move.y_arc_radius));
+						} else {
+							printf("move all the way up and then down to end\n");
+							current_move.y_move_count = (current_move.x_arc_center + current_move.y_arc_radius) - current_position.y;
+							current_move.y_move_count = current_move.y_move_count + (current_move.x_arc_center + current_move.y_arc_radius) - end_position.y;
+						}
 					} else {
-						// center of x is right
+						if(end_position.x < current_move.x_arc_center){
+							printf("move up to end\n");
+							current_move.y_move_count = end_position.y - current_position.y;
+						} else {
+							printf("move all the way up and then down to end\n");
+							current_move.y_move_count = (current_move.x_arc_center + current_move.y_arc_radius) - current_position.y;
+							current_move.y_move_count = current_move.y_move_count + (current_move.x_arc_center + current_move.y_arc_radius) - end_position.y;
+						}
 					}
 				} else {
-					if(long_arc){
-						// center of x is right
+					if((current_position.x == current_move.x_arc_center) && (current_position.y < current_move.y_arc_center)){
+						// y dir away/up
+						current_move.y_dir = MOTOR_MOVE_A;
+						if(current_position.y > end_position.y){
+							if(end_position.x < current_move.x_arc_center){
+								printf("move all the way up and then all the way down and then up to end\n");
+								current_move.y_move_count = (current_move.x_arc_center + current_move.y_arc_radius) - current_position.y;
+								current_move.y_move_count = current_move.y_move_count + (current_move.y_arc_radius + current_move.y_arc_radius);
+								current_move.y_move_count = current_move.y_move_count + (end_position.y - (current_move.y_arc_center - current_move.y_arc_radius));
+							} else {
+								printf("move all the way up and then down to end\n");
+								current_move.y_move_count = (current_move.x_arc_center + current_move.y_arc_radius) - current_position.y;
+								current_move.y_move_count = current_move.y_move_count + (current_move.x_arc_center + current_move.y_arc_radius) - end_position.y;	
+							}
+						} else {
+							if(end_position.x < current_move.x_arc_center){
+								printf("move up to end\n");
+								current_move.y_move_count = end_position.y - current_position.y;
+							} else {
+								printf("move all the way up and then down to end\n");
+								current_move.y_move_count = (current_move.x_arc_center + current_move.y_arc_radius) - current_position.y;
+								current_move.y_move_count = current_move.y_move_count + (current_move.x_arc_center + current_move.y_arc_radius) - end_position.y;
+							}
+						}
 					} else {
-						// center of x is left
+						// y dir towards/down
+						current_move.y_dir = MOTOR_MOVE_T;
+						if(current_position.y > end_position.y){
+							if(end_position.x < current_move.x_arc_center){
+								printf("move all the way down and then up to end\n");
+								current_move.y_move_count = current_position.y - (current_move.y_arc_center - current_move.y_arc_radius);
+								current_move.y_move_count = current_move.y_move_count + (end_position.y - (current_move.y_arc_center - current_move.y_arc_radius));
+							} else {
+								printf("move down to end\n");
+								current_move.y_move_count = current_position.y - end_position.y;
+							}
+						} else {
+							if(end_position.x < current_move.x_arc_center){
+								printf("move all the way down and then up to end\n");
+								current_move.y_move_count = current_position.y - (current_move.y_arc_center - current_move.y_arc_radius);
+								current_move.y_move_count = current_move.y_move_count + (end_position.y - (current_move.y_arc_center - current_move.y_arc_radius));
+							} else {
+								printf("move all the way down and then all the way up and then down to end\n");
+								current_move.y_move_count = current_position.y - (current_move.y_arc_center - current_move.y_arc_radius);
+								current_move.y_move_count = current_move.y_move_count + (current_move.y_arc_radius + current_move.y_arc_radius);
+								current_move.y_move_count = current_move.y_move_count + (current_move.y_arc_center + current_move.y_arc_radius) - end_position.y;
+							}
+						}
 					}
 				}
 			} else {
-				if(type == 2){
-					// counter clockwise
-					current_move.x_arc = (x_radius) ? 1 : 0;
-					current_move.y_arc = (y_radius) ? 1 : 0;
-					current_move.z_arc = (z_radius) ? 1 : 0;
-					current_move.x_arc_cw = 0;
-					current_move.y_arc_cw = 0;
-					current_move.z_arc_cw = 0;
-					if(y_radius > 0){
-						
+				if(current_position.y > current_move.y_arc_center){
+					// x dir left
+					current_move.x_dir = MOTOR_MOVE_L;
+					if(current_position.x < end_position.x){
+						if(end_position.y < current_move.y_arc_center){
+							printf("move all the way left and then right to end\n");
+							current_move.x_move_count = current_position.x - (current_move.x_arc_center - current_move.x_arc_radius);
+							current_move.x_move_count = current_move.x_move_count + (end_position.x - (current_move.x_arc_center - current_move.x_arc_radius));
+						} else {
+							printf("move all the way left and then all the way right, and then left to end\n");
+							current_move.x_move_count = current_position.x - (current_move.x_arc_center - current_move.x_arc_radius);
+							current_move.x_move_count = current_move.x_move_count + current_move.x_arc_radius + current_move.x_arc_radius;
+							current_move.x_move_count = current_move.x_move_count + (current_move.x_arc_center + current_move.x_arc_radius) - end_position.x;
+						}
 					} else {
-						
+						if(end_position.y < current_move.y_arc_center){
+							printf("move all the way left and then right to end\n");
+							current_move.x_move_count = current_position.x - (current_move.x_arc_center - current_move.x_arc_radius);
+							current_move.x_move_count = current_move.x_move_count + (end_position.x - (current_move.x_arc_center - current_move.x_arc_radius));
+						} else {
+							printf("move left to end\n");
+							current_move.x_move_count = current_position.x - end_position.x;
+						}
+					}
+				} else {
+					if((current_position.y == current_move.y_arc_center) && (current_position.x > current_move.x_arc_center)){
+						// x dir left
+						current_move.x_dir = MOTOR_MOVE_L;
+						if(current_position.x < end_position.x){
+							if(end_position.y < current_move.y_arc_center){
+								printf("move all the way left and then right to end\n");
+								current_move.x_move_count = current_position.x - (current_move.x_arc_center - current_move.x_arc_radius);
+								current_move.x_move_count = current_move.x_move_count + (end_position.x - (current_move.x_arc_center - current_move.x_arc_radius));
+							} else {
+								printf("move all the way left and then all the way right, and then left to end\n");
+								current_move.x_move_count = current_position.x - (current_move.x_arc_center - current_move.x_arc_radius);
+								current_move.x_move_count = current_move.x_move_count + current_move.x_arc_radius + current_move.x_arc_radius;
+								current_move.x_move_count = current_move.x_move_count + (current_move.x_arc_center + current_move.x_arc_radius) - end_position.x;
+							}
+						} else {
+							if(end_position.y < current_move.y_arc_center){
+								printf("move all the way left and then right to end\n");
+								current_move.x_move_count = current_position.x - (current_move.x_arc_center - current_move.x_arc_radius);
+								current_move.x_move_count = current_move.x_move_count + (end_position.x - (current_move.x_arc_center - current_move.x_arc_radius));
+							} else {
+								printf("move left to end\n");
+								current_move.x_move_count = current_position.x - end_position.x;
+							}
+						}
+					} else {
+						// x dir right
+						current_move.x_dir = MOTOR_MOVE_R;
+						if(current_position.x < end_position.x){
+							if(end_position.y < current_move.y_arc_center){
+								printf("move all the way right to end\n");
+								current_move.x_move_count = end_position.x - current_position.x;
+							} else {
+								printf("move all the way to the right and then left to end\n");
+								current_move.x_move_count = (current_move.x_arc_center + current_move.x_arc_radius) - current_position.x;
+								current_move.x_move_count = current_move.x_move_count + (current_move.x_arc_center + current_move.x_arc_radius) - end_position.x;
+							}
+						} else {
+							if(end_position.y < current_move.y_arc_center){
+								printf("move all the way right and then all the way left and then right to end\n");
+								current_move.x_move_count = (current_move.x_arc_center + current_move.x_arc_radius) - current_position.x;
+								current_move.x_move_count = current_move.x_move_count + (current_move.x_arc_center + current_move.x_arc_radius);
+								current_move.x_move_count = current_move.x_move_count + end_position.x - (current_move.x_arc_center - current_move.x_arc_radius);
+							} else {
+								printf("move all the way to the right and then to the left to end\n");
+								current_move.x_move_count = (current_move.x_arc_center + current_move.x_arc_radius) - current_position.x;
+								current_move.x_move_count = current_move.x_move_count + (current_move.x_arc_center + current_move.x_arc_radius) - end_position.x;
+							}
+						}
+					}
+				}
+				if(current_position.x > current_move.x_arc_center){
+					// y dir away
+					current_move.y_dir = MOTOR_MOVE_A;
+					if(current_position.y > end_position.y){
+						if(end_position.x < current_move.x_arc_center){
+							printf("move all the way up and then down to end\n");
+							current_move.y_move_count = (current_move.x_arc_center + current_move.y_arc_radius) - current_position.y;
+							current_move.y_move_count = current_move.y_move_count + (current_move.x_arc_center + current_move.y_arc_radius) - end_position.y;	
+						} else {
+							printf("move all the way up and then all the way down and then up to end\n");
+							current_move.y_move_count = (current_move.x_arc_center + current_move.y_arc_radius) - current_position.y;
+							current_move.y_move_count = current_move.y_move_count + (current_move.y_arc_radius + current_move.y_arc_radius);
+							current_move.y_move_count = current_move.y_move_count + (end_position.y - (current_move.y_arc_center - current_move.y_arc_radius));
+						}
+					} else {
+						if(end_position.x < current_move.x_arc_center){
+							printf("move all the way up and then down to end\n");
+							current_move.y_move_count = (current_move.x_arc_center + current_move.y_arc_radius) - current_position.y;
+							current_move.y_move_count = current_move.y_move_count + (current_move.x_arc_center + current_move.y_arc_radius) - end_position.y;	
+						} else {
+							printf("move up to end\n");
+							current_move.y_move_count = end_position.y - current_position.y;
+						}
+					}
+				} else {
+					if((current_position.x == current_move.x_arc_center) && (current_position.y < current_move.y_arc_center)){
+						// y dir away
+						current_move.y_dir = MOTOR_MOVE_A;
+						if(current_position.y > end_position.y){
+							if(end_position.x < current_move.x_arc_center){
+								printf("move all the way up and then down to end\n");
+								current_move.y_move_count = (current_move.x_arc_center + current_move.y_arc_radius) - current_position.y;
+								current_move.y_move_count = current_move.y_move_count + (current_move.x_arc_center + current_move.y_arc_radius) - end_position.y;	
+							} else {
+								printf("move all the way up and then all the way down and then up to end\n");
+								current_move.y_move_count = (current_move.x_arc_center + current_move.y_arc_radius) - current_position.y;
+								current_move.y_move_count = current_move.y_move_count + (current_move.y_arc_radius + current_move.y_arc_radius);
+								current_move.y_move_count = current_move.y_move_count + (end_position.y - (current_move.y_arc_center - current_move.y_arc_radius));
+							}
+						} else {
+							if(end_position.x < current_move.x_arc_center){
+								printf("move all the way up and then down to end\n");
+								current_move.y_move_count = (current_move.x_arc_center + current_move.y_arc_radius) - current_position.y;
+								current_move.y_move_count = current_move.y_move_count + (current_move.x_arc_center + current_move.y_arc_radius) - end_position.y;	
+							} else {
+								printf("move up to end\n");
+								current_move.y_move_count = end_position.y - current_position.y;
+							}
+						}
+					} else {
+						// y dir towards
+						current_move.y_dir = MOTOR_MOVE_T;
+						if(current_position.y > end_position.y){
+							if(end_position.x < current_move.x_arc_center){
+								printf("move down to end\n");
+								current_move.y_move_count = current_position.y - end_position.y;
+							} else {
+								printf("move all the way down and then up to end\n");
+								current_move.y_move_count = current_position.y - (current_move.y_arc_center - current_move.y_arc_radius);
+								current_move.y_move_count = current_move.y_move_count + (end_position.y - (current_move.y_arc_center - current_move.y_arc_radius));
+							}
+						} else {
+							if(end_position.x < current_move.x_arc_center){
+								printf("move all the way down and then all the way up and then down to end\n");
+								current_move.y_move_count = current_position.y - (current_move.y_arc_center - current_move.y_arc_radius);
+								current_move.y_move_count = current_move.y_move_count + (current_move.y_arc_radius + current_move.y_arc_radius);
+								current_move.y_move_count = current_move.y_move_count + (current_move.y_arc_center + current_move.y_arc_radius) - end_position.y;
+							} else {
+								printf("move all the way down and then up to end\n");
+								current_move.y_move_count = current_position.y - (current_move.y_arc_center - current_move.y_arc_radius);
+								current_move.y_move_count = current_move.y_move_count + (end_position.y - (current_move.y_arc_center - current_move.y_arc_radius));
+							}
+						}
 					}
 				}
 			}
+			printf("Got Dir and Move: %ld, %ld, %ld, %ld, %ld, %ld\n", current_move.x_move_count, current_move.y_move_count, current_move.x_arc_radius, current_move.y_arc_radius, current_move.x_arc_center, current_move.y_arc_center);
+			
 		}
 	}
 }

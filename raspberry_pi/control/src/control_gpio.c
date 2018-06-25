@@ -88,14 +88,109 @@ void process_motion(void){
 }
 
 void process_instruction(void){
-	if(current_move.x_act && current_move.x_arc){
-		
-	}
-	if(current_move.y_act && current_move.y_arc){
-		
-	}
-	if(current_move.z_act && current_move.z_arc){
-		
+	unsigned long int next_x, next_y, x_arc_2, y_arc_2;
+	long int x_del, y_del;
+	if((current_move.x_act && current_move.x_arc) && (current_move.y_act && current_move.y_arc)){
+		if(current_move.x_arc_cw){
+			if(current_position.y < current_move.y_arc_center){
+				// x dir left
+				current_move.x_dir = MOTOR_MOVE_L;
+			} else {
+				if((current_position.y == current_move.y_arc_center) && (current_position.x > current_move.x_arc_center)){
+					// x dir left
+					current_move.x_dir = MOTOR_MOVE_L;
+				} else {
+					// x dir right
+					current_move.x_dir = MOTOR_MOVE_R;
+				}
+			}
+			if(current_position.x < current_move.x_arc_center){
+				// y dir away
+				current_move.y_dir = MOTOR_MOVE_A;
+			} else {
+				if((current_position.x == current_move.x_arc_center) && (current_position.y < current_move.y_arc_center)){
+					// y dir away
+					current_move.y_dir = MOTOR_MOVE_A;
+				} else {
+					// y dir towards
+					current_move.y_dir = MOTOR_MOVE_T;
+				}
+			}
+		} else {
+			if(current_position.y > current_move.y_arc_center){
+				// x dir left
+				current_move.x_dir = MOTOR_MOVE_L;
+			} else {
+				if((current_position.y == current_move.y_arc_center) && (current_position.x > current_move.x_arc_center)){
+					// x dir left
+					current_move.x_dir = MOTOR_MOVE_L;
+				} else {
+					// x dir right
+					current_move.x_dir = MOTOR_MOVE_R;
+				}
+			}
+			if(current_position.x > current_move.x_arc_center){
+				// y dir away
+				current_move.y_dir = MOTOR_MOVE_A;
+			} else {
+				if((current_position.x == current_move.x_arc_center) && (current_position.y < current_move.y_arc_center)){
+					// y dir away
+					current_move.y_dir = MOTOR_MOVE_A;
+				} else {
+					// y dir towards
+					current_move.y_dir = MOTOR_MOVE_T;
+				}
+			}
+		}
+		if(current_move.x_dir == MOTOR_MOVE_R){
+			if(current_move.y_dir == MOTOR_MOVE_A){
+				printf("add to x and y and find new x and y period\n");
+				x_arc_2 = current_move.x_arc_radius * current_move.x_arc_radius;
+				y_arc_2 = current_move.y_arc_radius * current_move.y_arc_radius;
+				y_del = current_position.y + 1 - current_move.y_arc_center;
+				printf("del: %lu, %lu, %lu, %lu, %ld\n", current_move.x_arc_radius, current_move.y_arc_radius, x_arc_2, y_arc_2, y_del);
+				y_del = y_del * y_del * x_arc_2 / y_arc_2;
+				next_x = sqrtl(x_arc_2 - y_del) - current_move.x_arc_center;
+				x_del = current_position.x + 1 - current_move.x_arc_center;
+				x_del = x_del * x_del * y_arc_2 / x_arc_2;
+				next_y = sqrtl(y_arc_2 - x_del) - current_move.y_arc_center;
+			} else {
+				printf("add to x and subtract from y and find new x and y period\n");
+				x_arc_2 = current_move.x_arc_radius * current_move.x_arc_radius;
+				y_arc_2 = current_move.y_arc_radius * current_move.y_arc_radius;
+				y_del = current_position.y - 1 - current_move.y_arc_center;
+				y_del = y_del * y_del * x_arc_2 / y_arc_2;
+				next_x = sqrtl(x_arc_2 - y_del) - current_move.x_arc_center;
+				x_del = current_position.x + 1 - current_move.x_arc_center;
+				x_del = x_del * x_del * y_arc_2 / x_arc_2;
+				next_y = sqrtl(y_arc_2 - x_del) - current_move.y_arc_center;
+			}
+		} else {
+			if(current_move.y_dir == MOTOR_MOVE_A){
+				printf("subtract from x and add to y and find new x and y period\n");
+				x_arc_2 = current_move.x_arc_radius * current_move.x_arc_radius;
+				y_arc_2 = current_move.y_arc_radius * current_move.y_arc_radius;
+				y_del = current_position.y + 1 - current_move.y_arc_center;
+				y_del = y_del * y_del * x_arc_2 / y_arc_2;
+				next_x = sqrtl(x_arc_2 - y_del) - current_move.x_arc_center;
+				x_del = current_position.x - 1 - current_move.x_arc_center;
+				x_del = x_del * x_del * y_arc_2 / x_arc_2;
+				next_y = sqrtl(y_arc_2 - x_del) - current_move.y_arc_center;
+			} else {
+				printf("subtract from x and subtract from y and find new x and y period\n");
+				x_arc_2 = current_move.x_arc_radius * current_move.x_arc_radius;
+				y_arc_2 = current_move.y_arc_radius * current_move.y_arc_radius;
+				y_del = current_position.y - 1 - current_move.y_arc_center;
+				y_del = y_del * y_del * x_arc_2 / y_arc_2;
+				next_x = sqrtl(x_arc_2 - y_del) - current_move.x_arc_center;
+				x_del = current_position.x - 1 - current_move.x_arc_center;
+				x_del = x_del * x_del * y_arc_2 / x_arc_2;
+				next_y = sqrtl(y_arc_2 - x_del) - current_move.y_arc_center;
+			}
+		}
+		printf("made it through new\n");
+		current_move.x_period = (next_y*current_move.arc_period/next_x);
+		current_move.y_period = (next_x*current_move.arc_period/next_y);
 	}
 }
 
