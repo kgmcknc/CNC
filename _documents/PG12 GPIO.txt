@@ -150,6 +150,7 @@ ms2                        done
 
 On Main Boards:
 adc connectors (4): 4 pins, voltage out (5v), temp on, v div in (adc in), gnd
+fan connector (1): 2 pins, 12v supply, ground
 
 combine these two?
 ms0 connectors (7): 2 pins, ms0, ms1
