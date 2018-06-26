@@ -150,11 +150,30 @@ ms2                        done
 
 On Main Boards:
 adc connectors (4): 4 pins, voltage out (5v), temp on, v div in (adc in), gnd
+
+combine these two?
 ms0 connectors (7): 2 pins, ms0, ms1
 motor connectors (7): 3 pins, en, dir, step
+
 uart connection (1): 6 pins, clk, rx, tx, cs, cts, rts
-endstop connections (8): 3 pins, 5v, status, gnd
+endstop connections (8): 2 pins, 5v, gnd, 4 pins (x2) status (for 8)
 extra (1): 2 pins, reset, other...
+
+On Temp Boards: (need 4 boards - 2 to start)
+adc connection (4 pin), heat voltage (12v), heat ground (ps ground)
+adc read circuit (10k resistor 1%, 10k thermistor, 5v, adc_value, gnd)
+heater circuit (12v input, ground, heat on pin, mosfet for switch, resistors for base and collector)
+
+On Motor Control Board: (need 7 boards, 6 to start)
+ms connection (2 pins), ms0, ms1
+motor connector (3 pins) en, dir, step
+motor power (24v), ground
+
+On Endpoint board:
+endstop connection: (3 pins) 5v, endstop not hit signal, ground
+5v main in, 5v ground in.
+8 signal pins (2 4 pin connectors?)
+mosfet inverter circuit??
 
 We Have:
 VMCU
