@@ -1,0 +1,245 @@
+Pinout EMF32PG12:
+
+Name:          Pin:          Description:
+PF3            A1            GPIO 5v
+PF1            A2            GPIO 5v
+PC5            A3            GPIO 5v
+PC3            A4            GPIO 5v
+PC0            A5            GPIO 5v
+PC11           A6            GPIO 5v
+PC9            A7            GPIO 5v
+PC7            A8            GPIO 5v
+
+DECOUPLE       A9            Decouple Output for On Chip
+DVDD           A10           Digital Power Supply
+VREGVDD        A11           Voltage Regulator VDD Input
+VREGSW         A12           DCDC regulator switchig node
+VREGVSS        A13           Voltage Regulator VSS
+VREGVSS        B11           Voltage Regulator VSS
+VREGVSS        B12           Voltage Regulator VSS
+PF8            B1            GPIO (5v)
+PF2            B2            GPIO (5v)
+PF0            B3            GPIO (5v)
+PC4            B4            GPIO (5v)
+PC1            B5            GPIO (5v)
+PJ14           B6            GPIO (5v)
+PC10           B7            GPIO (5v)
+PC8            B8            GPIO (5v)
+PC6            B9            GPIO (5v)
+IOVDD          B10           Digital IO Power Supply
+IOVDD          F2            Digital IO Power Supply
+IOVDD          F11           Digital IO Power Supply
+IOVDD          M12           Digital IO Power Supply
+AVDD           B13           Analog Power Supply
+AVDD           J1            Analog Power Supply
+AVDD           J2            Analog Power Supply
+PF11           C1            GPIO (5v)
+PF10           C2            GPIO (5v)
+PF9            C3            GPIO (5v)
+PC2            C5            GPIO (5v)
+PJ15           C6            GPIO (5v)
+PB15           C10           GPIO (5v)
+PB14           C11           GPIO (5v)
+PB13           C12           GPIO (5v)
+PB12           D2            GPIO (5v)
+PF14           D1            GPIO (5v)
+PF13           D2            GPIO (5v)
+PF12           D12           GPIO (5v)
+PB11           D11           GPIO (5v)
+PB10           D12           GPIO (5v)
+PB9            D13           GPIO (5v)
+PK1            E1            GPIO (5v)
+PK0            E2            GPIO (5v)
+PF15           E3            GPIO (5v)
+PB8            E12           GPIO (5v)
+VSS            E5            Ground
+VSS            E6            Ground
+VSS            E7            Ground
+VSS            E8            Ground
+VSS            E9            Ground
+VSS            F5            Ground
+VSS            F6            Ground
+VSS            F7            Ground
+VSS            F8            Ground
+VSS            F9            Ground
+VSS            G5            Ground
+VSS            G6            Ground
+VSS            G7            Ground
+VSS            G8            Ground
+VSS            G9            Ground
+VSS            H5            Ground
+VSS            H6            Ground
+VSS            H8            Ground
+VSS            H9            Ground
+VSS            J5            Ground
+VSS            J6            Ground
+VSS            J6            Ground
+VSS            J7            Ground
+VSS            J8            Ground
+VSS            J9            Ground
+VSS            K2            Ground
+VSS            L2            Ground
+VSS            M2            Ground
+VSS            M3            Ground
+VSS            M4            Ground
+VSS            M5            Ground
+VSS            M6            Ground
+VSS            M7            Ground
+VSS            N5            Ground
+PB7            E13           GPIO (5v)
+PK2            F1            GPIO (5v)
+PB6            F12           GPIO (5v)
+PI3            F13           GPIO (5v)
+PF5            G1            GPIO (5v)
+PF4            G2            GPIO (5v)
+PI2            G11           GPIO (5v)
+PI1            G12           GPIO (5v)
+PI0            G13           GPIO (5v)
+PF7            H1            GPIO (5v)
+PF6            H2            GPIO (5v)
+PA9            H12           GPIO (5v)
+PA8            H13           GPIO (5v)
+PA7            J11           GPIO (5v)
+PA6            J12           GPIO (5v)
+PA5            J13           GPIO (5v)
+HFXTAL_N       K1            High Freq Crystal In Pin
+PA4            K12           GPIO (5v)
+PA3            K13           GPIO (5v)
+HFXTAL_P       L1            High Freq Crystal In Pin
+BODEN          L10           Brown Out Detector Enable (disconnect or tie to AVDD)
+PA2            L12           GPIO
+PA1            L13           GPIO
+RESETn         M1            Reset input, active low. External Reset. Drive Low during reset and float when not in reset (let pull up ensure out of reset)
+NC             M8            No Connect
+NC             N1            No Connect
+NC             N2            No Connect
+NC             N3            No Connect
+NC             N4            No Connect
+NC             N6            No Connect
+NC             N7            No Connect
+NC             N8            No Connect
+PD9            M9            GPIO (5v)
+PD11           M10           GPIO (5v)
+PD13           M11           GPIO
+PA0            M13           GPIO
+PD8            N9            GPIO (5v)
+PD10           N10           GPIO (5v)
+PD12           N11           GPIO (5v)
+PD14           N12           GPIO
+PD15           N13           GPIO
+
+we need
+5 motors for axis
+2 motors for extruders
+7 motors max
+6 pins per motor
+42 pins for motors??
+8 pins for end stops
+
+
+en                         done
+step                       done
+dir                        done
+ms0                        done
+ms1                        done
+ms2                        done
+
+4 adc inputs               done
+6 pins for uart            done
+1 pin for reset from pi    done
+
+On Main Boards:
+adc connectors (4): 4 pins, voltage out (5v), temp on, v div in (adc in), gnd
+ms0 connectors (7): 2 pins, ms0, ms1
+motor connectors (7): 3 pins, en, dir, step
+uart connection (1): 6 pins, clk, rx, tx, cs, cts, rts
+endstop connections (8): 3 pins, 5v, status, gnd
+extra (1): 2 pins, reset, other...
+
+We Have:
+VMCU
+VMCU
+GND
+GND
+PA0 - adc 0
+PC4 - 50           - 0 ms0
+PA1 - adc 1
+PC5 - 49           - 0 ms1
+PA2 - adc 2
+PC6 - 48           - 1 ms0
+PA3 - adc 3
+PC7 - 46           - 1 ms1
+PA4 - temp on 0
+PC8 - 46           - temp on 2
+PA5 - temp on 1
+PD12 - 44          - 4 ms0
+PB9  - 43          - 2 ms0
+PD13 - 42          - 4 ms1
+PB10 - 41          - 2 ms1
+PD14 - 40          - 3 ms0
+PB11 - 39          - 5 ms0
+PD15 - 38          - 3 ms1
+PB12 - 37          - 5 ms1
+PK0 - 36           - 6 ms0
+PB13 - 35          temp on 3
+PK1 - 34           - 6 ms1
+NC
+PK2 - 33           - pi reset?
+GND
+GND
+
+3.3 Board Control Supply
+3.3 Board Control Supply
+5V Board USB Voltage
+5V Board USb Voltage
+GND Ground
+GND Ground
+PF4 - 32 - step 4
+BDEN                 - na
+PF5 - 31 - step 5
+RST Debug Resetn     - maybe?
+PF6 - 30 - step 6
+PF0 - 29 - step 0
+PF7 - 28 - tool enable (spindle)
+PF1 - 27 - step 1
+PF8 - 26 - dir 0
+PF2 - 25 - step 2
+PF9 - 24 - dir 1
+PF3 - 23 - step 3
+PF10 - 22 - dir 2
+PI0 - 21  - en 0
+PF11 - 20 - dir 3
+PI1 - 19  - en 1
+PF12 - 18 - dir 4
+PI2 - 17  - en 2
+PF13 - 16 - dir 5
+PI3 - 15  - en 3
+PF14 - 14 - dir 6
+PJ14 - 13 - en 4
+PF15 - 12 - en 5
+PJ15 - 11 - en 6
+GND
+GND
+3.3V
+3.3V
+
+3.3V
+5V
+PC10 - 10            - endstop 0
+PD11 - 9             - endstop 1
+PD10 - 8 RTS??
+PA9 - 7              - endstop 2
+PA8 - 6              - endstop 3
+PA7 - 5              - endstop 4
+PA6 - 4              - endstop 5
+VMCU
+BOARD_ID_SDA
+BOARD_ID_SCL
+PC11 - 3              - endstop 6
+PD8 - usart3_cs#29
+PB8 - usart3_clk#10
+PB7 - usart3_rx#10
+PB6 - usart3_tx#10
+PD9 - 2 CTS??
+PC9 -                - endstop 7
+GND
