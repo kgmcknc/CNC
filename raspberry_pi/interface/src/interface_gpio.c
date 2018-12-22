@@ -1,35 +1,40 @@
 #include "main.h"
 
-int spi_fd;
-
 void init_interface_gpio(void){
     printf("Initializing System and Setting GPIO\n");
     wiringPiSetup();
     
-    spi_fd = wiringPiSPISetup(SPI_CHANNEL, SPI_SPEED);
+    pinMode(SILABS_POWER, OUTPUT);
+    pinMode(MOTOR_POWER, OUTPUT);
+    pinMode(SPI_RX_READY, OUTPUT);
+    pinMode(SPI_TX_READY, INPUT);
     
-    if(spi_fd < 0){
-		printf("Spi error...\n");
-	}
-    
-    delay(2000);
-    
+    digitalWrite(SILABS_POWER, POWER_OFF);
+    digitalWrite(MOTOR_POWER, POWER_OFF);
+    delay(50);
+    digitalWrite(SILABS_POWER, POWER_ON);
+    delay(50);
 }
 
 void disable_interface_gpio(void){
 	printf("Setting GPIO To Safe Default For Shutdown\n");
-	digitalWrite(DRIVER_POWER_RELAY, MOTOR_DRIVER_OFF);
-	digitalWrite(DRIVER_ENABLE, MOTOR_STANDBY);
-    digitalWrite(DRIVER_SLEEP, MOTOR_RESET_ON);
+	close(spi_fd);
+	
+	digitalWrite(MOTOR_POWER, POWER_OFF);
+    digitalWrite(SILABS_POWER, POWER_OFF);
     
-    digitalWrite(L_MOTOR_STP, LOW);
-    digitalWrite(L_MOTOR_DIR, MOTOR_MOVE_R);
-    digitalWrite(L_MOTOR_MS2, LOW);
-    digitalWrite(L_MOTOR_MS1, LOW);
+    pinMode(MOTOR_POWER, INPUT);
+    pinMode(SILABS_POWER, INPUT);
+    pinMode(SPI_RX_READY, INPUT);
+    pinMode(SPI_TX_READY, INPUT);
 
-    digitalWrite(F_MOTOR_STP, LOW);
-    digitalWrite(F_MOTOR_DIR, MOTOR_MOVE_B);
-    digitalWrite(F_MOTOR_MS2, LOW);
-    digitalWrite(F_MOTOR_MS1, LOW);
     printf("GPIO Safe... Quitting System\n");
+}
+
+void enable_motors(void){
+	digitalWrite(MOTOR_POWER, POWER_ON);
+}
+
+void disable_motors(void){
+	digitalWrite(MOTOR_POWER, POWER_OFF);
 }

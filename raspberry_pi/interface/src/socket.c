@@ -8,8 +8,6 @@ int active_unix = 0;
 fd_set all_sockets;
 int max_fds;
 struct timeval timeout;
-char command_ready = 0;
-char system_command[MAX_FUNCTION_STRING];
 
 #define handle_error(msg) do { perror(msg); exit(EXIT_FAILURE); } while(0)
 
@@ -68,18 +66,18 @@ int connect_unix_socket(char path[MAX_FILE_STRING]){
     return com_socket;
 }
 
-int socket_handler(void){
+int socket_handler(uint8_t* command_ready, uint8_t system_command[MAX_FUNCTION_STRING]){
     int s_count, r_count;
-    int activity;
+    int activity = 0;
     int new_socket = 0;
     int new_addr_len;
-    int num_read;
+    int num_read = 0;
     int shift;
     char read_data[MAX_FUNCTION_STRING];
     struct sockaddr_in new_addr;
     new_addr_len = sizeof(new_addr);
     
-    command_ready = 0;
+    *command_ready = 0;
     
     //printf("Active Sockets: %d\n", active_unix);
 
@@ -90,7 +88,10 @@ int socket_handler(void){
 
     // set unix sockets
     for(s_count=0;s_count<MAX_UNIX_SOCKETS;s_count++){
-        if(s_count >= active_unix) break;
+        if(s_count >= active_unix){
+			printf("break in active unix\n");
+			break;
+		}
         FD_SET(unix_sockets[s_count], &all_sockets);
         if(unix_sockets[s_count] > max_fds) max_fds = unix_sockets[s_count];
     }
@@ -114,10 +115,14 @@ int socket_handler(void){
             num_read = read(unix_sockets[s_count], read_data, sizeof(read_data));
             if(num_read > 0){
                 // Got Data
-                read_data[num_read] = '\0';
-                printf("got: %s\n", read_data);
-				command_ready = 1;
-                strcpy(system_command, read_data);
+                if(strcmp(read_data, "") == 0){
+					
+				} else {
+					printf("got: %d, %s\n", num_read, read_data);
+					read_data[num_read-1] = '\0';
+					*command_ready = 1;
+					strcpy(system_command, read_data);
+				}
             } else {
                 if(num_read == 0){
                     // No Data... Closing Connection
@@ -146,6 +151,7 @@ int socket_handler(void){
                 }
             }
             unix_sockets[r_count] = unix_sockets[r_count+shift];
+            printf("removing socket\n");
             active_unix = active_unix - 1;
         }
     }

@@ -76,20 +76,28 @@ void calibrate_system(void){
 void move(char move_string[200]){
 	char cmd;
 	int type;
-	unsigned int move_speed;
-	unsigned long int total_move;
-	long int x_count, y_count, z_count;
-	long int x_center_offset = 0, y_center_offset = 0, z_center_offset = 0;
-	unsigned long int x_radius = 0, y_radius = 0, z_radius;
-	unsigned long int x_rad_2 = 0, y_rad_2 = 0, z_rad_2;
-	unsigned long int x_r_temp_1 = 0, y_r_temp_1 = 0, z_r_temp_1;
-	unsigned long int x_r_temp_2 = 0, y_r_temp_2 = 0, z_r_temp_2;
-	unsigned long int x_div = 0, y_div = 0;
-	char input_count = 0;
-	char long_arc, dir;
-	long double ld_count;
-	input_count = sscanf(move_string, "%c%d.%ld.%ld.%ld.%u.%ld.%ld.%ld.%c.%c", &cmd, &type, &x_count, &y_count, &z_count, &move_speed, &x_center_offset, &y_center_offset, &z_center_offset, &dir, &long_arc);
-	//printf("Count: %d, Moving: T: %d, x:%ld, y:%ld, z:%ld, speed:%u, radius:%u\n", input_count, type, x_count, y_count, z_count, move_speed, radius);
+	double move_speed;
+	double total_move;
+	double x_count, y_count, z_count;
+	double x_center_offset = 0, y_center_offset = 0, z_center_offset = 0;
+	double x_radius = 0, y_radius = 0, z_radius;
+	double x_rad_2 = 0, y_rad_2 = 0, z_rad_2;
+	double x_r_temp_1 = 0, y_r_temp_1 = 0, z_r_temp_1;
+	double x_r_temp_2 = 0, y_r_temp_2 = 0, z_r_temp_2;
+	double x_div = 0, x_div_0 = 0, x_div_1 = 0, y_div = 0, y_div_0 = 0, y_div_1 = 0;
+	int input_count = 0;
+	int long_arc, dir;
+	double ld_count;
+	long int x_count_t, y_count_t, z_count_t, move_speed_t, x_center_t, y_center_t, z_center_t;
+	input_count = sscanf(move_string, "%c%d.%ld.%ld.%ld.%ld.%ld.%ld.%ld.%d.%d", &cmd, &type, &x_count_t, &y_count_t, &z_count_t, &move_speed_t, &x_center_t, &y_center_t, &z_center_t, &dir, &long_arc);
+	//printf("Count: %d: x: %ld, y: %ld, z: %ld, xoff: %ld, yoff: %ld, zoff: %ld\n", input_count, x_count_t, y_count_t, z_count_t, x_center_t, y_center_t, z_center_t);
+	x_count = x_count_t;
+	y_count = y_count_t;
+	z_count = z_count_t;
+	move_speed = move_speed_t;
+	x_center_offset = x_center_t;
+	y_center_offset = y_center_t;
+	z_center_offset = z_center_t;
 	if((input_count < 7) || (!x_count && !y_count && !z_count)){
 		printf("Stopping Movement\n");
 		current_move.x_period_count = 0;
@@ -191,23 +199,23 @@ void move(char move_string[200]){
 		}
 		if(type == 0){
 			printf("Linear Move\n");
-			current_move.line_count = sqrtl(current_move.x_move*current_move.x_move + current_move.y_move*current_move.y_move + current_move.z_move*current_move.z_move);
+			current_move.line_count = sqrt(current_move.x_move*current_move.x_move + current_move.y_move*current_move.y_move + current_move.z_move*current_move.z_move);
 			current_move.x_arc = 0;
 			current_move.y_arc = 0;
 			current_move.z_arc = 0;
 			if(current_move.x_act){
-				if(current_move.x_move > 0) current_move.x_period = current_move.x_period*current_move.line_count/current_move.x_move;
+				if(current_move.x_move > 0) current_move.x_period = round(current_move.x_period*current_move.line_count/current_move.x_move);
 				current_move.x_current_period = current_move.x_period;
 			}
 			if(current_move.y_act){
-				if(current_move.y_move > 0) current_move.y_period = current_move.y_period*current_move.line_count/current_move.y_move;
+				if(current_move.y_move > 0) current_move.y_period = round(current_move.y_period*current_move.line_count/current_move.y_move);
 				current_move.y_current_period = current_move.y_period;
 			}
 			if(current_move.z_act){
-				if(current_move.z_move > 0) current_move.z_period = current_move.z_period*current_move.line_count/current_move.z_move;
+				if(current_move.z_move > 0) current_move.z_period = round(current_move.z_period*current_move.line_count/current_move.z_move);
 				current_move.z_current_period = current_move.z_period;
 			}
-			printf("X: %lu, Y: %lu, Z: %lu\n", current_move.x_period, current_move.y_period, current_move.z_period);
+			printf("X: %f, Y: %f, Z: %f\n", current_move.x_period, current_move.y_period, current_move.z_period);
 		} else {
 			printf("Radial Move\n");
 			current_move.x_arc = 1;//(x_center_offset == 0) ? 0 : 1;
@@ -228,16 +236,18 @@ void move(char move_string[200]){
 			current_move.x_arc_center = current_position.x + x_center_offset;
 			current_move.y_arc_center = current_position.y + y_center_offset;
 			//current_move.z_arc_center = current_position.z + z_center_offset;
-			printf("center: %ld, %ld\n", current_move.x_arc_center, current_move.y_arc_center);
+			printf("center: %f, %f\n", current_move.x_arc_center, current_move.y_arc_center);
 			y_r_temp_2 = (end_position.y - current_move.y_arc_center)*(end_position.y - current_move.y_arc_center);
 			y_r_temp_1 = (current_position.y - current_move.y_arc_center)*(current_position.y - current_move.y_arc_center);
 			x_r_temp_2 = (end_position.x - current_move.x_arc_center)*(end_position.x - current_move.x_arc_center);
 			x_r_temp_1 = (current_position.x - current_move.x_arc_center)*(current_position.x - current_move.x_arc_center);
-			printf("Got Temps, %ld, %ld, %ld, %ld\n", y_r_temp_1, y_r_temp_2, x_r_temp_1,x_r_temp_2);
-			printf("offsets: %ld, %ld\n", x_center_offset, y_center_offset);
-			y_rad_2 = (y_r_temp_2 - y_r_temp_1);
-			y_div = ((x_r_temp_1*y_r_temp_2)-(x_r_temp_2*y_r_temp_1));
-			printf("ys: %lu, %lu\n", y_div, y_rad_2);
+			printf("Got Temps, %f, %f, %f, %f\n", y_r_temp_1, y_r_temp_2, x_r_temp_1,x_r_temp_2);
+			printf("offsets: %f, %f\n", x_center_offset, y_center_offset);
+			y_div_0 = (x_r_temp_2*y_r_temp_1);
+			y_div_1 = (x_r_temp_1*y_r_temp_2);
+			y_rad_2 = (y_div_1-y_div_0);
+			y_div = (x_r_temp_1 - x_r_temp_2);
+			printf("ys: %f, %f, %f, %f\n", y_div, y_div_0, y_div_1, y_rad_2);
 			if((y_div == 0) || (y_rad_2 == 0)){
 				printf("y div 0\n");
 				y_rad_2 = x_center_offset*x_center_offset;
@@ -246,16 +256,16 @@ void move(char move_string[200]){
 				printf("y div not 0\n");
 				y_rad_2 = y_rad_2 / y_div;
 				printf("y_rad: %lu\n", y_rad_2);
-				y_radius = sqrtl(y_rad_2);
+				y_radius = sqrt(y_rad_2);
 			}
 			current_move.y_arc_radius = y_radius;
-			printf("radius: %ld, %ld\n", y_radius, current_move.y_arc_radius);
+			printf("radius: %f, %f\n", y_radius, current_move.y_arc_radius);
 			
 			x_rad_2 = y_rad_2*x_r_temp_1;
 			if(y_rad_2 - y_r_temp_1){
 				printf("x div not 0\n");
 				x_rad_2 = x_rad_2/(y_rad_2 - y_r_temp_1);
-				x_radius = sqrtl(x_rad_2);	
+				x_radius = sqrt(x_rad_2);	
 			} else {
 				printf("x div 0\n");
 				x_rad_2 = y_center_offset*y_center_offset;
@@ -345,13 +355,13 @@ void move(char move_string[200]){
 					if(current_position.y > end_position.y){
 						if(end_position.x < current_move.x_arc_center){
 							printf("move all the way up and then all the way down and then up to end\n");
-							current_move.y_move_count = (current_move.x_arc_center + current_move.y_arc_radius) - current_position.y;
+							current_move.y_move_count = (current_move.y_arc_center + current_move.y_arc_radius) - current_position.y;
 							current_move.y_move_count = current_move.y_move_count + (current_move.y_arc_radius + current_move.y_arc_radius);
 							current_move.y_move_count = current_move.y_move_count + (end_position.y - (current_move.y_arc_center - current_move.y_arc_radius));
 						} else {
 							printf("move all the way up and then down to end\n");
-							current_move.y_move_count = (current_move.x_arc_center + current_move.y_arc_radius) - current_position.y;
-							current_move.y_move_count = current_move.y_move_count + (current_move.x_arc_center + current_move.y_arc_radius) - end_position.y;
+							current_move.y_move_count = (current_move.y_arc_center + current_move.y_arc_radius) - current_position.y;
+							current_move.y_move_count = current_move.y_move_count + (current_move.y_arc_center + current_move.y_arc_radius) - end_position.y;
 						}
 					} else {
 						if(end_position.x < current_move.x_arc_center){
@@ -359,8 +369,8 @@ void move(char move_string[200]){
 							current_move.y_move_count = end_position.y - current_position.y;
 						} else {
 							printf("move all the way up and then down to end\n");
-							current_move.y_move_count = (current_move.x_arc_center + current_move.y_arc_radius) - current_position.y;
-							current_move.y_move_count = current_move.y_move_count + (current_move.x_arc_center + current_move.y_arc_radius) - end_position.y;
+							current_move.y_move_count = (current_move.y_arc_center + current_move.y_arc_radius) - current_position.y;
+							current_move.y_move_count = current_move.y_move_count + (current_move.y_arc_center + current_move.y_arc_radius) - end_position.y;
 						}
 					}
 				} else {
@@ -370,13 +380,13 @@ void move(char move_string[200]){
 						if(current_position.y > end_position.y){
 							if(end_position.x < current_move.x_arc_center){
 								printf("move all the way up and then all the way down and then up to end\n");
-								current_move.y_move_count = (current_move.x_arc_center + current_move.y_arc_radius) - current_position.y;
+								current_move.y_move_count = (current_move.y_arc_center + current_move.y_arc_radius) - current_position.y;
 								current_move.y_move_count = current_move.y_move_count + (current_move.y_arc_radius + current_move.y_arc_radius);
 								current_move.y_move_count = current_move.y_move_count + (end_position.y - (current_move.y_arc_center - current_move.y_arc_radius));
 							} else {
 								printf("move all the way up and then down to end\n");
-								current_move.y_move_count = (current_move.x_arc_center + current_move.y_arc_radius) - current_position.y;
-								current_move.y_move_count = current_move.y_move_count + (current_move.x_arc_center + current_move.y_arc_radius) - end_position.y;	
+								current_move.y_move_count = (current_move.y_arc_center + current_move.y_arc_radius) - current_position.y;
+								current_move.y_move_count = current_move.y_move_count + (current_move.y_arc_center + current_move.y_arc_radius) - end_position.y;	
 							}
 						} else {
 							if(end_position.x < current_move.x_arc_center){
@@ -384,8 +394,8 @@ void move(char move_string[200]){
 								current_move.y_move_count = end_position.y - current_position.y;
 							} else {
 								printf("move all the way up and then down to end\n");
-								current_move.y_move_count = (current_move.x_arc_center + current_move.y_arc_radius) - current_position.y;
-								current_move.y_move_count = current_move.y_move_count + (current_move.x_arc_center + current_move.y_arc_radius) - end_position.y;
+								current_move.y_move_count = (current_move.y_arc_center + current_move.y_arc_radius) - current_position.y;
+								current_move.y_move_count = current_move.y_move_count + (current_move.y_arc_center + current_move.y_arc_radius) - end_position.y;
 							}
 						}
 					} else {
@@ -496,19 +506,19 @@ void move(char move_string[200]){
 					if(current_position.y > end_position.y){
 						if(end_position.x < current_move.x_arc_center){
 							printf("move all the way up and then down to end\n");
-							current_move.y_move_count = (current_move.x_arc_center + current_move.y_arc_radius) - current_position.y;
-							current_move.y_move_count = current_move.y_move_count + (current_move.x_arc_center + current_move.y_arc_radius) - end_position.y;	
+							current_move.y_move_count = (current_move.y_arc_center + current_move.y_arc_radius) - current_position.y;
+							current_move.y_move_count = current_move.y_move_count + (current_move.y_arc_center + current_move.y_arc_radius) - end_position.y;	
 						} else {
 							printf("move all the way up and then all the way down and then up to end\n");
-							current_move.y_move_count = (current_move.x_arc_center + current_move.y_arc_radius) - current_position.y;
+							current_move.y_move_count = (current_move.y_arc_center + current_move.y_arc_radius) - current_position.y;
 							current_move.y_move_count = current_move.y_move_count + (current_move.y_arc_radius + current_move.y_arc_radius);
 							current_move.y_move_count = current_move.y_move_count + (end_position.y - (current_move.y_arc_center - current_move.y_arc_radius));
 						}
 					} else {
 						if(end_position.x < current_move.x_arc_center){
 							printf("move all the way up and then down to end\n");
-							current_move.y_move_count = (current_move.x_arc_center + current_move.y_arc_radius) - current_position.y;
-							current_move.y_move_count = current_move.y_move_count + (current_move.x_arc_center + current_move.y_arc_radius) - end_position.y;	
+							current_move.y_move_count = (current_move.y_arc_center + current_move.y_arc_radius) - current_position.y;
+							current_move.y_move_count = current_move.y_move_count + (current_move.y_arc_center + current_move.y_arc_radius) - end_position.y;	
 						} else {
 							printf("move up to end\n");
 							current_move.y_move_count = end_position.y - current_position.y;
@@ -521,19 +531,19 @@ void move(char move_string[200]){
 						if(current_position.y > end_position.y){
 							if(end_position.x < current_move.x_arc_center){
 								printf("move all the way up and then down to end\n");
-								current_move.y_move_count = (current_move.x_arc_center + current_move.y_arc_radius) - current_position.y;
-								current_move.y_move_count = current_move.y_move_count + (current_move.x_arc_center + current_move.y_arc_radius) - end_position.y;	
+								current_move.y_move_count = (current_move.y_arc_center + current_move.y_arc_radius) - current_position.y;
+								current_move.y_move_count = current_move.y_move_count + (current_move.y_arc_center + current_move.y_arc_radius) - end_position.y;	
 							} else {
 								printf("move all the way up and then all the way down and then up to end\n");
-								current_move.y_move_count = (current_move.x_arc_center + current_move.y_arc_radius) - current_position.y;
+								current_move.y_move_count = (current_move.y_arc_center + current_move.y_arc_radius) - current_position.y;
 								current_move.y_move_count = current_move.y_move_count + (current_move.y_arc_radius + current_move.y_arc_radius);
 								current_move.y_move_count = current_move.y_move_count + (end_position.y - (current_move.y_arc_center - current_move.y_arc_radius));
 							}
 						} else {
 							if(end_position.x < current_move.x_arc_center){
 								printf("move all the way up and then down to end\n");
-								current_move.y_move_count = (current_move.x_arc_center + current_move.y_arc_radius) - current_position.y;
-								current_move.y_move_count = current_move.y_move_count + (current_move.x_arc_center + current_move.y_arc_radius) - end_position.y;	
+								current_move.y_move_count = (current_move.y_arc_center + current_move.y_arc_radius) - current_position.y;
+								current_move.y_move_count = current_move.y_move_count + (current_move.y_arc_center + current_move.y_arc_radius) - end_position.y;	
 							} else {
 								printf("move up to end\n");
 								current_move.y_move_count = end_position.y - current_position.y;
@@ -566,7 +576,7 @@ void move(char move_string[200]){
 					}
 				}
 			}
-			printf("Got Dir and Move: %ld, %ld, %ld, %ld, %ld, %ld\n", current_move.x_move_count, current_move.y_move_count, current_move.x_arc_radius, current_move.y_arc_radius, current_move.x_arc_center, current_move.y_arc_center);
+			printf("Got Dir and Move: %f, %f, %f, %f, %f, %f\n", current_move.x_move_count, current_move.y_move_count, current_move.x_arc_radius, current_move.y_arc_radius, current_move.x_arc_center, current_move.y_arc_center);
 			
 		}
 	}
@@ -575,10 +585,10 @@ void move(char move_string[200]){
 void go_to(char move_string[200]){
 	char cmd;
 	char x_axis, y_axis;
-	unsigned long int x_pos, y_pos;
-	unsigned int x_period, y_period;
+	double x_pos, y_pos;
+	double x_period, y_period;
 	sscanf(move_string, "%c%c%lu.%c%lu.%u.%u", &cmd, &x_axis, &x_pos, &y_axis, &y_pos, &x_period, &y_period);
-	printf("Going To: Axis: %c, Pos: %lu, Speed: %d, Axis: %c, Pos: %lu, Speed: %d\n", x_axis, x_pos, x_period, y_axis, y_pos, y_period);
+	printf("Going To: Axis: %c, Pos: %f, Speed: %f, Axis: %c, Pos: %f, Speed: %f\n", x_axis, x_pos, x_period, y_axis, y_pos, y_period);
 	if(x_axis == 'c'){
 		end_position.x = w_size.x/2;
 	} else {
@@ -762,9 +772,9 @@ void receive_spi_string(void){
 void print_system_info(void){
 	printf("\n\n<<------ SYSTEM INFO ------>>\n");
 	printf("\n<<-- Motor Enable: %d, System Calibration: %d-->\n", motors_enabled, system_calibrated);
-	printf("\n<<-- Cur X Pos: %lu, End X Pos: %lu, Period: %u, Speed: %u, Active: %u -->\n", current_position.x, end_position.x, current_move.x_period, current_move.x_current_period, current_move.x_act);
-	printf("\n<<-- Cur Y Pos: %lu, End Y Pos: %lu, Period: %u, Speed: %u, Active: %u -->\n", current_position.y, end_position.y, current_move.y_period, current_move.y_current_period, current_move.y_act);
-	printf("\n<<-- Cur Z Pos: %lu, End Z Pos: %lu, Period: %u, Speed: %u, Active: %u -->\n", current_position.z, end_position.z, current_move.z_period, current_move.z_current_period, current_move.z_act);
-	printf("\n<<-- Work Area Size X: %lu, Y: %lu-->\n", w_size.x, w_size.y);
+	printf("\n<<-- Cur X Pos: %f, End X Pos: %f, Cur X Move: %f, Period: %f, Speed: %f, Active: %u -->\n", current_position.x, end_position.x, current_move.x_move_count, current_move.x_period, current_move.x_current_period, current_move.x_act);
+	printf("\n<<-- Cur Y Pos: %f, End Y Pos: %f, Cur Y Move: %f, Period: %f, Speed: %f, Active: %u -->\n", current_position.y, end_position.y, current_move.y_move_count, current_move.y_period, current_move.y_current_period, current_move.y_act);
+	printf("\n<<-- Cur Z Pos: %f, End Z Pos: %f, Cur Z Move: %f, Period: %f, Speed: %f, Active: %u -->\n", current_position.z, end_position.z, current_move.z_move_count, current_move.z_period, current_move.z_current_period, current_move.z_act);
+	printf("\n<<-- Work Area Size X: %f, Y: %f-->\n", w_size.x, w_size.y);
 }
 

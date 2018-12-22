@@ -8,8 +8,8 @@ struct motor_movement current_move, next_move;
 
 struct work_area w_size;
 
-char system_calibrated = 0;
-char motors_enabled = 0;
+int8_t system_calibrated = 0;
+int8_t motors_enabled = 0;
 
 void reset_motor_state(void){
 	current_position.x = 100000;
@@ -88,8 +88,9 @@ void process_motion(void){
 }
 
 void process_instruction(void){
-	unsigned long int next_x, next_y, x_arc_2, y_arc_2;
-	long int x_del, y_del;
+	double next_x, next_y, x_arc_2, y_arc_2;
+	double x_del, y_del, x_now, y_now, cur_x, cur_y;
+	double move_count;
 	if((current_move.x_act && current_move.x_arc) && (current_move.y_act && current_move.y_arc)){
 		if(current_move.x_arc_cw){
 			if(current_position.y < current_move.y_arc_center){
@@ -144,26 +145,33 @@ void process_instruction(void){
 		}
 		if(current_move.x_dir == MOTOR_MOVE_R){
 			if(current_move.y_dir == MOTOR_MOVE_A){
-				printf("add to x and y and find new x and y period\n");
+				//printf("add to x and y and find new x and y period\n");
 				x_arc_2 = current_move.x_arc_radius * current_move.x_arc_radius;
 				y_arc_2 = current_move.y_arc_radius * current_move.y_arc_radius;
-				y_del = current_position.y + 1 - current_move.y_arc_center;
-				printf("del: %lu, %lu, %lu, %lu, %ld\n", current_move.x_arc_radius, current_move.y_arc_radius, x_arc_2, y_arc_2, y_del);
-				y_del = y_del * y_del * x_arc_2 / y_arc_2;
-				next_x = sqrtl(x_arc_2 - y_del) - current_move.x_arc_center;
-				x_del = current_position.x + 1 - current_move.x_arc_center;
+				y_now = current_position.y - current_move.y_arc_center;
+				y_now = y_now * y_now * x_arc_2 / y_arc_2;
+				cur_x = round(current_move.x_arc_center - sqrt(x_arc_2 - y_now));
+				x_now = current_position.x - current_move.x_arc_center;
+				x_now = x_now * x_now * y_arc_2 / x_arc_2;
+				cur_y = round(sqrt(y_arc_2 - x_now) + current_move.y_arc_center);
+				printf("Currentx: %f, x arc cnter: %f, x rad: %f, x rad 2: %f, y rad: %f, y rad 2: %f\n", current_position.x, current_move.x_arc_center, current_move.x_arc_radius, x_arc_2, current_move.y_arc_radius, y_arc_2);
+				x_del = cur_x + 1 - current_move.x_arc_center;
 				x_del = x_del * x_del * y_arc_2 / x_arc_2;
-				next_y = sqrtl(y_arc_2 - x_del) - current_move.y_arc_center;
+				next_y = sqrt(y_arc_2 - x_del) + current_move.y_arc_center;
+				y_del = cur_y + 1 - current_move.y_arc_center;
+				y_del = y_del * y_del * x_arc_2 / y_arc_2;
+				next_x = current_move.x_arc_center - sqrt(x_arc_2 - y_del);
+				printf("currentx: %f, currenty: %f, nextx: %f, nexty: %f\n", current_position.x, current_position.y, next_x, next_y);
 			} else {
 				printf("add to x and subtract from y and find new x and y period\n");
 				x_arc_2 = current_move.x_arc_radius * current_move.x_arc_radius;
 				y_arc_2 = current_move.y_arc_radius * current_move.y_arc_radius;
 				y_del = current_position.y - 1 - current_move.y_arc_center;
 				y_del = y_del * y_del * x_arc_2 / y_arc_2;
-				next_x = sqrtl(x_arc_2 - y_del) - current_move.x_arc_center;
+				next_x = sqrt(x_arc_2 - y_del) - current_move.x_arc_center;
 				x_del = current_position.x + 1 - current_move.x_arc_center;
 				x_del = x_del * x_del * y_arc_2 / x_arc_2;
-				next_y = sqrtl(y_arc_2 - x_del) - current_move.y_arc_center;
+				next_y = sqrt(y_arc_2 - x_del) - current_move.y_arc_center;
 			}
 		} else {
 			if(current_move.y_dir == MOTOR_MOVE_A){
@@ -172,30 +180,32 @@ void process_instruction(void){
 				y_arc_2 = current_move.y_arc_radius * current_move.y_arc_radius;
 				y_del = current_position.y + 1 - current_move.y_arc_center;
 				y_del = y_del * y_del * x_arc_2 / y_arc_2;
-				next_x = sqrtl(x_arc_2 - y_del) - current_move.x_arc_center;
+				next_x = sqrt(x_arc_2 - y_del) - current_move.x_arc_center;
 				x_del = current_position.x - 1 - current_move.x_arc_center;
 				x_del = x_del * x_del * y_arc_2 / x_arc_2;
-				next_y = sqrtl(y_arc_2 - x_del) - current_move.y_arc_center;
+				next_y = sqrt(y_arc_2 - x_del) - current_move.y_arc_center;
 			} else {
 				printf("subtract from x and subtract from y and find new x and y period\n");
 				x_arc_2 = current_move.x_arc_radius * current_move.x_arc_radius;
 				y_arc_2 = current_move.y_arc_radius * current_move.y_arc_radius;
 				y_del = current_position.y - 1 - current_move.y_arc_center;
 				y_del = y_del * y_del * x_arc_2 / y_arc_2;
-				next_x = sqrtl(x_arc_2 - y_del) - current_move.x_arc_center;
+				next_x = sqrt(x_arc_2 - y_del) - current_move.x_arc_center;
 				x_del = current_position.x - 1 - current_move.x_arc_center;
 				x_del = x_del * x_del * y_arc_2 / x_arc_2;
-				next_y = sqrtl(y_arc_2 - x_del) - current_move.y_arc_center;
+				next_y = sqrt(y_arc_2 - x_del) - current_move.y_arc_center;
 			}
 		}
-		printf("made it through new\n");
-		current_move.x_period = (next_y*current_move.arc_period/next_x);
-		current_move.y_period = (next_x*current_move.arc_period/next_y);
+		//printf("made it through new\n");
+		move_count = sqrt((next_x-current_position.x)*(next_x-current_position.x)+(next_y-current_position.y)*(next_y-current_position.y));
+		current_move.x_period = round(current_move.arc_period*move_count/abs(ceil((next_x-current_position.x))));
+		current_move.y_period = round(current_move.arc_period*move_count/abs(ceil((next_y-current_position.y))));
+		printf("curxper: %f, curyper: %f\n", current_move.x_period, current_move.y_period);
 	}
 }
 
 void process_speed(void){
-	if(current_move.x_act){
+	/*if(current_move.x_act){
 		if(current_move.x_move_count > (current_move.x_move - current_move.x_move_count)){
 			// speeding up
 			if(current_move.x_current_period > current_move.x_period){
@@ -281,7 +291,13 @@ void process_speed(void){
 				current_move.z_next_period = current_move.z_period;
 			}
 		}
-	}
+	}*/
+	current_move.x_current_period = current_move.x_period;
+	current_move.x_next_period = current_move.x_period;
+	current_move.y_current_period = current_move.y_period;
+	current_move.y_next_period = current_move.y_period;
+	current_move.z_current_period = current_move.z_period;
+	current_move.z_next_period = current_move.z_period;
 }
 
 void process_motors(void){
