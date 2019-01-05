@@ -16,6 +16,10 @@ int main(int argc, char **argv) {
     printf("\nSetting Up WiringPi\n");
     init_interface_gpio();
     
+    printf("Checking spi before forking...\n");
+    printf("If this crashes, than enable spin on raspberry pi\n");
+    check_spi();
+    
     printf("Everything safe... Turning on driver\n");
 
     system_control_fork = fork();
@@ -28,7 +32,8 @@ int main(int argc, char **argv) {
 	} else {
 		printf("Forked... In Parent process\n");
 		struct cnc_state cnc;
-		init_spi(&cnc_spi);
+		quit_system = init_spi(&cnc_spi);
+		printf("After spi...\n");
 		unix_sockets[active_unix] = create_unix_socket(CONTROL_SOCKET_PATH);
 		active_unix = active_unix + 1;
 		
@@ -56,7 +61,9 @@ void system_control(int control_socket){
     while(!exit_system){
 		sleep(1);
         print_interface_menu();
-		scanf("%s", control_string);
+        fflush(stdin);
+		scanf(" %s", control_string);
+		fflush(stdin);
 		printf("\n");
 		if(control_string[0] == 's'){
 			printf("Type String to Send and Press Enter: ");

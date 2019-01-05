@@ -1,6 +1,14 @@
 #include "main.h"
 #include "interface_spi.h"
 
+void check_spi(void){
+	// wiringPiSPISetupMode exits without return if spi not enabled...
+	// this checks and closes (or exits out before forking in main)
+	// so that the c program doesn't start a child and then crash...
+	int temp_fd = wiringPiSPISetupMode(SPI_CHANNEL, SPI_SPEED, 0);
+	close(temp_fd);
+}
+
 uint8_t init_spi(struct cnc_spi_struct* spi_struct){
 	spi_struct->read_pending = 0;
 	spi_struct->write_pending = 0;
@@ -8,15 +16,16 @@ uint8_t init_spi(struct cnc_spi_struct* spi_struct){
 	spi_struct->updating_firmware = 0;
 	spi_struct->pending_opcode = idle;
 	strcpy(spi_struct->read_data, "");
-	
+
 	spi_fd = wiringPiSPISetupMode(SPI_CHANNEL, SPI_SPEED, 0);
+	
 	if(spi_fd < 0){
 		printf("Spi error...\n");
+		return 1;
 	} else {
 		spi_struct->state = spi_initialized;
+		return 0;
 	}
-	
-	return 0;
 }
 
 void handle_spi(struct cnc_spi_struct* spi_struct){
@@ -230,34 +239,11 @@ void send_cnc_instruction(struct cnc_spi_struct* spi_struct){
 		for(clear_count=0;clear_count<MAX_SPI_LENGTH;clear_count++) spi_struct->write_data[clear_count] = 0;
 		if(instruction_count == 0){
 			// turn on motor
-			spi_struct->write_data[0] = 10;
+			spi_struct->write_data[0] = 11;
 			spi_struct->write_data[1] = 1;
 			spi_struct->write_data[2] = 1;
 		}
 		if(instruction_count == 1){
-			// move left
-			spi_struct->write_data[0] = 8;
-			
-			spi_struct->write_data[1] = 0;
-			spi_struct->write_data[2] = 0;
-			spi_struct->write_data[3] = 0;
-			spi_struct->write_data[4] = 0;
-			spi_struct->write_data[5] = 0;
-			spi_struct->write_data[6] = 0;
-			spi_struct->write_data[7] = 0;
-			spi_struct->write_data[8] = 0;
-			
-			spi_struct->write_data[9] = 10;
-			spi_struct->write_data[10] = 0;
-			spi_struct->write_data[11] = 0;
-			spi_struct->write_data[12] = 0;
-			
-			spi_struct->write_data[13] = 1;
-			spi_struct->write_data[14] = 1;
-			spi_struct->write_data[15] = 0;
-			spi_struct->write_data[16] = 0;
-		}
-		if(instruction_count == 2){
 			// move left
 			spi_struct->write_data[0] = 9;
 			
@@ -280,9 +266,32 @@ void send_cnc_instruction(struct cnc_spi_struct* spi_struct){
 			spi_struct->write_data[15] = 0;
 			spi_struct->write_data[16] = 0;
 		}
+		if(instruction_count == 2){
+			// move left
+			spi_struct->write_data[0] = 10;
+			
+			spi_struct->write_data[1] = 0;
+			spi_struct->write_data[2] = 0;
+			spi_struct->write_data[3] = 0;
+			spi_struct->write_data[4] = 0;
+			spi_struct->write_data[5] = 0;
+			spi_struct->write_data[6] = 0;
+			spi_struct->write_data[7] = 0;
+			spi_struct->write_data[8] = 0;
+			
+			spi_struct->write_data[9] = 10;
+			spi_struct->write_data[10] = 0;
+			spi_struct->write_data[11] = 0;
+			spi_struct->write_data[12] = 0;
+			
+			spi_struct->write_data[13] = 1;
+			spi_struct->write_data[14] = 1;
+			spi_struct->write_data[15] = 0;
+			spi_struct->write_data[16] = 0;
+		}
 		if(instruction_count == 3){
 			//turn off motor
-			spi_struct->write_data[0] = 11;
+			spi_struct->write_data[0] = 12;
 			spi_struct->write_data[1] = 1;
 			spi_struct->write_data[2] = 1;
 		}

@@ -63,6 +63,7 @@ struct cnc_spi_struct {
 	char read_data[MAX_SPI_LENGTH];
 };
 
+void check_spi(void);
 uint8_t init_spi(struct cnc_spi_struct* spi_struct);
 void handle_spi(struct cnc_spi_struct* spi_struct);
 void wait_for_connect(struct cnc_spi_struct* spi_struct);
