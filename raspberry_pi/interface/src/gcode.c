@@ -7,20 +7,21 @@
 #include "stdio.h"
 #include "stdint.h"
 #include "string.h"
-#include <cstdlib>
+#include "stdlib.h"
 
 #include "gcode.h"
 
 char linear_move_active;
 char arc_move_active;
 
-int parse_gcode_file(FILE* gcode_fp, char* file_data, struct gcode_program_struct* program){
+int parse_gcode_file(FILE* gcode_fp, struct gcode_program_struct* program){
     uint64_t file_counter;
     uint64_t line_counter;
     uint64_t line_count;
     uint64_t file_size;
-    char data;
+    int data;
     char line[4096];
+    char* file_data;
     int error = 0;
     program->linear_move_active = 0;
     program->arc_move_active = 0;
@@ -29,16 +30,17 @@ int parse_gcode_file(FILE* gcode_fp, char* file_data, struct gcode_program_struc
     program->instruction_count = 0;
     program->units_in_inches = 0;
     program->units_in_metric = 0;
-    
+    printf("Starting to read file\n");
     data = 0;
     file_counter = 0;
     while(data != EOF){
         file_counter++;
         data = getc(gcode_fp);
     }
+    printf("after file count\n");
     file_size = file_counter;
     fseek(gcode_fp, 0, SEEK_SET);
-    
+    printf("Got file size\n");
     file_data = (char*) malloc(file_size);
     
     file_counter = 0;
@@ -50,7 +52,7 @@ int parse_gcode_file(FILE* gcode_fp, char* file_data, struct gcode_program_struc
         file_data[file_counter] = data;
         file_counter++;
     }
-    
+    printf("Got full file\n");
     line_counter = 0;
     line_count = 0;
     for(file_counter=0;file_counter < file_size; file_counter++){
@@ -68,9 +70,9 @@ int parse_gcode_file(FILE* gcode_fp, char* file_data, struct gcode_program_struc
             line_counter++;
         }
     }
-    
+    printf("Got lines\n");
     program->instruction = (struct instruction_struct*) malloc(line_count*sizeof(struct instruction_struct));
-    
+    printf("Starting Parsing\n");
     line_counter = 0;
     line_count = 0;
     for(file_counter=0;file_counter < file_size; file_counter++){
@@ -101,7 +103,7 @@ int parse_gcode_file(FILE* gcode_fp, char* file_data, struct gcode_program_struc
             line_counter++;
         }
     }
-    
+    printf("Finished Parsing Instructions\n");
     free(file_data);
     free(program->instruction);
     printf("File was %llu long\n", file_counter);
@@ -119,7 +121,7 @@ int parse_gcode_line(char* line, struct gcode_program_struct* program){
     char error = 0;
     char skip = 0;
     
-    LINE_PARSE_STATE line_state = BEGIN_LINE;
+    enum LINE_PARSE_STATE line_state = BEGIN_LINE;
     
     // all ascii letter input already converted to uppercase
     
@@ -304,7 +306,7 @@ int parse_number(char* line, uint16_t* line_count, double* value){
     double decimal_divider = 10;
     char end_of_number = 0;
     
-    NUMBER_PARSE_STATE number_state = BEGIN_NUMBER;
+    enum NUMBER_PARSE_STATE number_state = BEGIN_NUMBER;
     
     while(!end_of_number){
         switch(number_state){

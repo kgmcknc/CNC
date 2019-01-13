@@ -16,20 +16,13 @@
 
 #include "stdint.h"
 
-int parse_gcode_file(FILE* fp, char* file_data, struct gcode_program_struct* program);
-int parse_gcode_line(char* line, struct gcode_program_struct* program);
-int parse_number(char* line, uint16_t* line_count, double* value);
-int parse_letter(char* line, uint16_t* line_count, char* value);
-int parse_gcode_word(char* line, uint16_t* line_count, struct gcode_program_struct* program);
-int check_instruction(struct instruction_struct* instruction);
-
-typedef enum {
+enum LINE_PARSE_STATE {
     BEGIN_LINE, CHECK_BLOCK_DELETE, GET_INSTRUCTION_NUMBER, GET_WORD, NEW_WORD, CONTINUE_WORD, START_COMMENT, HANDLE_COMMENT
-} LINE_PARSE_STATE;
+};
 
-typedef enum {
+enum NUMBER_PARSE_STATE {
     BEGIN_NUMBER, CHECK_SPACE, CHECK_SIGN, GET_INTEGER, GET_DECIMAL, SAVE_NUMBER
-} NUMBER_PARSE_STATE;
+};
 
 struct axis_movement_struct{
     char axis_active;
@@ -83,5 +76,12 @@ struct gcode_program_struct {
     char stop_switch;
     struct instruction_struct* instruction;
 };
+
+int parse_gcode_file(FILE* fp, struct gcode_program_struct* program);
+int parse_gcode_line(char* line, struct gcode_program_struct* program);
+int parse_number(char* line, uint16_t* line_count, double* value);
+int parse_letter(char* line, uint16_t* line_count, char* value);
+int parse_gcode_word(char* line, uint16_t* line_count, struct gcode_program_struct* program);
+int check_instruction(struct instruction_struct* instruction);
 
 #endif /* GCODE_H */

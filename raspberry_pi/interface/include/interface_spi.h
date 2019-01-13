@@ -52,6 +52,7 @@ enum spi_opcodes {
 
 struct cnc_spi_struct {
 	enum cnc_spi_state state;
+	uint8_t connected;
 	uint8_t write_pending;
 	uint8_t read_pending;
 	uint8_t write_finished;

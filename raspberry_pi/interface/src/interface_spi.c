@@ -10,6 +10,7 @@ void check_spi(void){
 }
 
 uint8_t init_spi(struct cnc_spi_struct* spi_struct){
+	spi_struct->connected = 0;
 	spi_struct->read_pending = 0;
 	spi_struct->write_pending = 0;
 	spi_struct->pending_length = 0;
@@ -31,6 +32,7 @@ uint8_t init_spi(struct cnc_spi_struct* spi_struct){
 void handle_spi(struct cnc_spi_struct* spi_struct){
 	switch(spi_struct->state){
 		case spi_inactive : {
+			spi_struct->connected = 0;
 			// re initialize?
 			printf("Spi was inactive??\n");
 			break;
@@ -98,6 +100,7 @@ void wait_for_connect(struct cnc_spi_struct* spi_struct){
 		wiringPiSPIDataRW(SPI_CHANNEL, spi_struct->read_data, SLAVE_INIT_LENGTH);
 		spi_struct->state = spi_idle;
 		spi_struct->pending_opcode = idle;
+		spi_struct->connected = 1;
 		printf("Read: %s... Connected to Mirco\n", spi_struct->read_data);
 	}
 }
@@ -341,6 +344,7 @@ void request_reconnect(struct cnc_spi_struct* spi_struct){
 	delay(100);
 	clear_m_ready(spi_struct);
 	spi_struct->state = spi_initialized;
+	spi_struct->connected = 1;
 	spi_struct->pending_opcode = idle;
 }
 

@@ -16,8 +16,8 @@ int create_unix_socket(char path[MAX_FILE_STRING]){
     int com_fd, com_socket, com_len, com_opt = 1;
     struct sockaddr_un com_addr;
     com_fd = socket(AF_UNIX, SOCK_STREAM, 0);
+    printf("Parent Socket Was %d\n");
     if(com_fd == 0){
-        printf("Parent Socket Was 0\n");
         return -1;
     }
     /*if(setsockopt(com_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, (char *) &com_opt, sizeof(com_opt))){
@@ -32,7 +32,8 @@ int create_unix_socket(char path[MAX_FILE_STRING]){
     printf("Doing Bind in Parent\n");
     if(bind(com_fd, (struct sockaddr*) &com_addr, sizeof(com_addr)) < 0){
         printf("Failed in Parent Bind\n");
-        handle_error("bind");
+        //handle_error("bind");
+        perror("bind");
         return -1;
     }
     printf("Doing Listen in Parent\n");
@@ -118,7 +119,7 @@ int socket_handler(uint8_t* command_ready, uint8_t system_command[MAX_FUNCTION_S
                 if(strcmp(read_data, "") == 0){
 					
 				} else {
-					printf("got: %d, %s\n", num_read, read_data);
+					printf("got: %d, %s, %d\n", num_read, read_data, read_data[0]);
 					read_data[num_read-1] = '\0';
 					*command_ready = 1;
 					strcpy(system_command, read_data);
