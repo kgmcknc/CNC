@@ -34,10 +34,6 @@ void handle_input(struct cnc_state* cnc, uint8_t system_command[MAX_FUNCTION_STR
 			cnc->state = POWER_MOTORS_OFF;
 			break;
 		}
-		case 's' : {
-			send_spi_string(system_command, MAX_SPI_LENGTH);
-			break;
-		}
 		case 'o' : {
 			cnc->state = GET_PROGRAM;
 			break;
@@ -47,7 +43,16 @@ void handle_input(struct cnc_state* cnc, uint8_t system_command[MAX_FUNCTION_STR
 			cnc->state = UPDATE_FIRMARE;
 			break;
 		}
-		/*case 'i' : {
+		case 'i' : {
+			
+			cnc->state = SEND_TO_MICRO;
+			break;
+		}
+		/*case 's' : {
+			send_spi_string(system_command, MAX_SPI_LENGTH);
+			break;
+		}
+		case 'i' : {
 			cnc->spi->pending_opcode = start_cnc_program;
 			printf("got start interface function: %d\n", cnc->spi->pending_opcode);
 			break;

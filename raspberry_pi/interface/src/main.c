@@ -208,7 +208,33 @@ int main(int argc, char **argv) {
 				break;
 			}
 			case SEND_TO_MICRO : {
-				
+				if(command_set){
+					socket_handler(&command_ready, system_command);
+					if(command_ready){
+						if(system_command[0] == 13 || system_command[0] == 10){
+							// new line or CR so finish string
+							control_string[string_counter] = '\0';
+							string_counter = 0;
+							command_set = 0;
+							cnc.state = OPEN_PROGRAM;
+						} else {
+							if(system_command[0] == 8 || system_command[0] == 127){
+								// backspace
+								string_counter = (string_counter > 0) ? string_counter - 1 : 0;
+								control_string[string_counter] = '\0';
+							} else {
+								control_string[string_counter] = system_command[0];
+								string_counter++;
+							}
+						}
+						command_ready = 0;
+						printf("\rCommand: %s", control_string);
+					}
+				} else {
+					printf("Enter Commands for Machine and press enter\n");
+					printf("Typing q and enter will cancel\n");
+					command_set = 1;
+				}
 				break;
 			}
 			case UPDATE_FIRMARE : {

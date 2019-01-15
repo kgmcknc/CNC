@@ -30,17 +30,17 @@ int parse_gcode_file(FILE* gcode_fp, struct gcode_program_struct* program){
     program->instruction_count = 0;
     program->units_in_inches = 0;
     program->units_in_metric = 0;
-    printf("Starting to read file\n");
+    
     data = 0;
     file_counter = 0;
     while(data != EOF){
         file_counter++;
         data = getc(gcode_fp);
     }
-    printf("after file count\n");
+    
     file_size = file_counter;
     fseek(gcode_fp, 0, SEEK_SET);
-    printf("Got file size\n");
+    
     file_data = (char*) malloc(file_size);
     
     file_counter = 0;
@@ -52,7 +52,7 @@ int parse_gcode_file(FILE* gcode_fp, struct gcode_program_struct* program){
         file_data[file_counter] = data;
         file_counter++;
     }
-    printf("Got full file\n");
+    
     line_counter = 0;
     line_count = 0;
     for(file_counter=0;file_counter < file_size; file_counter++){
@@ -70,7 +70,7 @@ int parse_gcode_file(FILE* gcode_fp, struct gcode_program_struct* program){
             line_counter++;
         }
     }
-    printf("Got lines\n");
+    
     program->instruction = (struct instruction_struct*) malloc(line_count*sizeof(struct instruction_struct));
     printf("Starting Parsing\n");
     line_counter = 0;
