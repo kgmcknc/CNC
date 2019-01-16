@@ -1,0 +1,35 @@
+To Do:
+Raspberry Pi:
+add single/instantaneous instruction passing to micro through spi
+make start input and then send that to micro as handshake then move to input stage then have handshake to close/stop
+
+finish instruction/program state that reads off instructions from the list and pauses/continues as needed
+while also handling input for stopping and resetting or just quitting
+
+make pause/continue spi command/instruction
+
+parse gcode file more fully and handle all odd commands
+finish gcode parsing for mm/inch and absolute or relative movements
+create states to latch linear/arc/other and current tool/extruder
+
+
+Micro Controller:
+remove "start program" (and maybe instruction numbers) and allow single instructions... essentially always ready for instructions
+add (verify) "reset program" functionality to clear any pending instructions (reset the buffer)
+
+create ramp for speeds across all axes
+finish heater/temp stuff
+create pid loop for heater/temp
+create heater setting/clearing instructions
+
+make pause/continue spi command instruction
+
+update zero instruction to add z functionality
+make zero adjustment state that will set the z location
+
+Both:
+Fix defines for print lengths and spi transactions... make that make sense...
+Verify spi behavior and gpio (maybe make way to break out of condition when spi is waiting for something that won't ever happen... like wrong length)
+Hard code some spi lengths that are variable (like prints?) or just verify failsafe/error...
+
+make config file and file saving for the system... you can choose 3d printing or cnc or others... and save off zero positioning and stuff...
