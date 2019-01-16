@@ -1,7 +1,7 @@
 /***************************************************************************//**
  * @file em_system.c
  * @brief System Peripheral API
- * @version 5.4.0
+ * @version 5.5.0
  *******************************************************************************
  * # License
  * <b>Copyright 2016 Silicon Laboratories, Inc. www.silabs.com</b>
@@ -50,10 +50,10 @@
 
 /***************************************************************************//**
  * @brief
- *   Get chip major/minor revision.
+ *   Get a chip major/minor revision.
  *
  * @param[out] rev
- *   Location to place chip revision info.
+ *   A location to place the chip revision information.
  ******************************************************************************/
 void SYSTEM_ChipRevisionGet(SYSTEM_ChipRevision_TypeDef *rev)
 {
@@ -84,11 +84,11 @@ void SYSTEM_ChipRevisionGet(SYSTEM_ChipRevision_TypeDef *rev)
 
 /***************************************************************************//**
  * @brief
- *    Get factory calibration value for a given peripheral register.
+ *    Get a factory calibration value for a given peripheral register.
  *
  * @param[in] regAddress
- *    Peripheral calibration register address to get calibration value for. If
- *    a calibration value is found then this register is updated with the
+ *    The peripheral calibration register address to get a calibration value for. If
+ *    the calibration value is found, this register is updated with the
  *    calibration value.
  *
  * @return
@@ -107,7 +107,7 @@ bool SYSTEM_GetCalibrationValue(volatile uint32_t *regAddress)
       return true;
     }
   }
-  /* Nothing found for regAddress */
+  /* Nothing found for regAddress. */
   return false;
 }
 

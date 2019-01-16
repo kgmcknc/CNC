@@ -1,0 +1,29 @@
+00:14:48 **** Incremental Build of configuration GNU ARM v7.2.1 - Debug for project machine ****
+make -j8 all 
+Building file: ../src/cnc_timers.cpp
+Invoking: GNU ARM C++ Compiler
+arm-none-eabi-g++ -g3 -gdwarf-2 -mcpu=cortex-m4 -mthumb '-DEFM32PG12B500F1024GL125=1' -I"C:/SiliconLabs/SimplicityStudio/v4/developer/sdks/gecko_sdk_suite/v2.3//platform/emlib/inc" -I"C:/SiliconLabs/SimplicityStudio/v4/developer/sdks/gecko_sdk_suite/v2.3//platform/CMSIS/Include" -I"C:/SiliconLabs/SimplicityStudio/v4/developer/sdks/gecko_sdk_suite/v2.3//hardware/kit/SLSTK3402A_EFM32PG12/config" -I"C:/SiliconLabs/SimplicityStudio/v4/developer/sdks/gecko_sdk_suite/v2.3//hardware/kit/common/bsp" -I"C:/SiliconLabs/SimplicityStudio/v4/developer/sdks/gecko_sdk_suite/v2.3//platform/Device/SiliconLabs/EFM32PG12B/Include" -I"C:/SiliconLabs/SimplicityStudio/v4/developer/sdks/gecko_sdk_suite/v2.3//platform/emdrv/common/inc" -I"C:/SiliconLabs/SimplicityStudio/v4/developer/sdks/gecko_sdk_suite/v2.3//platform/emdrv/dmadrv/config" -I"C:/SiliconLabs/SimplicityStudio/v4/developer/sdks/gecko_sdk_suite/v2.3//platform/emdrv/ezradiodrv/config" -I"C:/SiliconLabs/SimplicityStudio/v4/developer/sdks/gecko_sdk_suite/v2.3//platform/emdrv/nvm/config" -I"C:/SiliconLabs/SimplicityStudio/v4/developer/sdks/gecko_sdk_suite/v2.3//platform/emdrv/rtcdrv/config" -I"C:/SiliconLabs/SimplicityStudio/v4/developer/sdks/gecko_sdk_suite/v2.3//platform/emdrv/spidrv/config" -I"C:/SiliconLabs/SimplicityStudio/v4/developer/sdks/gecko_sdk_suite/v2.3//platform/emdrv/tempdrv/config" -I"C:/SiliconLabs/SimplicityStudio/v4/developer/sdks/gecko_sdk_suite/v2.3//platform/emdrv/uartdrv/config" -I"C:/SiliconLabs/SimplicityStudio/v4/developer/sdks/gecko_sdk_suite/v2.3//platform/emdrv/ustimer/config" -I"C:/SiliconLabs/SimplicityStudio/v4/developer/sdks/gecko_sdk_suite/v2.3//hardware/kit/common/drivers" -I"C:/SiliconLabs/SimplicityStudio/v4/developer/sdks/gecko_sdk_suite/v2.3//platform/emdrv/dmadrv/inc" -I"C:/SiliconLabs/SimplicityStudio/v4/developer/sdks/gecko_sdk_suite/v2.3//platform/emdrv/gpiointerrupt/inc" -I"C:/SiliconLabs/SimplicityStudio/v4/developer/sdks/gecko_sdk_suite/v2.3//platform/emdrv/nvm/inc" -I"C:/SiliconLabs/SimplicityStudio/v4/developer/sdks/gecko_sdk_suite/v2.3//platform/emdrv/nvm3/inc" -I"C:/SiliconLabs/SimplicityStudio/v4/developer/sdks/gecko_sdk_suite/v2.3//platform/emdrv/rtcdrv/inc" -I"C:/SiliconLabs/SimplicityStudio/v4/developer/sdks/gecko_sdk_suite/v2.3//platform/emdrv/sleep/inc" -I"C:/SiliconLabs/SimplicityStudio/v4/developer/sdks/gecko_sdk_suite/v2.3//platform/emdrv/spidrv/inc" -I"C:/SiliconLabs/SimplicityStudio/v4/developer/sdks/gecko_sdk_suite/v2.3//platform/emdrv/uartdrv/inc" -I"C:/SiliconLabs/SimplicityStudio/v4/developer/sdks/gecko_sdk_suite/v2.3//platform/emdrv/ustimer/inc" -I"C:/SiliconLabs/SimplicityStudio/v4/developer/sdks/gecko_sdk_suite/v2.3//platform/emdrv/tempdrv/inc" -O0 -Wall -c -fmessage-length=0 -ffunction-sections -fdata-sections -mfpu=fpv4-sp-d16 -mfloat-abi=softfp -MMD -MP -MF"src/cnc_timers.d" -MT"src/cnc_timers.o" -o "src/cnc_timers.o" "../src/cnc_timers.cpp"
+Finished building: ../src/cnc_timers.cpp
+ 
+Building target: machine.axf
+Invoking: GNU ARM C++ Linker
+arm-none-eabi-g++ -g3 -gdwarf-2 -mcpu=cortex-m4 -mthumb -T "machine.ld" -L"C:/SiliconLabs/SimplicityStudio/v4/developer/sdks/gecko_sdk_suite/v2.3//platform/emdrv/" -L"C:/SiliconLabs/SimplicityStudio/v4/developer/sdks/gecko_sdk_suite/v2.3//platform/emdrv/nvm3/lib/" -u _printf_float --specs=nosys.specs -Xlinker --gc-sections -Xlinker -Map="machine.map" -mfpu=fpv4-sp-d16 -mfloat-abi=softfp --specs=nano.specs -u _printf_float -u _scanf_float -o machine.axf "./src/main.o" "./emlib/em_system.o" "./Drivers/dmadrv.o" "./Drivers/gpiointerrupt.o" "./Drivers/nvm.o" "./Drivers/nvm3_default.o" "./Drivers/nvm3_hal_flash.o" "./Drivers/nvm3_lock.o" "./Drivers/nvm_hal.o" "./Drivers/rtcdriver.o" "./Drivers/sleep.o" "./Drivers/spidrv.o" "./Drivers/tempdrv.o" "./Drivers/uartdrv.o" "./Drivers/ustimer.o" "./CMSIS/EFM32PG12B/startup_gcc_efm32pg12b.o" "./CMSIS/EFM32PG12B/system_efm32pg12b.o" -lnvm3_CM4_gcc "./src/cnc_adc.o" "./src/cnc_functions.o" "./src/cnc_gpio.o" "./src/cnc_heaters.o" "./src/cnc_instructions.o" "./src/cnc_motors.o" "./src/cnc_pid.o" "./src/cnc_spi.o" "./src/cnc_timers.o" "./src/util.o" "./emlib/em_adc.o" "./emlib/em_cmu.o" "./emlib/em_core.o" "./emlib/em_emu.o" "./emlib/em_ldma.o" "./emlib/em_letimer.o" "./emlib/em_msc.o" "./emlib/em_rtc.o" "./emlib/em_rtcc.o" "./emlib/em_timer.o" "./emlib/em_usart.o" "./Drivers/em_gpio.o" -Wl,--start-group -lgcc -lc -lnosys -Wl,--end-group
+Finished building target: machine.axf
+ 
+Building hex file: machine.hex
+arm-none-eabi-objcopy -O ihex "machine.axf" "machine.hex"
+ 
+Building bin file: machine.bin
+arm-none-eabi-objcopy -O binary "machine.axf" "machine.bin"
+ 
+Building s37 file: machine.s37
+arm-none-eabi-objcopy -O srec "machine.axf" "machine.s37"
+ 
+Running size tool
+arm-none-eabi-size "machine.axf"
+   text	   data	    bss	    dec	    hex	filename
+  58536	    552	 176120	 235208	  396c8	machine.axf
+ 
+
+00:14:54 Build Finished (took 6s.230ms)
+
