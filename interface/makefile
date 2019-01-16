@@ -1,23 +1,23 @@
 CURDIR = $(dir $(realpath $(firstword $(MAKEFILE_LIST))))
 INCDIR = $(CURDIR)include
 SRCDIR = $(CURDIR)src
-OUTDIR = $(CURDIR)output
+OUTDIR = $(CURDIR)obj
 PRJNAME = $(shell basename $(CURDIR))
+LIBRARIES = -lwiringPi
 
 CC=gcc
-CFLAGS=-I$(INCDIR)
+CFLAGS=
 
-DEPS = $(wildcard $(INCDIR)/*.h)
+DEPS = $(wildcard $(SRCDIR)/*.h)
 OBJ = $(patsubst $(SRCDIR)/%.c,$(OUTDIR)/%.o,$(wildcard $(SRCDIR)/*.c))
-LIBS = wiringPi
 
 $(OUTDIR)/%.o: $(SRCDIR)/%.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 cnc_interface: $(OBJ)
-	gcc -o $@ $^ $(CFLAGS) -lwiringPi
+	gcc -o $@ $^ $(CFLAGS) $(LIBRARIES)
 
 .PHONY: clean
 
 clean:
-	rm -f $(OUTDIR)/*.o *~ core $(INCDIR)/*~
+	rm -f $(OUTDIR)/*.o *~ core
