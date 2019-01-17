@@ -1,5 +1,6 @@
 
 #include "main.h"
+#include "revision.h"
 #include "keyboard.h"
 #include "interface_spi.h"
 #include "gcode.h"
@@ -23,6 +24,7 @@ int main(int argc, char **argv) {
 	
     printf("\n----------------------------------------\n");
     printf("\nStarting CNC Interface\n");
+    printf("\nVersion %d.%d.%d.%d\n", FW_REV_BETA, FW_REV_MAJOR, FW_REV_MINOR, FW_REV_PATCH);
     
     printf("Checking to see if spi is enabled on the pi...\n");
     printf("If this crashes, than enable spi on raspberry pi\n");
