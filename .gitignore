@@ -10,3 +10,8 @@
 *.geany
 *.gch
 *.kmf
+
+/.metadata/*
+/.outgoing/*
+/machine/.settings/*
+/machine/*.html
