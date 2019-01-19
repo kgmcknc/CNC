@@ -10,4 +10,5 @@
 *.geany
 *.gch
 *.kmf
-
+/outgoing/*
+.metadata/.cache
