@@ -10,3 +10,4 @@
 *.geany
 *.gch
 *.kmf
+*outgoing/*
