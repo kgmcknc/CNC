@@ -5,4 +5,16 @@
 		<item value="1|Segoe UI|9.0|0|WINDOWS|1|-12|0|0|0|400|0|0|0|1|0|0|0|0|Segoe UI" key="DIALOG_FONT_NAME"/>
 		<item value="360" key="DIALOG_HEIGHT"/>
 	</section>
+	<section name="com.silabs.ss.framework.ide.project.ui.ExportSLSProjectsWizard">
+		<item value="C:/Users/Kyle/Documents/GitHub/CNC/machine" key="lastFileLocation"/>
+		<list key="selectedProjects">
+			<item value="machine"/>
+		</list>
+		<list key="fileLocationHistory">
+			<item value="C:/Users/Kyle/Documents/GitHub/CNC"/>
+			<item value="C:/Users/Kyle/Documents/GitHub/"/>
+			<item value="C:/Users/Kyle/Documents/GitHub/CNC/"/>
+			<item value="C:/Users/Kyle/Documents/GitHub/CNC/machine"/>
+		</list>
+	</section>
 </section>

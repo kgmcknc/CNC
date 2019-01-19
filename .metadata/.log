@@ -1,105 +1,42 @@
-!SESSION 2019-01-15 23:38:23.945 -----------------------------------------------
-eclipse.buildId=unknown
-java.version=1.8.0_92
-java.vendor=Oracle Corporation
-BootLoader constants: OS=win32, ARCH=x86_64, WS=win32, NL=en_US
-Command-line arguments:  -os win32 -ws win32 -arch x86_64 -data C:\Users\Kyle\Documents\GitHub\CNC
-
-!ENTRY com.silabs.ss.platform.content.core 4 0 2019-01-15 23:38:39.949
-!MESSAGE Local timestamp file does not exist: C:\SiliconLabs\SimplicityStudio\v4\offline\common\Simplicity_Studio_Terms_of_Use_and_Privacy_Statement.timestamp
-
-!ENTRY com.silabs.ss.platform.content.core 4 0 2019-01-15 23:38:51.767
-!MESSAGE Local timestamp file does not exist: C:\SiliconLabs\SimplicityStudio\v4\offline\common\Simplicity_Studio_Terms_of_Use_and_Privacy_Statement.timestamp
-
-!ENTRY com.silabs.ss.tool.ide.arm.toolchain.iar 1 0 2019-01-15 23:39:06.252
-!MESSAGE detectIAREWARMFromRegistry: null
-
-!ENTRY com.silabs.ss.framework.project.core 4 0 2019-01-15 23:47:15.920
-!MESSAGE Module file not found: C:\SiliconLabs\SimplicityStudio\v4\developer\sdks\gecko_sdk_suite\v2.3\.studio\.\modules\LibraryModules\Micrium\uCos3Client.slsproj
-
-!ENTRY org.eclipse.cdt.core 1 0 2019-01-15 23:47:30.389
-!MESSAGE Indexed 'cnc_control' (3 sources, 134 headers) in 11.5 sec: 3,967 declarations; 8,189 references; 0 unresolved inclusions; 0 syntax errors; 0 unresolved names (0%)
-
-!ENTRY org.eclipse.cdt.core 1 0 2019-01-15 23:49:58.922
-!MESSAGE Indexed 'machine_code' (3 sources, 134 headers) in 4.38 sec: 3,967 declarations; 8,189 references; 0 unresolved inclusions; 0 syntax errors; 0 unresolved names (0%)
-
-!ENTRY org.eclipse.cdt.core 1 0 2019-01-15 23:50:48.101
-!MESSAGE Indexed 'machine' (3 sources, 134 headers) in 4.38 sec: 3,967 declarations; 8,189 references; 0 unresolved inclusions; 0 syntax errors; 0 unresolved names (0%)
-
-!ENTRY com.silabs.ss.framework.ide.project.core.cpp 2 0 2019-01-15 23:52:30.025
-!MESSAGE Adding library object as split of library search path and library name. This may cause build errors!
-!STACK 0
-java.lang.Exception
-	at com.silabs.java.utils.ExceptionUtils.newMinimalStackException(ExceptionUtils.java:29)
-	at com.silabs.ss.framework.ide.internal.api.project.core.cpp.CppBuildConfigBuildSettings.addLibraryObject(CppBuildConfigBuildSettings.java:395)
-	at com.silabs.ss.framework.ide.internal.project.core.cpp.CppProjectEngineOperationHandler.handleAddLibraryFileSettingOperation(CppProjectEngineOperationHandler.java:226)
-	at com.silabs.ss.framework.project.api.core.engine.operations.AddLibraryFileSettingOperation.executeProcess(AddLibraryFileSettingOperation.java:51)
-	at com.silabs.ss.framework.project.internal.core.engine.ProjectModelEngine.queueProjectOperations(ProjectModelEngine.java:766)
-	at com.silabs.ss.framework.project.api.core.utils.ProjectUpdateUtils.doUpdateBuildConfigFromModel(ProjectUpdateUtils.java:385)
-	at com.silabs.ss.framework.project.api.core.utils.ProjectUpdateUtils.doUpdateProjectFromModel(ProjectUpdateUtils.java:319)
-	at com.silabs.ss.framework.project.api.core.utils.ProjectUpdateUtils.updateProjectFromModelLocked(ProjectUpdateUtils.java:287)
-	at com.silabs.ss.framework.project.api.core.utils.ProjectUpdateUtils.lambda$1(ProjectUpdateUtils.java:279)
-	at ... extra clipped....(Unknown Source)
-
-!ENTRY org.eclipse.cdt.core 1 0 2019-01-15 23:52:45.900
-!MESSAGE Indexed 'machine' (16 sources, 169 headers) in 8.93 sec: 7,287 declarations; 19,595 references; 17 unresolved inclusions; 3 syntax errors; 3,372 unresolved names (11%)
-!SESSION 2019-01-16 01:35:30.953 -----------------------------------------------
+!SESSION 2019-01-18 22:20:34.801 -----------------------------------------------
 eclipse.buildId=unknown
 java.version=1.8.0_92
 java.vendor=Oracle Corporation
 BootLoader constants: OS=win32, ARCH=x86_64, WS=win32, NL=en_US
 Command-line arguments:  -os win32 -ws win32 -arch x86_64
 
-!ENTRY com.silabs.ss.tool.ide.arm.toolchain.iar 1 0 2019-01-16 01:35:55.863
+!ENTRY com.silabs.ss.tool.ide.arm.toolchain.iar 1 0 2019-01-18 22:20:49.581
 !MESSAGE detectIAREWARMFromRegistry: null
 
-!ENTRY com.silabs.ss.platform.content.core 4 0 2019-01-16 01:36:55.461
+!ENTRY com.silabs.ss.platform.content.core 4 0 2019-01-18 22:21:06.767
 !MESSAGE Local timestamp file does not exist: C:\SiliconLabs\SimplicityStudio\v4\offline\common\Simplicity_Studio_Terms_of_Use_and_Privacy_Statement.timestamp
 
-!ENTRY com.silabs.ss.platform.content.core 4 0 2019-01-16 01:37:16.281
+!ENTRY com.silabs.ss.platform.content.core 4 0 2019-01-18 22:21:22.300
 !MESSAGE Local timestamp file does not exist: C:\SiliconLabs\SimplicityStudio\v4\offline\common\Simplicity_Studio_Terms_of_Use_and_Privacy_Statement.timestamp
-!SESSION 2019-01-16 01:46:37.723 -----------------------------------------------
+!SESSION 2019-01-18 22:24:33.354 -----------------------------------------------
 eclipse.buildId=unknown
 java.version=1.8.0_92
 java.vendor=Oracle Corporation
 BootLoader constants: OS=win32, ARCH=x86_64, WS=win32, NL=en_US
 Command-line arguments:  -os win32 -ws win32 -arch x86_64
 
-!ENTRY com.silabs.ss.tool.ide.arm.toolchain.iar 1 0 2019-01-16 01:46:49.710
-!MESSAGE detectIAREWARMFromRegistry: null
-
-!ENTRY com.silabs.ss.platform.content.core 4 0 2019-01-16 01:47:05.654
+!ENTRY com.silabs.ss.platform.content.core 4 0 2019-01-18 22:24:49.399
 !MESSAGE Local timestamp file does not exist: C:\SiliconLabs\SimplicityStudio\v4\offline\common\Simplicity_Studio_Terms_of_Use_and_Privacy_Statement.timestamp
 
-!ENTRY com.silabs.ss.platform.content.core 4 0 2019-01-16 01:47:19.979
+!ENTRY com.silabs.ss.platform.content.core 4 0 2019-01-18 22:25:07.010
 !MESSAGE Local timestamp file does not exist: C:\SiliconLabs\SimplicityStudio\v4\offline\common\Simplicity_Studio_Terms_of_Use_and_Privacy_Statement.timestamp
-!SESSION 2019-01-16 01:48:15.818 -----------------------------------------------
+!SESSION 2019-01-18 22:47:13.517 -----------------------------------------------
 eclipse.buildId=unknown
 java.version=1.8.0_92
 java.vendor=Oracle Corporation
 BootLoader constants: OS=win32, ARCH=x86_64, WS=win32, NL=en_US
 Command-line arguments:  -os win32 -ws win32 -arch x86_64
 
-!ENTRY com.silabs.ss.tool.ide.arm.toolchain.iar 1 0 2019-01-16 01:48:26.722
+!ENTRY com.silabs.ss.tool.ide.arm.toolchain.iar 1 0 2019-01-18 22:53:59.188
 !MESSAGE detectIAREWARMFromRegistry: null
 
-!ENTRY com.silabs.ss.platform.content.core 4 0 2019-01-16 01:48:41.704
+!ENTRY com.silabs.ss.platform.content.core 4 0 2019-01-18 22:54:14.328
 !MESSAGE Local timestamp file does not exist: C:\SiliconLabs\SimplicityStudio\v4\offline\common\Simplicity_Studio_Terms_of_Use_and_Privacy_Statement.timestamp
 
-!ENTRY com.silabs.ss.platform.content.core 4 0 2019-01-16 01:48:57.815
-!MESSAGE Local timestamp file does not exist: C:\SiliconLabs\SimplicityStudio\v4\offline\common\Simplicity_Studio_Terms_of_Use_and_Privacy_Statement.timestamp
-!SESSION 2019-01-16 01:52:21.471 -----------------------------------------------
-eclipse.buildId=unknown
-java.version=1.8.0_92
-java.vendor=Oracle Corporation
-BootLoader constants: OS=win32, ARCH=x86_64, WS=win32, NL=en_US
-Command-line arguments:  -os win32 -ws win32 -arch x86_64
-
-!ENTRY com.silabs.ss.tool.ide.arm.toolchain.iar 1 0 2019-01-16 01:52:39.476
-!MESSAGE detectIAREWARMFromRegistry: null
-
-!ENTRY com.silabs.ss.platform.content.core 4 0 2019-01-16 01:52:54.592
-!MESSAGE Local timestamp file does not exist: C:\SiliconLabs\SimplicityStudio\v4\offline\common\Simplicity_Studio_Terms_of_Use_and_Privacy_Statement.timestamp
-
-!ENTRY com.silabs.ss.platform.content.core 4 0 2019-01-16 01:53:10.985
+!ENTRY com.silabs.ss.platform.content.core 4 0 2019-01-18 22:54:31.687
 !MESSAGE Local timestamp file does not exist: C:\SiliconLabs\SimplicityStudio\v4\offline\common\Simplicity_Studio_Terms_of_Use_and_Privacy_Statement.timestamp
