@@ -10,6 +10,7 @@
 *.geany
 *.gch
 *.kmf
+*.code-workspace
 
 /.metadata/*
 /.outgoing/*
