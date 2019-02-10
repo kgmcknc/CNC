@@ -21,9 +21,9 @@ void init_motors(struct cnc_motor_list_struct* motors){
 	motors->aux.pins.ms0_pin     = AUX_MOTOR_MS0_PIN;
 	motors->aux.ports.ms1_port    = AUX_MOTOR_MS1_PORT;
 	motors->aux.pins.ms1_pin     = AUX_MOTOR_MS1_PIN;
-	motors->aux.ports.max_es_port = AUX_MOTOR_EN_PORT;
+	motors->aux.ports.max_es_port = (GPIO_Port_TypeDef) 0;
 	motors->aux.pins.max_es_pin  = 0;
-	motors->aux.ports.min_es_port = AUX_MOTOR_EN_PORT;
+	motors->aux.ports.min_es_port = (GPIO_Port_TypeDef) 0;
 	motors->aux.pins.min_es_pin  = 0;
 	motors->aux.ports.step_port   = AUX_MOTOR_STEP_PORT;
 	motors->aux.pins.step_pin    = AUX_MOTOR_STEP_PIN;
@@ -36,9 +36,9 @@ void init_motors(struct cnc_motor_list_struct* motors){
 	motors->extruder_0.pins.ms0_pin     = EXTRUDER_0_MOTOR_MS0_PIN;
 	motors->extruder_0.ports.ms1_port    = EXTRUDER_0_MOTOR_MS1_PORT;
 	motors->extruder_0.pins.ms1_pin     = EXTRUDER_0_MOTOR_MS1_PIN;
-	motors->extruder_0.ports.max_es_port = EXTRUDER_0_MOTOR_EN_PORT;
+	motors->extruder_0.ports.max_es_port = (GPIO_Port_TypeDef) 0;
 	motors->extruder_0.pins.max_es_pin  = 0;
-	motors->extruder_0.ports.min_es_port = EXTRUDER_0_MOTOR_EN_PORT;
+	motors->extruder_0.ports.min_es_port = (GPIO_Port_TypeDef) 0;
 	motors->extruder_0.pins.min_es_pin  = 0;
 	motors->extruder_0.ports.step_port   = EXTRUDER_0_MOTOR_STEP_PORT;
 	motors->extruder_0.pins.step_pin    = EXTRUDER_0_MOTOR_STEP_PIN;
@@ -51,9 +51,9 @@ void init_motors(struct cnc_motor_list_struct* motors){
 	motors->extruder_1.pins.ms0_pin     = EXTRUDER_1_MOTOR_MS0_PIN;
 	motors->extruder_1.ports.ms1_port    = EXTRUDER_1_MOTOR_MS1_PORT;
 	motors->extruder_1.pins.ms1_pin     = EXTRUDER_1_MOTOR_MS1_PIN;
-	motors->extruder_1.ports.max_es_port = EXTRUDER_1_MOTOR_EN_PORT;
+	motors->extruder_1.ports.max_es_port = (GPIO_Port_TypeDef) 0;
 	motors->extruder_1.pins.max_es_pin  = 0;
-	motors->extruder_1.ports.min_es_port = EXTRUDER_1_MOTOR_EN_PORT;
+	motors->extruder_1.ports.min_es_port = (GPIO_Port_TypeDef) 0;
 	motors->extruder_1.pins.min_es_pin  = 0;
 	motors->extruder_1.ports.step_port   = EXTRUDER_1_MOTOR_STEP_PORT;
 	motors->extruder_1.pins.step_pin    = EXTRUDER_1_MOTOR_STEP_PIN;

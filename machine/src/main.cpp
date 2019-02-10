@@ -5,6 +5,7 @@
 #include "em_adc.h"
 
 #include "main.h"
+#include "revision.h"
 #include "cnc_gpio.h"
 #include "cnc_spi.h"
 #include "cnc_functions.h"

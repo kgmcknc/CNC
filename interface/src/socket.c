@@ -11,7 +11,7 @@ struct timeval timeout;
 
 #define handle_error(msg) do { perror(msg); exit(EXIT_FAILURE); } while(0)
 
-int create_unix_socket(char path[MAX_FILE_STRING]){
+int create_unix_socket(const char socket_path[MAX_FILE_STRING]){
     // Create a unix socket as a server
     int com_fd, com_socket, com_len, com_opt = 1;
     struct sockaddr_un com_addr;
@@ -24,12 +24,13 @@ int create_unix_socket(char path[MAX_FILE_STRING]){
         printf("Parent Socket Opt Failed\n");
         return -1;
     }*/
-    printf("SOCKET PATH: %s\n", path);
+    unlink(socket_path);
+    printf("SOCKET PATH: %s\n", socket_path);
     memset(&com_addr, 0, sizeof(com_addr));
     com_addr.sun_family = AF_UNIX;
-	com_addr.sun_path[0] = 0x00;
-    strncpy(com_addr.sun_path+1, path, sizeof(path));
-    printf("Doing Bind in Parent\n");
+	com_addr.sun_path[0] = '\0';
+    strncpy(com_addr.sun_path+1, socket_path, strlen(socket_path));
+    printf("Doing Bind in Parent: %s\n", com_addr.sun_path+1);
     if(bind(com_fd, (struct sockaddr*) &com_addr, sizeof(com_addr)) < 0){
         printf("Failed in Parent Bind\n");
         //handle_error("bind");
@@ -52,18 +53,27 @@ int create_unix_socket(char path[MAX_FILE_STRING]){
     return com_socket;
 }
 
-int connect_unix_socket(char path[MAX_FILE_STRING]){
+int connect_unix_socket(const char socket_path[MAX_FILE_STRING]){
     // connect to un//ix_socket as client
+    int connected = -1;
     int com_fd, com_socket, com_len, com_opt = 1;
     struct sockaddr_un com_addr;
-    com_socket = socket(AF_UNIX, SOCK_STREAM, 0);
-    memset(&com_addr, 0, sizeof(com_addr));
-    com_addr.sun_family = AF_UNIX;
-    com_addr.sun_path[0] = 0x00;
-    strncpy(com_addr.sun_path+1, path, sizeof(path));
-    printf("Doing Connect in Listener\n");
-    connect(com_socket, (struct sockaddr *)&com_addr, sizeof(com_addr));
-    printf("Finished Connect\n");
+    while(connected < 0){
+        com_socket = socket(AF_UNIX, SOCK_STREAM, 0);
+        memset(&com_addr, 0, sizeof(com_addr));
+        com_addr.sun_family = AF_UNIX;
+        com_addr.sun_path[0] = '\0';
+        strncpy(com_addr.sun_path+1, socket_path, strlen(socket_path));
+        printf("Doing Connect in Listener: %s\n", com_addr.sun_path+1);
+        connected = connect(com_socket, (struct sockaddr *)&com_addr, sizeof(com_addr));
+        if(connected == -1){
+            printf("Failed Connect\n");
+            sleep(1);
+        } else {
+            printf("Finished Connect\n");
+        }
+    }
+    
     return com_socket;
 }
 

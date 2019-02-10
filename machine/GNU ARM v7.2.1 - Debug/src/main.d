@@ -72,7 +72,9 @@ src/main.o: ../src/main.cpp \
  c:\siliconlabs\simplicitystudio\v4\developer\sdks\gecko_sdk_suite\v2.3\platform\emlib\inc\em_ldma.h \
  c:\siliconlabs\simplicitystudio\v4\developer\sdks\gecko_sdk_suite\v2.3\platform\emdrv\dmadrv\config\dmadrv_config.h \
  ../src/cnc_functions.h ../src/cnc_instructions.h ../src/cnc_heaters.h \
- ../src/cnc_pid.h ../src/cnc_motors.h ../src/cnc_gpio.h ../src/util.h \
+ ../src/cnc_pid.h ../src/cnc_motors.h ../src/cnc_gpio.h \
+ C:\Users\Kyle\Documents\GitHub\CNC/common/src/revision.h \
+ C:\Users\Kyle\Documents\GitHub\CNC/common/src/common_spi.h ../src/util.h \
  ../src/cnc_adc.h ../src/cnc_timers.h
 
 c:\siliconlabs\simplicitystudio\v4\developer\sdks\gecko_sdk_suite\v2.3\platform\device\siliconlabs\efm32pg12b\include\em_device.h:
@@ -232,6 +234,10 @@ c:\siliconlabs\simplicitystudio\v4\developer\sdks\gecko_sdk_suite\v2.3\platform\
 ../src/cnc_motors.h:
 
 ../src/cnc_gpio.h:
+
+C:\Users\Kyle\Documents\GitHub\CNC/common/src/revision.h:
+
+C:\Users\Kyle\Documents\GitHub\CNC/common/src/common_spi.h:
 
 ../src/util.h:
 

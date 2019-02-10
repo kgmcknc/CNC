@@ -11,8 +11,9 @@
 *.gch
 *.kmf
 *.code-workspace
+*.vscode/
 
 /.metadata/*
-/.outgoing/*
+/outgoing/*
 /machine/.settings/*
 /machine/*.html

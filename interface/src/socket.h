@@ -11,14 +11,14 @@
 #include <sys/un.h>
 #include <sys/time.h>
 
-#define CONTROL_SOCKET_PATH "./test_socket"
+#define CONTROL_SOCKET_PATH "./cnc_socket"
 #define MAX_UNIX_SOCKETS 1
 #define MAX_FUNCTION_STRING 40
 #define MAX_FILE_STRING 200
 
 int socket_handler(uint8_t* command_ready, uint8_t system_command[MAX_FUNCTION_STRING]);
-int create_unix_socket(char path[MAX_FILE_STRING]);
-int connect_unix_socket(char path[MAX_FILE_STRING]);
+int create_unix_socket(const char socket_path[MAX_FILE_STRING]);
+int connect_unix_socket(const char socket_path[MAX_FILE_STRING]);
 
 extern pid_t system_control_fork;
 extern int control_socket;

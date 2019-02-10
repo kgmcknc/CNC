@@ -221,8 +221,9 @@ void handle_opcode(struct cnc_spi_struct* spi_struct, enum spi_opcodes new_opcod
 
 void display_cnc_print(struct cnc_spi_struct* spi_struct){
 	char read_string[PRINT_LENGTH];
-	wiringPiSPIDataRW(SPI_CHANNEL, spi_struct->read_data, spi_struct->pending_length);
-	strncpy(read_string, spi_struct->read_data + IDLE_LENGTH, PRINT_LENGTH-IDLE_LENGTH);
+	if(spi_struct->pending_length > PRINT_LENGTH) spi_struct->pending_length = PRINT_LENGTH;
+	wiringPiSPIDataRW(SPI_CHANNEL, spi_struct->read_data, spi_struct->pending_length+IDLE);
+	strncpy(read_string, spi_struct->read_data + IDLE_LENGTH, PRINT_LENGTH);
 	printf("CNC Print: %s\n", read_string);
 	strcpy(spi_struct->read_data, "");
 	spi_struct->state = spi_idle;
@@ -306,7 +307,7 @@ void send_cnc_instruction(struct cnc_spi_struct* spi_struct){
 		printf("sent instruction! %d\n", instruction_count);
 		
 		delay(100);
-		wiringPiSPIDataRW(SPI_CHANNEL, spi_struct->write_data, spi_struct->pending_length);
+		wiringPiSPIDataRW(SPI_CHANNEL, spi_struct->write_data, spi_struct->pending_length+IDLE);
 		instruction_count = (instruction_count < 4) ? instruction_count + 1: instruction_count;
 		clear_m_ready(spi_struct);
 		spi_struct->pending_length = 0;
@@ -351,8 +352,8 @@ void request_reconnect(struct cnc_spi_struct* spi_struct){
 void request_cnc_status(struct cnc_spi_struct* spi_struct){
 	if(get_s_ready_state(spi_struct)){
 		char read_string[STATUS_LENGTH];
-		wiringPiSPIDataRW(SPI_CHANNEL, spi_struct->read_data, spi_struct->pending_length);
-		strncpy(read_string, spi_struct->read_data + IDLE_LENGTH, STATUS_LENGTH-IDLE_LENGTH);
+		wiringPiSPIDataRW(SPI_CHANNEL, spi_struct->read_data, spi_struct->pending_length+IDLE_LENGTH);
+		strncpy(read_string, spi_struct->read_data + IDLE_LENGTH, STATUS_LENGTH);
 		printf("Status Print: %s\n", read_string);
 		spi_struct->write_pending = 0;
 		spi_struct->state = spi_idle;
@@ -363,7 +364,7 @@ void request_cnc_status(struct cnc_spi_struct* spi_struct){
 			set_m_ready(spi_struct);
 			set_write_opcode(spi_struct, get_cnc_status, IDLE_LENGTH);
 			delay(100);
-			spi_struct->pending_length = STATUS_LENGTH+IDLE_LENGTH;
+			spi_struct->pending_length = STATUS_LENGTH;
 			wiringPiSPIDataRW(SPI_CHANNEL, spi_struct->write_data, IDLE_LENGTH);
 			delay(100);
 			clear_m_ready(spi_struct);

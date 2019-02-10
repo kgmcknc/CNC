@@ -193,7 +193,7 @@ void update_si_firmware(struct cnc_spi_struct* spi_struct){
 	char send_string[IDLE_LENGTH] = {0};
 	if(spi_struct->updating_firmware == 1){
 		if(!get_s_ready_state(spi_struct)){
-			system("cp ./firmware/spitest.hex /media/pi/STK3402/");
+			system("cp \"../machine/GNU ARM v7.2.1 - Debug/machine.hex\" /media/pi/STK3402/");
 			spi_struct->updating_firmware = 0;
 			spi_struct->state = spi_initialized;
 		}

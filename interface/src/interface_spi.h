@@ -3,22 +3,10 @@
 #define SRC_CNC_SPI_H_
 
 #include "stdint.h"
+#include "common_spi.h"
 
 #define SPI_CHANNEL 0
 #define SPI_SPEED 1000000
-
-#define MAX_SPI_LENGTH 140
-
-#define MASTER_INIT_LENGTH 6
-#define SLAVE_INIT_LENGTH 6
-#define SPI_MASTER_INIT_STRING "PiHere"
-#define SPI_SLAVE_INIT_STRING "UcHere"
-#define IDLE_LENGTH 6
-#define PRINT_LENGTH 140
-#define OPCODE_LENGTH 2
-#define GENERAL_LENGTH 8
-#define INSTRUCTION_LENGTH 128
-#define STATUS_LENGTH 128
 
 enum cnc_spi_state {
 	spi_inactive,
@@ -32,22 +20,6 @@ enum cnc_spi_state {
 	spi_read_version,
 	spi_request_reconnect,
 	firmware_update
-};
-
-enum spi_opcodes {
-	idle,
-	init,
-	reconnect_spi,
-	loopback_test,
-	read_version,
-	flash_firmware,
-	start_cnc_program,
-	end_cnc_program,
-	new_cnc_instruction,
-	get_cnc_status,
-	new_cnc_print,
-	disable_route,
-	enable_route
 };
 
 struct cnc_spi_struct {

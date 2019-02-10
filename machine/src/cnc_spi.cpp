@@ -196,7 +196,7 @@ void loop_back_data(cnc_spi_struct* spi_struct){
 	if(spi_struct->read_pending){
 		if(spi_struct->read_finished){
 			spi_struct->read_finished = 0;
-			SPIDRV_STransmit( handle, spi_struct->read_data, spi_struct->pending_length, slave_write_done, 0);
+			SPIDRV_STransmit( handle, spi_struct->read_data, spi_struct->pending_length+IDLE_LENGTH, slave_write_done, 0);
 			clear_read_request(spi_struct);
 			set_write_request(spi_struct);
 		}
@@ -209,7 +209,7 @@ void loop_back_data(cnc_spi_struct* spi_struct){
 				clear_write_request(spi_struct);
 			}
 		} else {
-			SPIDRV_SReceive( handle, spi_struct->read_data, spi_struct->pending_length, slave_read_done, 0);
+			SPIDRV_SReceive( handle, spi_struct->read_data, spi_struct->pending_length+IDLE_LENGTH, slave_read_done, 0);
 			set_read_request(spi_struct);
 		}
 	}
@@ -230,11 +230,11 @@ void receive_instruction(cnc_spi_struct* spi_struct, cnc_state_struct* cnc){
 			if(spi_struct->write_finished){
 				spi_struct->write_finished = 0;
 				clear_write_request(spi_struct);
-				SPIDRV_SReceive( handle, spi_struct->read_data, INSTRUCTION_LENGTH, slave_read_done, 0);
+				SPIDRV_SReceive( handle, spi_struct->read_data, INSTRUCTION_LENGTH+IDLE_LENGTH, slave_read_done, 0);
 				set_read_request(spi_struct);
 			}
 		} else {
-			set_write_opcode(spi_struct, new_cnc_instruction, INSTRUCTION_LENGTH+IDLE_LENGTH);
+			set_write_opcode(spi_struct, new_cnc_instruction, INSTRUCTION_LENGTH);
 			SPIDRV_STransmit( handle, spi_struct->write_data, IDLE_LENGTH, slave_write_done, 0);
 			set_write_request(spi_struct);
 		}
@@ -470,7 +470,7 @@ void parse_instruction(cnc_spi_struct* spi_struct, cnc_state_struct* cnc){
 }
 
 void parse_status(cnc_spi_struct* spi_struct, cnc_state_struct* cnc){
-	char status_string[STATUS_LENGTH - OPCODE_LENGTH];
+	char status_string[STATUS_LENGTH];
 	sprintf(status_string, "L:%d%d,R:%d%d,ZL:%d%d,ZR:%d%d,X:%ld,Y:%ld, T0:%f, T1:%f",
 			cnc->motors->xl_axis.min_range_flag, cnc->motors->xl_axis.max_range_flag,
 			cnc->motors->yf_axis.min_range_flag, cnc->motors->yf_axis.max_range_flag,
@@ -480,12 +480,12 @@ void parse_status(cnc_spi_struct* spi_struct, cnc_state_struct* cnc){
 			cnc->motors->yf_axis.position,
 			cnc->heaters->heater_0.current_temp,
 			cnc->heaters->heater_1.current_temp);
-	set_write_opcode(spi_struct, get_cnc_status, STATUS_LENGTH + IDLE_LENGTH);
+	set_write_opcode(spi_struct, get_cnc_status, STATUS_LENGTH);
 	strcpy(spi_struct->write_data + (IDLE_LENGTH), status_string);
 }
 
 void parse_print(cnc_spi_struct* spi_struct, cnc_state_struct* cnc){
-	set_write_opcode(spi_struct, new_cnc_print, PRINT_LENGTH+IDLE_LENGTH);
+	set_write_opcode(spi_struct, new_cnc_print, PRINT_LENGTH);
 	strcpy(spi_struct->write_data + (IDLE_LENGTH), cnc->print_buffer[cnc->print_rp]);
 	cnc->print_buffer[cnc->print_rp][0] = 0;
 	cnc->print_rp = (cnc->print_rp < (PRINT_DEPTH-1)) ? (cnc->print_rp + 1) : 0;
@@ -526,14 +526,14 @@ void send_print(cnc_spi_struct* spi_struct, cnc_state_struct* cnc){
 				spi_struct->opcode_sent = 0;
 				parse_print(spi_struct, cnc);
 				spi_struct->pending_length = PRINT_LENGTH;
-				SPIDRV_STransmit(handle, spi_struct->write_data, spi_struct->pending_length, slave_write_done, 0);
+				SPIDRV_STransmit(handle, spi_struct->write_data, spi_struct->pending_length+IDLE_LENGTH, slave_write_done, 0);
 			} else {
 				clear_write_request(spi_struct);
 				spi_struct->state = spi_idle;
 			}
 		}
 	} else {
-		set_write_opcode(spi_struct, new_cnc_print, PRINT_LENGTH+IDLE_LENGTH);
+		set_write_opcode(spi_struct, new_cnc_print, PRINT_LENGTH);
 		spi_struct->pending_length = IDLE_LENGTH;
 		SPIDRV_STransmit(handle, spi_struct->write_data, spi_struct->pending_length, slave_write_done, 0);
 		set_write_request(spi_struct);
