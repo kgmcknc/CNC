@@ -48,6 +48,8 @@ uint8_t init_spi(cnc_spi_struct* spi_struct){
 	spi_struct->write_pending = 0;
 	spi_struct->pending_length = 0;
 	spi_struct->opcode_sent = 0;
+	spi_struct->read_data[0] = '\0';
+	spi_struct->write_data[0] = '\0';
 	spi_struct->pending_opcode = idle;
 	spi_struct->state = spi_inactive;
 
@@ -67,10 +69,11 @@ uint8_t init_spi(cnc_spi_struct* spi_struct){
     	spi_init_error = 1;
     	spi_struct->state = spi_inactive;
     }
+	cnc_sleep(1000);
     return spi_init_error;
 }
 
-void handle_spi(cnc_spi_struct* spi_struct, cnc_state_struct* cnc){
+void handle_cnc_spi(cnc_spi_struct* spi_struct, cnc_state_struct* cnc){
 	check_read_request(spi_struct);
 	switch(spi_struct->state){
 		case spi_inactive : {
@@ -129,14 +132,14 @@ void wait_for_connect(cnc_spi_struct* spi_struct){
 				clear_read_request(spi_struct);
 				spi_struct->state = spi_connected;
 			} else {
-				SPIDRV_SReceive(handle, spi_struct->read_data, MASTER_INIT_LENGTH, slave_read_done, 0);
+				SPIDRV_SReceive(handle, spi_struct->read_data, strlen(SPI_MASTER_INIT_STRING), slave_read_done, 0);
 			}
 		} else {
 			// waiting for pi to initialize data write
 		}
 	} else {
 		if(spi_struct->read_ready && spi_struct->read_requested){
-			SPIDRV_SReceive(handle, spi_struct->read_data, MASTER_INIT_LENGTH, slave_read_done, 0);
+			SPIDRV_SReceive(handle, spi_struct->read_data, strlen(SPI_MASTER_INIT_STRING), slave_read_done, 0);
 			set_read_request(spi_struct);
 		}
 	}
@@ -154,7 +157,7 @@ void send_connected(cnc_spi_struct* spi_struct){
 		}
 	} else {
 		strcpy(spi_struct->write_data, SPI_SLAVE_INIT_STRING);
-		SPIDRV_STransmit( handle, spi_struct->write_data, SLAVE_INIT_LENGTH, slave_write_done, 0);
+		SPIDRV_STransmit( handle, spi_struct->write_data, strlen(SPI_SLAVE_INIT_STRING), slave_write_done, 0);
 		set_write_request(spi_struct);
 	}
 }
@@ -485,7 +488,7 @@ void parse_status(cnc_spi_struct* spi_struct, cnc_state_struct* cnc){
 }
 
 void parse_print(cnc_spi_struct* spi_struct, cnc_state_struct* cnc){
-	set_write_opcode(spi_struct, new_cnc_print, PRINT_LENGTH);
+	set_write_opcode(spi_struct, new_cnc_print, strlen(cnc->print_buffer[cnc->print_rp]));
 	strcpy(spi_struct->write_data + (IDLE_LENGTH), cnc->print_buffer[cnc->print_rp]);
 	cnc->print_buffer[cnc->print_rp][0] = 0;
 	cnc->print_rp = (cnc->print_rp < (PRINT_DEPTH-1)) ? (cnc->print_rp + 1) : 0;
@@ -502,11 +505,13 @@ void send_status(cnc_spi_struct* spi_struct, cnc_state_struct* cnc){
 	if(spi_struct->write_pending){
 		if(spi_struct->write_finished){
 			spi_struct->write_finished = 0;
+			spi_struct->pending_length = 0;
 			clear_write_request(spi_struct);
 			spi_struct->state = spi_idle;
 		}
 	} else {
 		parse_status(spi_struct, cnc);
+		spi_struct->pending_length = STATUS_LENGTH;
 		SPIDRV_STransmit( handle, spi_struct->write_data, STATUS_LENGTH+IDLE_LENGTH, slave_write_done, 0);
 		set_write_request(spi_struct);
 	}
@@ -524,8 +529,8 @@ void send_print(cnc_spi_struct* spi_struct, cnc_state_struct* cnc){
 			spi_struct->write_finished = 0;
 			if(spi_struct->opcode_sent){
 				spi_struct->opcode_sent = 0;
+				spi_struct->pending_length = strlen(cnc->print_buffer[cnc->print_rp]);
 				parse_print(spi_struct, cnc);
-				spi_struct->pending_length = PRINT_LENGTH;
 				SPIDRV_STransmit(handle, spi_struct->write_data, spi_struct->pending_length+IDLE_LENGTH, slave_write_done, 0);
 			} else {
 				clear_write_request(spi_struct);
@@ -533,7 +538,7 @@ void send_print(cnc_spi_struct* spi_struct, cnc_state_struct* cnc){
 			}
 		}
 	} else {
-		set_write_opcode(spi_struct, new_cnc_print, PRINT_LENGTH);
+		set_write_opcode(spi_struct, new_cnc_print, strlen(cnc->print_buffer[cnc->print_rp]));
 		spi_struct->pending_length = IDLE_LENGTH;
 		SPIDRV_STransmit(handle, spi_struct->write_data, spi_struct->pending_length, slave_write_done, 0);
 		set_write_request(spi_struct);

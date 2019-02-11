@@ -25,3 +25,9 @@ int32_t string_to_int32(char length_string[MAX_STRING_LENGTH], uint8_t byte_leng
 	return temp;
 }
 
+void cnc_sleep(uint32_t count){
+	uint32_t temp_count;
+	for(temp_count=0;temp_count<count;temp_count++){
+		// do nothing. just idle delay
+	}
+}

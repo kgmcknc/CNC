@@ -14,6 +14,7 @@
 
 int32_t string_to_int32(char length_string[MAX_STRING_LENGTH], uint8_t length);
 
+void cnc_sleep(uint32_t count);
 
 
 #endif /* SRC_UTIL_H_ */

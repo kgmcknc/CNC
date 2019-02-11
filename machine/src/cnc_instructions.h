@@ -9,13 +9,13 @@
 #define CNC_INSTRUCTIONS_H_
 
 #include "stdint.h"
+#include "common_spi.h"
 #include "cnc_functions.h"
 #include "cnc_heaters.h"
 #include "cnc_pid.h"
 
 #define INSTRUCTION_FIFO_DEPTH 500
 #define PRINT_DEPTH 16
-#define PRINT_LENGTH 128
 
 typedef enum {
 	PROGRAM_IDLE,

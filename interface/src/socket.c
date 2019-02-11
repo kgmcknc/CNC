@@ -68,7 +68,7 @@ int connect_unix_socket(const char socket_path[MAX_FILE_STRING]){
         connected = connect(com_socket, (struct sockaddr *)&com_addr, sizeof(com_addr));
         if(connected == -1){
             printf("Failed Connect\n");
-            sleep(1);
+            usleep(50000);
         } else {
             printf("Finished Connect\n");
         }

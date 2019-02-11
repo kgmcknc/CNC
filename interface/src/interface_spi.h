@@ -38,7 +38,7 @@ struct cnc_spi_struct {
 
 void check_spi(void);
 uint8_t init_spi(struct cnc_spi_struct* spi_struct);
-void handle_spi(struct cnc_spi_struct* spi_struct);
+void handle_interface_spi(struct cnc_spi_struct* spi_struct);
 void wait_for_connect(struct cnc_spi_struct* spi_struct);
 void send_connected(struct cnc_spi_struct* spi_struct);
 void set_m_ready(struct cnc_spi_struct* spi_struct);

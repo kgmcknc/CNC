@@ -48,7 +48,7 @@ struct cnc_spi_struct {
 };
 
 uint8_t init_spi(struct cnc_spi_struct* spi_struct);
-void handle_spi(struct cnc_spi_struct* spi_struct, struct cnc_state_struct* cnc);
+void handle_cnc_spi(struct cnc_spi_struct* spi_struct, struct cnc_state_struct* cnc);
 void wait_for_connect(struct cnc_spi_struct* spi_struct);
 void send_connected(struct cnc_spi_struct* spi_struct);
 void set_idle_read(struct cnc_spi_struct* spi_struct, struct cnc_state_struct* cnc);

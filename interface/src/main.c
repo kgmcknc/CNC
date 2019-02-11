@@ -76,7 +76,7 @@ int main(int argc, char **argv) {
 				break;
 			}
 			case CONNECT_MICRO : {
-				handle_spi(cnc.spi);
+				handle_interface_spi(cnc.spi);
 				if(cnc.spi->connected == 1){
 					cnc.state = IDLE;
 				} else {
@@ -127,7 +127,7 @@ int main(int argc, char **argv) {
 				if(cnc.spi->state == spi_idle){
 					cnc.state = IDLE;
 				} else {
-					handle_spi(cnc.spi);
+					handle_interface_spi(cnc.spi);
 				}
 				break;
 			}
@@ -135,7 +135,7 @@ int main(int argc, char **argv) {
 				if(cnc.spi->pending_opcode == idle){
 					cnc.state = IDLE;
 				} else {
-					handle_spi(cnc.spi);
+					handle_interface_spi(cnc.spi);
 					cnc.state = PROCESS_INPUT;
 				}
 				break;
@@ -146,7 +146,7 @@ int main(int argc, char **argv) {
 					cnc.motors_enabled = 1;
 					cnc.state = IDLE;
 				} else {
-					handle_spi(cnc.spi);
+					handle_interface_spi(cnc.spi);
 				}
 				break;
 			}
@@ -156,7 +156,7 @@ int main(int argc, char **argv) {
 					cnc.motors_enabled = 0;
 					cnc.state = IDLE;
 				} else {
-					handle_spi(cnc.spi);
+					handle_interface_spi(cnc.spi);
 				}
 				break;
 			}
@@ -244,7 +244,7 @@ int main(int argc, char **argv) {
 					cnc.state = CONNECT_MICRO;
 				} else {
 					cnc.spi->connected = 0;
-					handle_spi(cnc.spi);
+					handle_interface_spi(cnc.spi);
 				}
 				break;
 			}
@@ -273,7 +273,7 @@ int main(int argc, char **argv) {
 	
 	//interface_functions(command_ready, system_command, &cnc_spi, &cnc);
 	//command_ready = 0;
-	//handle_spi(&cnc_spi);
+	//handle_interface_spi(&cnc_spi);
 //
     //system_control_fork = fork();
     /*if(system_control_fork == 0){
@@ -294,7 +294,7 @@ int main(int argc, char **argv) {
 			//input_handler();
 			interface_functions(command_ready, system_command, &cnc_spi, &cnc);
 			command_ready = 0;
-			handle_spi(&cnc_spi);
+			handle_interface_spi(&cnc_spi);
 			
 		    delay(100);
 		}*/

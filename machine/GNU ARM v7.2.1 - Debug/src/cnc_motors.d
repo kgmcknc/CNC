@@ -60,8 +60,9 @@ src/cnc_motors.o: ../src/cnc_motors.cpp ../src/cnc_motors.h \
  c:\siliconlabs\simplicitystudio\v4\developer\sdks\gecko_sdk_suite\v2.3\platform\device\siliconlabs\efm32pg12b\include\efm32pg12b_af_pins.h \
  c:\siliconlabs\simplicitystudio\v4\developer\sdks\gecko_sdk_suite\v2.3\platform\emlib\inc\em_bus.h \
  c:\siliconlabs\simplicitystudio\v4\developer\sdks\gecko_sdk_suite\v2.3\platform\emlib\inc\em_assert.h \
- ../src/cnc_functions.h ../src/cnc_instructions.h ../src/cnc_heaters.h \
- ../src/cnc_pid.h ../src/cnc_timers.h
+ ../src/cnc_functions.h ../src/cnc_instructions.h \
+ C:\Users\Kyle\Documents\GitHub\CNC/common/src/common_spi.h \
+ ../src/cnc_heaters.h ../src/cnc_pid.h ../src/cnc_timers.h
 
 ../src/cnc_motors.h:
 
@@ -190,6 +191,8 @@ c:\siliconlabs\simplicitystudio\v4\developer\sdks\gecko_sdk_suite\v2.3\platform\
 ../src/cnc_functions.h:
 
 ../src/cnc_instructions.h:
+
+C:\Users\Kyle\Documents\GitHub\CNC/common/src/common_spi.h:
 
 ../src/cnc_heaters.h:
 

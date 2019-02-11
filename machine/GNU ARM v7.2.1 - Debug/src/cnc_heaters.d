@@ -1,6 +1,7 @@
 src/cnc_heaters.o: ../src/cnc_heaters.cpp ../src/cnc_heaters.h \
- ../src/cnc_functions.h ../src/cnc_instructions.h ../src/cnc_pid.h \
- ../src/cnc_motors.h \
+ ../src/cnc_functions.h ../src/cnc_instructions.h \
+ C:\Users\Kyle\Documents\GitHub\CNC/common/src/common_spi.h \
+ ../src/cnc_pid.h ../src/cnc_motors.h \
  c:\siliconlabs\simplicitystudio\v4\developer\sdks\gecko_sdk_suite\v2.3\platform\emdrv\rtcdrv\inc\rtcdriver.h \
  c:\siliconlabs\simplicitystudio\v4\developer\sdks\gecko_sdk_suite\v2.3\platform\emdrv\common\inc\ecode.h \
  c:\siliconlabs\simplicitystudio\v4\developer\sdks\gecko_sdk_suite\v2.3\platform\emdrv\rtcdrv\config\rtcdrv_config.h \
@@ -70,6 +71,8 @@ src/cnc_heaters.o: ../src/cnc_heaters.cpp ../src/cnc_heaters.h \
 ../src/cnc_functions.h:
 
 ../src/cnc_instructions.h:
+
+C:\Users\Kyle\Documents\GitHub\CNC/common/src/common_spi.h:
 
 ../src/cnc_pid.h:
 
