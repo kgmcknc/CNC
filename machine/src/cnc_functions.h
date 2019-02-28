@@ -23,6 +23,7 @@ struct cnc_state_struct {
 	uint8_t abort_program;
 	uint8_t request_instruction;
 	uint8_t request_print;
+	uint8_t spi_connected;
 	struct cnc_instruction_struct current_instruction;
 	struct cnc_motor_list_struct* motors;
 	struct cnc_heater_list_struct* heaters;
@@ -30,7 +31,7 @@ struct cnc_state_struct {
 	uint16_t instruction_rp;
 	uint16_t instruction_wp;
 	uint16_t instruction_fullness;
-	char print_buffer[PRINT_DEPTH][PRINT_LENGTH];
+	char print_buffer[PRINT_DEPTH][MAX_PRINT_LENGTH];
 	uint8_t print_rp;
 	uint8_t print_wp;
 	uint8_t print_fullness;

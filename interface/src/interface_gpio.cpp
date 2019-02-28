@@ -6,14 +6,15 @@ void init_interface_gpio(void){
     
     pinMode(SILABS_POWER, OUTPUT);
     pinMode(MOTOR_POWER, OUTPUT);
-    pinMode(SPI_RX_READY, OUTPUT);
-    pinMode(SPI_TX_READY, INPUT);
+    pinMode(CNC_SPI_REQUEST, INPUT);
+    pinMode(CNC_SPI_RESET, OUTPUT);
     
     digitalWrite(SILABS_POWER, POWER_OFF);
     digitalWrite(MOTOR_POWER, POWER_OFF);
-    delay(50);
+    usleep(50000);
+    digitalWrite(CNC_SPI_RESET, LOW);
     digitalWrite(SILABS_POWER, POWER_ON);
-    delay(50);
+    usleep(50000);
 }
 
 void disable_interface_gpio(void){
@@ -22,11 +23,12 @@ void disable_interface_gpio(void){
 	
 	digitalWrite(MOTOR_POWER, POWER_OFF);
     digitalWrite(SILABS_POWER, POWER_OFF);
+    digitalWrite(CNC_SPI_RESET, LOW);
     
     pinMode(MOTOR_POWER, INPUT);
     pinMode(SILABS_POWER, INPUT);
-    pinMode(SPI_RX_READY, INPUT);
-    pinMode(SPI_TX_READY, INPUT);
+    pinMode(CNC_SPI_REQUEST, INPUT);
+    pinMode(CNC_SPI_RESET, INPUT);
 
     printf("GPIO Safe... Quitting System\n");
 }

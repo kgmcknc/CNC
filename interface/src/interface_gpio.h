@@ -13,8 +13,8 @@
 
 #define SILABS_POWER 29
 #define MOTOR_POWER 28
-#define SPI_RX_READY 5
-#define SPI_TX_READY 6
+#define CNC_SPI_REQUEST 5
+#define CNC_SPI_RESET 6
 
 #define POWER_OFF 1
 #define POWER_ON 0

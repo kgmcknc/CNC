@@ -3,34 +3,66 @@
 #include "interface_spi.h"
 #include "gcode.h"
 
-void handle_input(struct cnc_state* cnc, uint8_t system_command[MAX_FUNCTION_STRING]){
+void handle_input(struct cnc_state* cnc, char* system_command){
+	int32_t value;
 	switch(system_command[0]){
 		case 'q' : {
 			cnc->state = DISABLE_GPIO;
 			break;
 		}
+		case 's' : {
+			char read_string[MAX_SPI_TRANSFER];
+			strcpy(read_string, "thisislongthisislongthisislongthisislongthisislongthisislongthisislongthisislongthisislongthisislong");
+			//value = spi_set_write(system_command, strlen(system_command));
+			value = spi_set_write(read_string, strlen(read_string));
+			if(value > 0){
+				printf("sent data: %s\n", &system_command[1]);
+			} else {
+				printf("write hasn't finished\n");
+			}
+			break;
+		}
+		/*case 'r' : {
+			char read_string[MAX_SPI_TRANSFER];
+			uint16_t len;
+			value = spi_check_read(read_string);
+			if(value > 0){
+				printf("read data: %s, %d\n", read_string, value);
+			} else {
+				if(value < 0){
+					printf("read hasn't finished\n");
+				} else {
+					spi_set_read();
+				}
+			}
+			break;
+		}*/
 		case 'c' : {
-			cnc->spi->pending_opcode = reconnect_spi;
+			//cnc->spi->pending_opcode = reconnect_spi;
 			cnc->state = PROCESS_INPUT;
 			break;
 		}
+		case 'r' : {
+			reset_spi();
+			break;
+		}
 		case 'g' : {
-			cnc->spi->pending_opcode = get_cnc_status;
+			//cnc->spi->pending_opcode = get_cnc_status;
 			cnc->state = PROCESS_INPUT;
 			break;
 		}
 		case 'v' : {
-			cnc->spi->pending_opcode = read_version;
+			//cnc->spi->pending_opcode = read_version;
 			cnc->state = PROCESS_INPUT;
 			break;
 		}
 		case 'e' : {
-			cnc->spi->pending_opcode = disable_route;
+			//cnc->spi->pending_opcode = disable_route;
 			cnc->state = POWER_MOTORS_ON;
 			break;
 		}
 		case 'd' : {
-			cnc->spi->pending_opcode = enable_route;
+			//cnc->spi->pending_opcode = enable_route;
 			cnc->state = POWER_MOTORS_OFF;
 			break;
 		}
@@ -39,7 +71,7 @@ void handle_input(struct cnc_state* cnc, uint8_t system_command[MAX_FUNCTION_STR
 			break;
 		}
 		case 'u' : {
-			cnc->spi->pending_opcode = flash_firmware;
+			//cnc->spi->pending_opcode = flash_firmware;
 			cnc->state = UPDATE_FIRMARE;
 			break;
 		}
@@ -58,7 +90,7 @@ void handle_input(struct cnc_state* cnc, uint8_t system_command[MAX_FUNCTION_STR
 			break;
 		}
 		case 't' : {
-			printf("got end interface function\n");
+			printf("got end interface function\n");s
 			cnc->spi->pending_opcode = end_cnc_program;
 			break;
 		}*/
@@ -70,7 +102,7 @@ void handle_input(struct cnc_state* cnc, uint8_t system_command[MAX_FUNCTION_STR
 	}
 }
 /*
-void interface_functions(uint8_t command_ready, uint8_t system_command[MAX_FUNCTION_STRING], struct cnc_spi_struct* spi_struct, struct cnc_state* cnc){
+void interface_functions(uint8_t command_ready, char* system_command, struct cnc_spi_struct* spi_struct, struct cnc_state* cnc){
 	if(command_ready){
 		switch(system_command[0]){
 			case 'q' :
@@ -119,7 +151,7 @@ void interface_functions(uint8_t command_ready, uint8_t system_command[MAX_FUNCT
 		}
 	}
 }
-*/
+
 void send_spi_string(char spi_string[MAX_SPI_LENGTH], uint8_t string_length){
 	unsigned char spi_data[MAX_SPI_LENGTH] = {0};
 	unsigned char snd_data[MAX_SPI_LENGTH] = {0};
@@ -146,7 +178,7 @@ void send_spi_string(char spi_string[MAX_SPI_LENGTH], uint8_t string_length){
 	spi_length = strlen(spi_data);
 	printf("Sent: %s, Read: %s\n", snd_data, ret_data);
 }
-
+*/
 void receive_spi_string(uint8_t string_length){
 	unsigned char spi_data[64] = {0};
 	int spi_length = 8;
@@ -155,9 +187,9 @@ void receive_spi_string(uint8_t string_length){
 	char read_done = 0;
 	printf("Reading Spi Bus\n");
 	//while((last_length < spi_length) && (read_done == 0)){
-	wiringPiSPIDataRW(SPI_CHANNEL, spi_data, IDLE_LENGTH);
+	//wiringPiSPIDataRW(SPI_CHANNEL, spi_data, IDLE_LENGTH);
 	delay(1);
-	last_length = wiringPiSPIDataRW(SPI_CHANNEL, spi_data, 60);
+	//last_length = wiringPiSPIDataRW(SPI_CHANNEL, spi_data, 60);
 		
 		/*for(read_length = 0;read_length < 8; read_length++){
 			if(spi_data[last_length + read_length] == '\0'){
@@ -188,27 +220,27 @@ void opcode_to_string(enum spi_opcodes opcode, char* opcode_string){
 	}
 }
 
-void update_si_firmware(struct cnc_spi_struct* spi_struct){
+void update_si_firmware(struct spi_struct* spi){
 	enum spi_opcodes opcode;
 	char send_string[IDLE_LENGTH] = {0};
-	if(spi_struct->updating_firmware == 1){
-		if(!get_s_ready_state(spi_struct)){
+	//if(spi->updating_firmware == 1){
+		//if(!get_s_ready_state(spi)){
 			system("cp \"../machine/GNU ARM v7.2.1 - Debug/machine.hex\" /media/pi/STK3402/");
-			spi_struct->updating_firmware = 0;
-			spi_struct->state = spi_initialized;
-		}
-	} else {
+			//spi->updating_firmware = 0;
+			spi->state = spi_initialized;
+		//}
+	//} else {
 		if(system("ls /media/pi/STK3402/") == 0){ // need to find better check/mask prints in system call
-			spi_struct->updating_firmware = 1;
-			opcode = flash_firmware;
+			//spi->updating_firmware = 1;
+			//opcode = flash_firmware;
 			opcode_to_string(opcode, &send_string[0]);
 			
-			wiringPiSPIDataRW(SPI_CHANNEL, send_string, IDLE_LENGTH);
+			//wiringPiSPIDataRW(SPI_CHANNEL, send_string, IDLE_LENGTH);
 		} else {
 			printf("Can't upgrade firmware - not connected\n");
-			spi_struct->state = spi_idle;
+			//spi->state = spi_idle;
 		}
-	}
+	//}
 }
 
 int open_gcode(struct cnc_state* cnc, char gcode_file[200]){

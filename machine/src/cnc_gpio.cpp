@@ -9,8 +9,8 @@
 #include "em_msc.h"
 
 void init_gpio(void){
-	GPIO_PinModeSet(SPI_M_READY_PORT, SPI_M_READY_PIN, gpioModeInputPull, 1);
-	GPIO_PinModeSet(SPI_S_READY_PORT, SPI_S_READY_PIN, gpioModePushPull, 0);
+	GPIO_PinModeSet(SPI_REQUEST_PORT, SPI_REQUEST_PIN, gpioModePushPull, 0);
+	GPIO_PinModeSet(SPI_RESET_PORT, SPI_RESET_PIN, gpioModeInputPull, 1);
 
 	GPIO_PinModeSet(ENDSTOP_0_PORT, ENDSTOP_0_PIN, gpioModeInputPull, 0);
 	GPIO_PinModeSet(ENDSTOP_1_PORT, ENDSTOP_1_PIN, gpioModeInputPull, 0);

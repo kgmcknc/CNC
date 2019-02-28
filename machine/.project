@@ -20,9 +20,19 @@
 	</natures>
 	<linkedResources>
 		<link>
-			<name>Common</name>
-			<type>2</type>
-			<locationURI>WORKSPACE_LOC/common/src</locationURI>
+			<name>src/common_spi.cpp</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/common/src/common_spi.cpp</locationURI>
+		</link>
+		<link>
+			<name>src/common_spi.h</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/common/src/common_spi.h</locationURI>
+		</link>
+		<link>
+			<name>src/revision.h</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/common/src/revision.h</locationURI>
 		</link>
 	</linkedResources>
 </projectDescription>

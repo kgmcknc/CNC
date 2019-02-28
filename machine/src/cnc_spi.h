@@ -8,6 +8,8 @@
 #ifndef SRC_CNC_SPI_H_
 #define SRC_CNC_SPI_H_
 
+#define SPI_SLAVE
+
 #include "spidrv.h"
 #include "cnc_functions.h"
 #include "revision.h"
@@ -19,58 +21,33 @@
 #define SPI_MOSI_LOC      10
 #define SPI_MISO_LOC      10
 
-typedef enum {
-	spi_inactive,
-	spi_initialized,
-	spi_connected,
-	spi_idle,
-	spi_loopback_active,
-	spi_handle_request,
-	get_cnc_instruction,
-	send_cnc_status,
-	send_cnc_print,
-	firmware_update
-} cnc_spi_state;
+void init_spi_driver(void);
 
-struct cnc_spi_struct {
-	cnc_spi_state state = spi_inactive;
-	uint8_t write_pending = 0;
-	uint8_t read_pending = 0;
-	uint8_t read_ready = 0;
-	uint8_t read_requested = 0;
-	uint8_t write_finished = 0;
-	uint8_t read_finished = 0;
-	uint8_t opcode_sent = 0;
-	uint32_t pending_length = 0;
-	spi_opcodes pending_opcode = idle;
-	char write_data[MAX_SPI_LENGTH] = {0};
-	char read_data[MAX_SPI_LENGTH] = {0};
-};
-
-uint8_t init_spi(struct cnc_spi_struct* spi_struct);
-void handle_cnc_spi(struct cnc_spi_struct* spi_struct, struct cnc_state_struct* cnc);
-void wait_for_connect(struct cnc_spi_struct* spi_struct);
-void send_connected(struct cnc_spi_struct* spi_struct);
-void set_idle_read(struct cnc_spi_struct* spi_struct, struct cnc_state_struct* cnc);
-void read_idle(struct cnc_spi_struct* spi_struct, struct cnc_state_struct* cnc);
-spi_opcodes parse_opcode(char opcode_string[MAX_STRING_LENGTH]);
-void handle_opcode(struct cnc_spi_struct* spi_struct, spi_opcodes new_opcode, struct cnc_state_struct* cnc);
-void handle_request(struct cnc_spi_struct* spi_struct, struct cnc_state_struct* cnc);
-void loop_back_data(struct cnc_spi_struct* spi_struct);
-void wait_for_read(struct cnc_spi_struct* spi_struct);
-void wait_for_write(struct cnc_spi_struct* spi_struct);
-void set_read_request(struct cnc_spi_struct* spi_struct);
-void check_read_request(struct cnc_spi_struct* spi_struct);
-void clear_read_request(struct cnc_spi_struct* spi_struct);
-void set_idle_read_request(struct cnc_spi_struct* spi_struct);
-void set_write_request(struct cnc_spi_struct* spi_struct);
-void clear_write_request(struct cnc_spi_struct* spi_struct);
-void set_write_opcode(struct cnc_spi_struct* spi_struct, spi_opcodes instruction, uint8_t byte_length);
-void receive_instruction(struct cnc_spi_struct* spi_struct, struct cnc_state_struct* cnc);
-void parse_instruction(struct cnc_spi_struct* spi_struct, struct cnc_state_struct* cnc);
-void parse_status(struct cnc_spi_struct* spi_struct, struct cnc_state_struct* cnc);
-void parse_print(struct cnc_spi_struct* spi_struct, struct cnc_state_struct* cnc);
-void send_status(struct cnc_spi_struct* spi_struct, struct cnc_state_struct* cnc);
-void send_print(struct cnc_spi_struct* spi_struct, struct cnc_state_struct* cnc);
+void init_spi(struct spi_struct* spi);
+//void handle_spi_reset(struct spi_struct*spi);
+void handle_cnc_spi(struct spi_struct* spi, struct cnc_state_struct* cnc);
+//void send_connected(struct spi_struct* spi);
+//void set_idle_read(struct spi_struct* spi, struct cnc_state_struct* cnc);
+//void read_idle(struct spi_struct* spi, struct cnc_state_struct* cnc);
+//spi_opcodes parse_opcode(char opcode_string[MAX_STRING_LENGTH]);
+//void handle_opcode(struct spi_struct* spi, spi_opcodes new_opcode, struct cnc_state_struct* cnc);
+//void handle_request(struct spi_struct* spi, struct cnc_state_struct* cnc);
+//void loop_back_data(struct spi_struct* spi);
+//void wait_for_read(struct spi_struct* spi);
+//void wait_for_write(struct spi_struct* spi);
+//void set_pending_transfer(struct spi_struct* spi);
+//void clear_pending_transfer(struct spi_struct* spi);
+//void set_request_ready(struct spi_struct* spi);
+//void clear_request_ready(struct spi_struct* spi);
+//void get_spi_reset(struct spi_struct* spi);
+//void set_idle_read_request(struct spi_struct* spi);
+//void clear_write_request(struct spi_struct* spi);
+//void set_write_opcode(struct spi_struct* spi, spi_opcodes instruction, uint8_t byte_length);
+void receive_instruction(struct spi_struct* spi, struct cnc_state_struct* cnc);
+void parse_instruction(struct spi_struct* spi, struct cnc_state_struct* cnc);
+void parse_status(struct spi_struct* spi, struct cnc_state_struct* cnc);
+void parse_print(struct spi_struct* spi, struct cnc_state_struct* cnc);
+void send_status(struct spi_struct* spi, struct cnc_state_struct* cnc);
+void send_print(struct spi_struct* spi, struct cnc_state_struct* cnc);
 
 #endif /* SRC_CNC_SPI_H_ */

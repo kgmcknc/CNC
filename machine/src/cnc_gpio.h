@@ -49,10 +49,10 @@
 #define ENDSTOP_BR_PIN ENDSTOP_6_PIN
 #define ENDSTOP_TR_PIN ENDSTOP_7_PIN
 
-#define SPI_M_READY_PORT     gpioPortD // C
-#define SPI_M_READY_PIN      10
-#define SPI_S_READY_PORT     gpioPortD // C
-#define SPI_S_READY_PIN      9
+#define SPI_REQUEST_PORT     gpioPortD // C
+#define SPI_REQUEST_PIN      10
+#define SPI_RESET_PORT       gpioPortD // C
+#define SPI_RESET_PIN        9
 
 #define TEMP_ADC_0_PORT gpioPortA
 #define TEMP_ADC_1_PORT gpioPortA

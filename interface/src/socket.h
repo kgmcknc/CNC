@@ -16,7 +16,7 @@
 #define MAX_FUNCTION_STRING 40
 #define MAX_FILE_STRING 200
 
-int socket_handler(uint8_t* command_ready, uint8_t system_command[MAX_FUNCTION_STRING]);
+int socket_handler(uint8_t* command_ready, char* system_command);
 int create_unix_socket(const char socket_path[MAX_FILE_STRING]);
 int connect_unix_socket(const char socket_path[MAX_FILE_STRING]);
 

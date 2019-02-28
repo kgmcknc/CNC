@@ -151,6 +151,7 @@ __Vectors:
     .type       Reset_Handler, %function
 Reset_Handler:
 #ifndef __NO_SYSTEM_INIT
+
     ldr     r0, =SystemInit
     blx     r0
 #endif

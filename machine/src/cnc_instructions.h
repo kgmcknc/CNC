@@ -16,6 +16,7 @@
 
 #define INSTRUCTION_FIFO_DEPTH 500
 #define PRINT_DEPTH 16
+#define MAX_PRINT_LENGTH 2048
 
 typedef enum {
 	PROGRAM_IDLE,

@@ -1,6 +1,5 @@
 #include "main.h"
 
-pid_t system_control_fork;
 int control_socket;
 int unix_sockets[MAX_UNIX_SOCKETS] = {0};
 int active_sockets = 0;
@@ -77,7 +76,7 @@ int connect_unix_socket(const char socket_path[MAX_FILE_STRING]){
     return com_socket;
 }
 
-int socket_handler(uint8_t* command_ready, uint8_t system_command[MAX_FUNCTION_STRING]){
+int socket_handler(uint8_t* command_ready, char* system_command){
     int s_count, r_count;
     int activity = 0;
     int new_socket = 0;
@@ -122,17 +121,16 @@ int socket_handler(uint8_t* command_ready, uint8_t system_command[MAX_FUNCTION_S
     for(s_count=0;s_count<MAX_UNIX_SOCKETS;s_count++){
         if(s_count >= active_unix) break;
         if(FD_ISSET(unix_sockets[s_count], &all_sockets)){
-            printf("Got Data On Unix:%d\n", s_count);
-            num_read = read(unix_sockets[s_count], read_data, sizeof(read_data));
+            num_read = read(unix_sockets[s_count], system_command, MAX_FUNCTION_STRING);
+            printf("num read: %d, Data: %s", num_read, system_command);
             if(num_read > 0){
                 // Got Data
-                if(strcmp(read_data, "") == 0){
+                if(strcmp(system_command, "") == 0){
 					
 				} else {
-					printf("got: %d, %s, %d\n", num_read, read_data, read_data[0]);
-					read_data[num_read-1] = '\0';
+                    system_command[num_read] = '\0';
+					printf("got: %d, %s\n", num_read, system_command);
 					*command_ready = 1;
-					strcpy(system_command, read_data);
 				}
             } else {
                 if(num_read == 0){
