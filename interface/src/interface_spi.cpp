@@ -19,16 +19,16 @@ void init_spi_driver(void){
 	}
 }
 
-uint8_t spi_get_request_pin(void){
+uint8_t spi_get_slave_request_pin(void){
 	return digitalRead(CNC_SPI_REQUEST);
 }
-void spi_set_reset_pin(void){
+void spi_set_master_request_pin(void){
 	digitalWrite(CNC_SPI_RESET, HIGH);
 }
-void spi_clear_reset_pin(void){
+void spi_clear_master_request_pin(void){
 	digitalWrite(CNC_SPI_RESET, LOW);
 }
-void spi_transfer_data(char* spi_data, uint16_t data_length){
+uint8_t spi_transfer_data(char* spi_data, uint16_t data_length){
 	int value = 0;
 	if(data_length == 0){
 		printf("Zero Length!!!");
@@ -48,6 +48,7 @@ void spi_transfer_data(char* spi_data, uint16_t data_length){
 		}
 	}
 	spi_finish_transfer(spi_data, data_length);
+	return 0;
 }
 /*
 void handle_interface_spi(struct spi_struct* spi){

@@ -32,16 +32,16 @@ static void slave_transfer_done(SPIDRV_Handle_t handleSlave,
 	spi_finish_transfer(spi_read_data, (uint16_t) itemsTransferred);
 }
 
-uint8_t spi_get_reset_pin(void){
+uint8_t spi_get_master_request_pin(void){
 	return GPIO_PinInGet(SPI_RESET_PORT, SPI_RESET_PIN);
 }
-void spi_set_request_pin(void){
+void spi_set_slave_request_pin(void){
 	GPIO_PinOutSet(SPI_REQUEST_PORT, SPI_REQUEST_PIN);
 }
-void spi_clear_request_pin(void){
+void spi_clear_slave_request_pin(void){
 	GPIO_PinOutClear(SPI_REQUEST_PORT, SPI_REQUEST_PIN);
 }
-void spi_transfer_data(char* spi_data, uint16_t data_length){
+uint8_t spi_transfer_data(char* spi_data, uint16_t data_length){
 	int value = 0;
 	if(data_length < 8){
 		value = 1;
@@ -57,6 +57,7 @@ void spi_transfer_data(char* spi_data, uint16_t data_length){
 	} else {
 		value = 0;
 	}
+	return 0;
 }
 
 void init_spi_driver(void){

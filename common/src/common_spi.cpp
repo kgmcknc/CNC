@@ -15,12 +15,12 @@ struct spi_struct spi = SPI_STRUCT_INIT;
 // MUST ADD DEFINE FOR SPI_SLAVE or SPI_MASTER IN YOUR CODE!
 
 #ifdef SPI_MASTER
-void spi_check_request(struct spi_struct* spi){
+void spi_check_slave_request(struct spi_struct* spi){
 	if(spi->transfer_request){
 		//printf("transfer already set\n");
 		// if transfer is already been detected... don't recheck until master has sent data
 	} else {
-		uint8_t new_pin_level = spi_get_request_pin(); // must be defined in your user code. See header
+		uint8_t new_pin_level = spi_get_slave_request_pin(); // must be defined in your user code. See header
 		//printf("saved level: %d, pin level: %d\n", spi->transfer_pin, new_pin_level);
 		// toggle indicates slave trsansfer set
 		if(spi->transfer_pin){
@@ -43,32 +43,43 @@ void spi_check_request(struct spi_struct* spi){
 		spi->transfer_pin = new_pin_level;
 	}
 }
-void spi_set_reset(struct spi_struct* spi){
-	spi_set_reset_pin(); // must be defined in your user code. See header
-	spi->reset_request = 1;
+void spi_set_master_request(struct spi_struct* spi){
+	spi_set_master_request_pin(); // must be defined in your user code. See header
+	// used to be reset pin
+	//	spi->reset_request = 1;
 }
-void spi_clear_reset(struct spi_struct* spi){
-	spi_clear_reset_pin(); // must be defined in your user code. See header
-	spi->reset_request = 0;
+void spi_clear_master_request(struct spi_struct* spi){
+	spi_clear_master_request_pin(); // must be defined in your user code. See header
+	// used to be reset pin
+	//spi->reset_request = 0;
 }
 #endif
 #ifdef SPI_SLAVE
-void spi_set_request_ready(struct spi_struct* spi){
+void spi_check_master_request(struct spi_struct* spi){
+	spi_get_master_request_pin(); // must be defined in your user code. See header
+	// used to be reset pin
+	//spi->reset_request = 0;
+}
+void spi_set_slave_request(struct spi_struct* spi){
 	if(spi->transfer_request){
 		// don't toggle if transfer already requested...
 	} else {
 		// toggle on the pin indicates spi is set
 		if(spi->transfer_pin){
-			spi_clear_request_pin(); // must be defined in your user code. See header
+			spi_clear_slave_request_pin(); // must be defined in your user code. See header
 			spi->transfer_pin = 0;
 		} else {
-			spi_set_request_pin(); // must be defined in your user code. See header
+			spi_set_slave_request_pin(); // must be defined in your user code. See header
 			spi->transfer_pin = 1;
 		}
 		spi->transfer_request = 1;
 	}
 }
-void spi_clear_request_ready(struct spi_struct* spi){
+void spi_clear_slave_request(struct spi_struct* spi){
+	// only used to reset to default zero;
+	spi_clear_slave_request_pin(); // must be defined in your user code. See header
+}
+void spi_clear_slave_request_ready(struct spi_struct* spi){
 	spi->transfer_request = 0;
 }
 #endif
@@ -76,14 +87,28 @@ void spi_check_reset(struct spi_struct* spi){
 	#ifdef SPI_MASTER
 	if(spi->reset_request){
 		// Reset requested
-		spi_set_reset_pin();
+		printf("reset requested\n");
+		spi_set_master_request(spi);
 		spi->state = spi_reset;
 	}
 	#endif
 	#ifdef SPI_SLAVE
-	spi->reset_request = spi_get_reset_pin(); // must be defined in your user code. See header
 	if(spi->reset_request){
 		spi->state = spi_reset;
+	} else {
+		// must be defined in your user code. See header
+		if(spi_get_master_request_pin()){ // change the request structure for master... add master rand slave request flags
+			spi->reset_detect_count++;
+		} else {
+			// reset count if slave drops request
+			spi->reset_detect_count = 0;
+		}
+		if(spi->reset_detect_count >= SPI_RESET_COUNT_VALUE){
+			// reached maximum value with master request high...
+			spi->reset_detect_count = 0;
+			spi->reset_request = 1;
+			spi->state = spi_reset;
+		}
 	}
 	#endif
 }
@@ -190,7 +215,9 @@ void init_spi_struct(struct spi_struct* spi){
 	spi->write_remaining = 0;
 	spi->write_requested = 0;
 	spi->spi_data[0] = '\0';
-	
+	spi->reset_detect_count = 0;
+	spi->timeout_detect_count = 0;
+
 	spi->initialized = 1;
 	spi->state = spi_reset;
 }
@@ -234,7 +261,7 @@ void handle_spi_reset(struct spi_struct* spi){
 				#ifdef SPI_MASTER
 				//printf("Finished Data transfer\n");
 				if(spi->reset_complete){
-					spi_clear_reset(spi);
+					spi_clear_master_request(spi);
 					spi->state = spi_initialized;
 				} else {
 					if(!strcmp(spi->spi_data, SPI_RESET_STRING)){
@@ -242,7 +269,7 @@ void handle_spi_reset(struct spi_struct* spi){
 						// need to do one more transfer to clear transaction in slave
 						spi->reset_complete = 1;
 					} else {
-						//printf("CNC Spi isn't reset... Received: %s\n", spi->spi_data);
+						printf("CNC Spi isn't reset... Received: %s\n", spi->spi_data);
 					}
 				}
 				#endif
@@ -263,8 +290,8 @@ void handle_spi_reset(struct spi_struct* spi){
 			if(spi->reset_request){
 				#ifdef SPI_MASTER
 				if(spi->reset_complete){
-					spi_clear_reset(spi);
-					//printf("Finished Reset\n");
+					spi_clear_master_request(spi);
+					printf("Finished Reset\n");
 				}
 				strcpy(spi->spi_data, SPI_IDLE_STRING);
 				spi_transfer_data(spi->spi_data, strlen(SPI_IDLE_STRING));
@@ -282,10 +309,10 @@ void handle_spi_reset(struct spi_struct* spi){
 		// Initialize a SPI driver instance
 		init_spi_struct(spi);
 		#ifdef SPI_MASTER
-		spi_clear_reset(spi);
+		spi_clear_master_request(spi);
 		#endif
 		#ifdef SPI_SLAVE
-		spi_clear_request_pin();
+		spi_clear_slave_request(spi);
 		#endif
 		spi->initialized = 1;
 		spi->state = spi_initialized;
@@ -357,10 +384,20 @@ void handle_transfer(struct spi_struct* spi){
 			//printf("read %d, write %d, in progress, transfer pending\n", spi->read_in_progress, spi->write_in_progress);
 			if(spi->transfer_finished){
 				spi_parse_transfer(spi);
+				spi->timeout_detect_count = 0;
 				//printf("transfer done\n");
 			} else {
 				// wait for transfer to finish
 				//printf("transfer not done\n");
+				#ifdef SPI_SLAVE
+					spi->timeout_detect_count++;
+					if(spi->timeout_detect_count >= SPI_TIMEOUT_COUNT_VALUE){
+						// timeout detected so toggle the request again to trigger slave event
+						spi->transfer_request = 0;
+						spi_set_slave_request(spi);
+						spi->timeout_detect_count = 0;
+					}
+				#endif
 			}
 		} else {
 			// check read and write for max transfer size needed
@@ -463,11 +500,15 @@ void spi_prepare_transfer(struct spi_struct* spi){
 		spi->transfer_length = read_size;
 	}
 	#ifdef SPI_MASTER
-	spi_check_request(spi);
+	spi_check_slave_request(spi);
 	if(spi->transfer_request){
+		// clear master request since slave responded
+		spi_clear_master_request(spi);
 		// allow transfer to be processed
 		send_transfer = 1;
 	} else {
+		// set master request
+		spi_set_master_request(spi);
 		// wait for slave transfer request
 		send_transfer = 0;
 	}
@@ -493,11 +534,15 @@ void spi_prepare_transfer(struct spi_struct* spi){
 		if((write_size > 0) && (total_write_length > 0)){
 			memcpy(&spi->spi_data[8], &spi->write_data[(total_write_length)-(spi->write_remaining)], write_size);
 		}
-		spi_transfer_data(spi->spi_data, spi->transfer_length);
-		#ifdef SPI_SLAVE
-		spi_set_request_ready(spi);
-		#endif
-		spi_set_pending_transfer(spi);
+		if(spi_transfer_data(spi->spi_data, spi->transfer_length)){
+			// if didn't get zero, than couldn't transfer, so retry
+		} else {
+			#ifdef SPI_SLAVE
+			spi_set_slave_request(spi);
+			#endif
+			spi_set_pending_transfer(spi);
+		}
+		
 	}
 }
 
@@ -511,6 +556,8 @@ void spi_parse_transfer(struct spi_struct* spi){
 	enum spi_opcodes next_read_opcode = write_idle;
 
 	if(spi->transfer_length < SPI_HEADER_LENGTH){
+		// check to see if this is reset request?
+
 		// didn't receive valid transfer
 		#ifdef SPI_MASTER
 		//printf("received bad transfer\n");

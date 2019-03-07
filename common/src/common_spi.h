@@ -12,6 +12,8 @@
 
 #define MAX_SPI_TRANSFER 4096
 #define MAX_SPI_LENGTH 256
+#define SPI_RESET_COUNT_VALUE 5000
+#define SPI_TIMEOUT_COUNT_VALUE 1000
 
 #define OPCODE_LENGTH 1
 #define SPI_SIZE_LENGTH 2
@@ -94,6 +96,8 @@ struct spi_struct {
 	uint8_t connected;         // if master and slave are connected
 	uint8_t reset_request;     // if reset reconnect requested
 	uint8_t reset_complete;    // if reset reconnect comlete
+	uint32_t reset_detect_count; // count to trigger reset
+	uint32_t timeout_detect_count; // count to trigger timeout
 	uint8_t transfer_pending;  // if we've sent the transfer
 	uint8_t transfer_finished; // if transfer has completed
 	uint8_t transfer_request;  // if a transfer has been requested from the slave
@@ -132,6 +136,8 @@ struct spi_struct {
 	0,                   \
 	0,                   \
 	0,                   \
+	0,                   \
+	0,                   \
 	transfer_idle,       \
 	transfer_idle,       \
 	0,                   \
@@ -148,19 +154,19 @@ struct spi_struct {
 // example functions...
 // define your own gpio control in these functions
 /*
-uint8_t spi_get_reset_pin(void){
+uint8_t spi_get_master_request_pin(void){
 	return GPIO_PinInGet(SPI_RESET_PORT, SPI_RESET_PIN);
 }
-void spi_set_reset_pin(void){
+void spi_set_master_request_pin(void){
 	GPIO_PinOutSet(SPI_REQUEST_PORT, SPI_REQUEST_PIN);
 }
-void spi_clear_reset_pin(void){
+void spi_clear_master_request_pin(void){
 	GPIO_PinOutClear(SPI_REQUEST_PORT, SPI_REQUEST_PIN);
 }
-void spi_set_request_pin(void){
+void spi_set_slavE_request_pin(void){
 	GPIO_PinOutSet(SPI_REQUEST_PORT, SPI_REQUEST_PIN);
 }
-void spi_clear_request_pin(void){
+void spi_clear_slave_request_pin(void){
 	GPIO_PinOutClear(SPI_REQUEST_PORT, SPI_REQUEST_PIN);
 }
 void set_spi_transfer(char* spi_data, uint16_t data_length){
@@ -179,17 +185,17 @@ void init_spi_driver(void){
 /**********************************************************************/
 // begin user defined functions
 #ifdef SPI_MASTER
-uint8_t spi_get_request_pin(void);
-void spi_set_reset_pin(void);
-void spi_clear_reset_pin(void);
+uint8_t spi_get_slave_request_pin(void);
+void spi_set_master_request_pin(void);
+void spi_clear_master_request_pin(void);
 #endif
 #ifdef SPI_SLAVE
-uint8_t spi_get_reset_pin(void);
-void spi_set_request_pin(void);
-void spi_clear_request_pin(void);
+uint8_t spi_get_master_request_pin(void);
+void spi_set_slave_request_pin(void);
+void spi_clear_slave_request_pin(void);
 #endif
 //common
-void spi_transfer_data(char* spi_data, uint16_t data_length);
+uint8_t spi_transfer_data(char* spi_data, uint16_t data_length);
 // end user defined functions
 /**********************************************************************/
 
@@ -210,12 +216,12 @@ int32_t spi_check_write(void); // this returns 0 if transfer hasn't finished, re
 
 /**********************************************************************/
 // begin backend functions
-void spi_check_request(struct spi_struct* spi);
-void spi_set_reset(struct spi_struct* spi);
-void spi_clear_reset(struct spi_struct* spi);
-void spi_check_reset(struct spi_struct* spi);
-void spi_set_request_ready(struct spi_struct* spi);
-void spi_clear_request_ready(struct spi_struct* spi);
+void spi_check_slave_request(struct spi_struct* spi);
+void spi_check_master_request(struct spi_struct* spi);
+void spi_set_master_request(struct spi_struct* spi);
+void spi_clear_master_request(struct spi_struct* spi);
+void spi_set_slave_request(struct spi_struct* spi);
+void spi_clear_slave_request(struct spi_struct* spi);
 void spi_set_pending_transfer(struct spi_struct* spi);
 void spi_clear_pending_transfer(struct spi_struct* spi);
 
