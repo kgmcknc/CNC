@@ -1,13 +1,123 @@
 #include "main.h"
 #include "stdio.h"
+#include "common_spi.h"
 #include "interface_spi.h"
 #include "gcode.h"
 
-void handle_input(struct cnc_state* cnc, char* system_command){
+uint8_t print_set = 0;
+
+void handle_cnc_state(struct interface_struct* interface){
+	// check if reading
+	interface->cnc_read_length = spi_check_read(interface->cnc_read_data);
+	if(interface->cnc_read_length > 0){
+		// read finished, so process
+	} else {
+		// not reading, so set read ready
+		spi_set_read();
+	}
+	switch(interface->machine_state){
+		case MACHINE_IDLE : {
+
+			break;
+		}
+		case PROCESS_INPUT : {
+
+			break;
+		}
+		case POWER_MOTORS_ON : {
+
+			break;
+		}
+		case POWER_MOTORS_OFF : {
+
+			break;
+		}
+		case GET_PROGRAM : {
+
+			break;
+		}
+		case OPEN_PROGRAM : {
+			
+			break;
+		}
+		case RUN_PROGRAM : {
+
+			break;
+		}
+		case UPDATE_FIRMARE : {
+			update_si_firmware(interface);
+			break;
+		}
+		default : {
+			interface->machine_state = MACHINE_IDLE;
+			break;
+		}
+	}
+}
+
+void handle_user_input(struct interface_struct* interface){
+	if(print_set){
+		socket_handler(&interface->user_command_set, interface->user_input);
+		if(interface->user_command_set){
+			//sprintf("Current Command: %s\n", interface->user_command[0]);
+			if(interface->user_input[0] == 13 || interface->user_input[0] == 10){
+				// new line or CR so finish string
+				printf("\n");
+				interface->user_command[interface->command_counter] = '\0';
+				if((interface->user_command[0] > 64) && (interface->user_command[0] < 91)){
+					interface->user_command[0] = interface->user_command[0] + 32;
+				}
+				handle_input(interface, interface->user_command);
+				while(interface->command_counter>1){
+					interface->user_command[interface->command_counter] = '\0';
+					interface->command_counter--;
+				};
+				interface->user_command[0] = '\0';
+				interface->user_input[0] = '\0';
+				interface->command_counter = 0;
+				print_set = 0;
+			} else {
+				if(interface->user_input[0] == 8 || interface->user_input[0] == 127){
+					// backspace
+					interface->command_counter = (interface->command_counter > 0) ? interface->command_counter - 1 : 0;
+					interface->user_command[interface->command_counter] = ' ';
+					printf("\rCommand: %s", interface->user_command);
+					fflush(stdout);
+					interface->user_command[interface->command_counter] = '\0';
+				} else {
+					interface->user_command[interface->command_counter] = interface->user_input[0];
+					interface->command_counter++;
+					interface->user_command[interface->command_counter] = '\0';
+				}
+			}
+			interface->user_command_set = 0;
+			printf("\rCommand: %s", interface->user_command);
+			fflush(stdout);
+		} else {
+			//check_idle(cnc.spi);
+			/*if(cnc.spi->state != spi_idle){
+				command_set = 0;
+			}*/
+		}
+	} else {
+		//check_idle(cnc.spi);
+		print_set = 1;
+		printf("Enter Command and Press Enter. Enter h For Help\n");
+		printf("\rCommand: %s", interface->user_command);
+		fflush(stdout);
+	}
+}
+
+
+void handle_input(struct interface_struct* interface, char* system_command){
 	int32_t value;
 	switch(system_command[0]){
 		case 'q' : {
-			cnc->state = DISABLE_GPIO;
+			interface->state = DISABLE_GPIO;
+			break;
+		}
+		case 'h' : {
+			print_interface_menu();
 			break;
 		}
 		case 's' : {
@@ -20,6 +130,10 @@ void handle_input(struct cnc_state* cnc, char* system_command){
 			} else {
 				printf("write hasn't finished\n");
 			}
+			break;
+		}
+		case 'u' : {
+			interface->machine_state = UPDATE_FIRMARE;
 			break;
 		}
 		/*case 'r' : {
@@ -36,7 +150,7 @@ void handle_input(struct cnc_state* cnc, char* system_command){
 				}
 			}
 			break;
-		}*/
+		}
 		case 'c' : {
 			//cnc->spi->pending_opcode = reconnect_spi;
 			cnc->state = PROCESS_INPUT;
@@ -70,11 +184,7 @@ void handle_input(struct cnc_state* cnc, char* system_command){
 			cnc->state = GET_PROGRAM;
 			break;
 		}
-		case 'u' : {
-			//cnc->spi->pending_opcode = flash_firmware;
-			cnc->state = UPDATE_FIRMARE;
-			break;
-		}
+		
 		case 'i' : {
 			
 			cnc->state = SEND_TO_MICRO;
@@ -90,17 +200,18 @@ void handle_input(struct cnc_state* cnc, char* system_command){
 			break;
 		}
 		case 't' : {
-			printf("got end interface function\n");s
+			printf("got end interface function\n");
 			cnc->spi->pending_opcode = end_cnc_program;
 			break;
 		}*/
 		default : {
 			//spi_struct->pending_opcode = idle;
-			cnc->state = IDLE;
+			interface->state = INTERFACE_RUNNING;
 			break;
 		}
 	}
 }
+
 /*
 void interface_functions(uint8_t command_ready, char* system_command, struct cnc_spi_struct* spi_struct, struct cnc_state* cnc){
 	if(command_ready){
@@ -220,41 +331,171 @@ void opcode_to_string(enum spi_opcodes opcode, char* opcode_string){
 	}
 }
 
-void update_si_firmware(struct spi_struct* spi){
-	enum spi_opcodes opcode;
-	char send_string[IDLE_LENGTH] = {0};
+void update_si_firmware(struct interface_struct* interface){
+	//enum spi_opcodes opcode;
+	//char send_string[IDLE_LENGTH] = {0};
 	//if(spi->updating_firmware == 1){
 		//if(!get_s_ready_state(spi)){
 			system("cp \"../machine/GNU ARM v7.2.1 - Debug/machine.hex\" /media/pi/STK3402/");
 			//spi->updating_firmware = 0;
-			spi->state = spi_initialized;
+			//spi->state = spi_initialized;
 		//}
 	//} else {
 		if(system("ls /media/pi/STK3402/") == 0){ // need to find better check/mask prints in system call
 			//spi->updating_firmware = 1;
 			//opcode = flash_firmware;
-			opcode_to_string(opcode, &send_string[0]);
-			
+			//opcode_to_string(opcode, &send_string[0]);
+			system("cp \"../machine/GNU ARM v7.2.1 - Debug/machine.hex\" /media/pi/STK3402/");
 			//wiringPiSPIDataRW(SPI_CHANNEL, send_string, IDLE_LENGTH);
 		} else {
 			printf("Can't upgrade firmware - not connected\n");
 			//spi->state = spi_idle;
 		}
+		spi_reconnect();
 	//}
+	interface->machine_state = MACHINE_IDLE;
 }
 
-int open_gcode(struct cnc_state* cnc, char gcode_file[200]){
+int open_gcode(struct interface_struct* interface, char gcode_file[200]){
 	printf("openeing file: %s\n", gcode_file);
-	cnc->gcode_fp = fopen(gcode_file, "r");
-	if(cnc->gcode_fp == NULL){
+	interface->gcode_fp = fopen(gcode_file, "r");
+	if(interface->gcode_fp == NULL){
 		printf("Couln't Open File\n");
 		return -1;
 	} else {
 		printf("Opened File!\n");
 		
-		parse_gcode_file(cnc->gcode_fp, &cnc->program);
+		parse_gcode_file(interface->gcode_fp, &interface->program);
 		
-		fclose(cnc->gcode_fp);
+		fclose(interface->gcode_fp);
 		return 0;
 	}
 }
+
+
+// case HANDLE_SPI : {
+// 				/*if(cnc.spi->state == spi_idle){
+// 					cnc.state = IDLE;
+// 				} else {
+// 					//handle_interface_spi(cnc.spi);
+// 				}*/
+// 				break;
+// 			}
+// 			case PROCESS_INPUT : {
+// 				/*if(cnc.spi->pending_opcode == idle){
+// 					cnc.state = IDLE;
+// 				} else {
+// 					//handle_interface_spi(cnc.spi);
+// 					cnc.state = PROCESS_INPUT;
+// 				}*/
+// 				break;
+// 			}
+// 			case POWER_MOTORS_ON : {
+// 				//if(cnc.spi->pending_opcode == idle){
+// 					enable_motors();
+// 					cnc.motors_enabled = 1;
+// 					cnc.state = IDLE;
+// 				//} else {
+// 					//handle_interface_spi(cnc.spi);
+// 				//}
+// 				break;
+// 			}
+// 			case POWER_MOTORS_OFF : {
+// 				//if(cnc.spi->pending_opcode == idle){
+// 					disable_motors();
+// 					cnc.motors_enabled = 0;
+// 					cnc.state = IDLE;
+// 				//} else {
+// 					//handle_interface_spi(cnc.spi);
+// 				//}
+// 				break;
+// 			}
+// 			case GET_PROGRAM : {
+// 				if(command_set){
+// 					socket_handler(&command_ready, system_command);
+// 					if(command_ready){
+// 						if(system_command[0] == 13 || system_command[0] == 10){
+// 							// new line or CR so finish string
+// 							control_string[string_counter] = '\0';
+// 							string_counter = 0;
+// 							command_set = 0;
+// 							cnc.state = OPEN_PROGRAM;
+// 						} else {
+// 							if(system_command[0] == 8 || system_command[0] == 127){
+// 								// backspace
+// 								string_counter = (string_counter > 0) ? string_counter - 1 : 0;
+// 								control_string[string_counter] = '\0';
+// 							} else {
+// 								control_string[string_counter] = system_command[0];
+// 								string_counter++;
+// 							}
+// 						}
+// 						command_ready = 0;
+// 						printf("\rFile Name: %s", control_string);
+// 					}
+// 				} else {
+// 					printf("Type Full Path to File and Press Enter:\n");
+// 					printf("Typing q and enter will cancel\n");
+// 					command_set = 1;
+// 				}
+// 				break;
+// 			}
+// 			case OPEN_PROGRAM : {
+// 				if((control_string[0] == 'q' || control_string[0] == 'Q') && (control_string[1] == '\0')){
+// 					printf("Going back to idle\n");
+// 					cnc.state = IDLE;
+// 				} else {
+// 					if(open_gcode(&cnc, control_string) == 0){
+// 						printf("File Opened\n");
+// 						cnc.state = RUN_PROGRAM;
+// 					} else {
+// 						cnc.state = IDLE;
+// 					}
+// 				}
+// 				break;
+// 			}
+// 			case RUN_PROGRAM : {
+// 				printf("We would start the program here\n");
+// 				cnc.state = IDLE;
+// 				break;
+// 			}
+// 			case SEND_TO_MICRO : {
+// 				if(command_set){
+// 					socket_handler(&command_ready, system_command);
+// 					if(command_ready){
+// 						if(system_command[0] == 13 || system_command[0] == 10){
+// 							// new line or CR so finish string
+// 							control_string[string_counter] = '\0';
+// 							string_counter = 0;
+// 							command_set = 0;
+// 							cnc.state = OPEN_PROGRAM;
+// 						} else {
+// 							if(system_command[0] == 8 || system_command[0] == 127){
+// 								// backspace
+// 								string_counter = (string_counter > 0) ? string_counter - 1 : 0;
+// 								control_string[string_counter] = '\0';
+// 							} else {
+// 								control_string[string_counter] = system_command[0];
+// 								string_counter++;
+// 							}
+// 						}
+// 						command_ready = 0;
+// 						printf("\rCommand: %s", control_string);
+// 					}
+// 				} else {
+// 					printf("Enter Commands for Machine and press enter\n");
+// 					printf("Typing q and enter will cancel\n");
+// 					command_set = 1;
+// 				}
+// 				break;
+// 			}
+// 			case UPDATE_FIRMARE : {
+// 				//update_si_firmware(spi);
+// 				if(cnc.spi->state == spi_initialized){
+// 					cnc.state = CONNECT_MICRO;
+// 				} else {
+// 					cnc.spi->connected = 0;
+// 					//handle_interface_spi(cnc.spi);
+// 				}
+// 				break;
+// 			}

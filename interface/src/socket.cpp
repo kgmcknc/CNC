@@ -122,14 +122,14 @@ int socket_handler(uint8_t* command_ready, char* system_command){
         if(s_count >= active_unix) break;
         if(FD_ISSET(unix_sockets[s_count], &all_sockets)){
             num_read = read(unix_sockets[s_count], system_command, MAX_FUNCTION_STRING);
-            printf("num read: %d, Data: %s", num_read, system_command);
+            //printf("num read: %d, Data: %s", num_read, system_command);
             if(num_read > 0){
                 // Got Data
                 if(strcmp(system_command, "") == 0){
 					
 				} else {
                     system_command[num_read] = '\0';
-					printf("got: %d, %s\n", num_read, system_command);
+					//printf("got: %d, %s\n", num_read, system_command);
 					*command_ready = 1;
 				}
             } else {

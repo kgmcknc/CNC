@@ -193,6 +193,9 @@ int32_t spi_check_write(void){
 		return 0;
 	}
 }
+void spi_reconnect(void){
+	spi.state = spi_reset;
+}
 
 void init_spi_struct(struct spi_struct* spi){
 	spi->connected = 0;
@@ -330,7 +333,7 @@ void send_connect(struct spi_struct* spi){
 				spi->state = spi_running;
 				spi->connected = 1;
 			} else {
-				//printf("CNC Spi Wasn't Ready... Received: %s, length: %d\n", spi->spi_data, spi->transfer_length);
+				printf("CNC Spi Wasn't Ready... Received: %s, length: %d\n", spi->spi_data, spi->transfer_length);
 			}
 			#endif
 			#ifdef SPI_SLAVE
@@ -345,15 +348,23 @@ void send_connect(struct spi_struct* spi){
 		}
 	} else {
 		#ifdef SPI_MASTER
-		strcpy(spi->spi_data, SPI_MASTER_INIT_STRING);
-		spi_transfer_data(spi->spi_data, strlen(SPI_MASTER_INIT_STRING));
+		spi_set_master_request(spi);
+		spi_check_slave_request(spi);
+		if(spi->transfer_request){
+			strcpy(spi->spi_data, SPI_MASTER_INIT_STRING);
+			spi_transfer_data(spi->spi_data, strlen(SPI_MASTER_INIT_STRING));
+			spi_set_pending_transfer(spi);
+			spi_clear_master_request(spi);
+		}
 		//printf("Sending Connection\n");
 		#endif
 		#ifdef SPI_SLAVE
+		//spi_check_master_request();
 		strcpy(spi->spi_data, SPI_SLAVE_INIT_STRING);
 		spi_transfer_data(spi->spi_data, strlen(SPI_SLAVE_INIT_STRING));
-		#endif
+		spi_set_slave_request(spi);
 		spi_set_pending_transfer(spi);
+		#endif
 	}
 }
 

@@ -211,6 +211,7 @@ int32_t spi_set_read(void);    // this sets string input pointer for data read f
 int32_t spi_set_write(char* spi_data, uint16_t data_length);   // this sets data and size to be written for the transaction. won't apply if another write in progress, returns 0 if write already running and new write didn't take. returns 1 if all good
 int32_t spi_check_read(char* spi_data);  // this returns 0 if transfer hasn't finished, returns 1 if transfer is complete.
 int32_t spi_check_write(void); // this returns 0 if transfer hasn't finished, returns 1 if transfer is complete.
+void spi_reconnect(void);
 // end user interface functions
 /**********************************************************************/
 
