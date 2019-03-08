@@ -94,8 +94,6 @@ struct spi_struct {
 	enum spi_states state;     // running states...
 	uint8_t initialized;       // if spi struct is initialized
 	uint8_t connected;         // if master and slave are connected
-	uint8_t reset_request;     // if reset reconnect requested
-	uint8_t reset_complete;    // if reset reconnect comlete
 	uint32_t reset_detect_count; // count to trigger reset
 	uint32_t timeout_detect_count; // count to trigger timeout
 	uint8_t transfer_pending;  // if we've sent the transfer
@@ -122,8 +120,6 @@ struct spi_struct {
 
 #define SPI_STRUCT_INIT {\
 	spi_reset,           \
-	0,                   \
-	0,                   \
 	0,                   \
 	0,                   \
 	0,                   \
@@ -203,7 +199,6 @@ uint8_t spi_transfer_data(char* spi_data, uint16_t data_length);
 // begin user interface functions
 // common for master and slave
 uint8_t handle_spi(void); // must call periodically in main or something
-void reset_spi(void);
 // maybe make get status function to see spy state?
 void spi_finish_transfer(char* spi_data, uint16_t data_length); //must call when finished transfer (whether interrupt like in slave or immediate like master)
 // can do simultaneous read and write, but can't do write while write in progress or read while read in progress... essentially no write/read queue

@@ -19,9 +19,9 @@ struct interface_struct {
     char user_command[MAX_USER_COMMAND];
     char user_input[MAX_USER_COMMAND];
     char cnc_read_data[MAX_SPI_TRANSFER];
-    uint16_t cnc_read_length;
+    int32_t cnc_read_length;
     char cnc_write_data[MAX_SPI_TRANSFER];
-    uint16_t cnc_write_length;
+    int32_t cnc_write_length;
     uint16_t command_counter = 0;
     uint8_t user_command_set = 0;
 };

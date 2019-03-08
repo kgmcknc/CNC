@@ -84,17 +84,9 @@ void spi_clear_slave_request_ready(struct spi_struct* spi){
 }
 #endif
 void spi_check_reset(struct spi_struct* spi){
-	#ifdef SPI_MASTER
-	if(spi->reset_request){
-		// Reset requested
-		printf("reset requested\n");
-		spi_set_master_request(spi);
-		spi->state = spi_reset;
-	}
-	#endif
 	#ifdef SPI_SLAVE
-	if(spi->reset_request){
-		spi->state = spi_reset;
+	if(spi->state == spi_reset){
+		spi->reset_detect_count = 0;
 	} else {
 		// must be defined in your user code. See header
 		if(spi_get_master_request_pin()){ // change the request structure for master... add master rand slave request flags
@@ -106,8 +98,12 @@ void spi_check_reset(struct spi_struct* spi){
 		if(spi->reset_detect_count >= SPI_RESET_COUNT_VALUE){
 			// reached maximum value with master request high...
 			spi->reset_detect_count = 0;
-			spi->reset_request = 1;
 			spi->state = spi_reset;
+			spi->transfer_pin = 0;
+			spi->transfer_pending = 0;
+			spi->transfer_finished = 0;
+			spi->transfer_request = 0;
+			spi_clear_slave_request_pin();
 		}
 	}
 	#endif
@@ -205,8 +201,6 @@ void init_spi_struct(struct spi_struct* spi){
 	spi->read_remaining = 0;
 	spi->read_requested = 0;
 	spi->read_state = transfer_idle;
-	spi->reset_complete = 0;
-	spi->reset_request = 0;
 	spi->transfer_finished = 0;
 	spi->transfer_length = 0;
 	spi->transfer_pending = 0;
@@ -223,12 +217,6 @@ void init_spi_struct(struct spi_struct* spi){
 
 	spi->initialized = 1;
 	spi->state = spi_reset;
-}
-
-void reset_spi(void){
-	#ifdef SPI_MASTER
-	spi.reset_request = 1;
-	#endif
 }
 
 uint8_t handle_spi(void){
@@ -256,6 +244,7 @@ uint8_t handle_spi(void){
 
 void handle_spi_reset(struct spi_struct* spi){
 	spi->connected = 0;
+	spi->reset_detect_count = 0;
 	if(spi->initialized){
 		if(spi->transfer_pending){
 			if(spi->transfer_finished){
@@ -263,50 +252,51 @@ void handle_spi_reset(struct spi_struct* spi){
 				spi_clear_finished_transfer(spi);
 				#ifdef SPI_MASTER
 				//printf("Finished Data transfer\n");
-				if(spi->reset_complete){
-					spi_clear_master_request(spi);
+				if(!strcmp(spi->spi_data, SPI_RESET_STRING)){
+					printf("Received Reset String %s, so CNC Spi is reset\n", spi->spi_data);
 					spi->state = spi_initialized;
+					spi_clear_master_request(spi);
 				} else {
-					if(!strcmp(spi->spi_data, SPI_RESET_STRING)){
-						//printf("Received Reset String %s, so CNC Spi is reset\n", spi->spi_data);
-						// need to do one more transfer to clear transaction in slave
-						spi->reset_complete = 1;
-					} else {
-						printf("CNC Spi isn't reset... Received: %s\n", spi->spi_data);
-					}
+					printf("CNC Spi isn't reset... Received: %s\n", spi->spi_data);
 				}
 				#endif
 				#ifdef SPI_SLAVE
-				spi_check_reset(spi);
-				if(spi->reset_request){
-					// continue in this state until master de-asserts reset
-				} else {
+				if(spi_get_master_request_pin() == 0){
 					spi->state = spi_initialized;
-					spi->initialized = 1;
 				}
 				#endif
+				spi->transfer_request = 0;
+				spi->timeout_detect_count = 0;
 			} else {
+				#ifdef SPI_SLAVE
 				// wait for master to send data
-				spi->state = spi_reset;
+				spi->timeout_detect_count++;
+				if(spi->timeout_detect_count >= SPI_TIMEOUT_COUNT_VALUE){
+					// timeout detected so toggle the request again to trigger slave event
+					spi->transfer_request = 0;
+					spi_set_slave_request(spi);
+					spi->timeout_detect_count = 0;
+				}
+				#endif
 			}
 		} else {
-			if(spi->reset_request){
-				#ifdef SPI_MASTER
-				if(spi->reset_complete){
-					spi_clear_master_request(spi);
-					printf("Finished Reset\n");
-				}
+			#ifdef SPI_MASTER
+			spi_set_master_request(spi);
+			spi_check_slave_request(spi);
+			if(spi->transfer_request){
 				strcpy(spi->spi_data, SPI_IDLE_STRING);
 				spi_transfer_data(spi->spi_data, strlen(SPI_IDLE_STRING));
-				#endif
-				#ifdef SPI_SLAVE
+				spi_set_pending_transfer(spi);
+			}
+			#endif
+			#ifdef SPI_SLAVE
+			if(spi_get_master_request_pin()){
 				strcpy(spi->spi_data, SPI_RESET_STRING);
 				spi_transfer_data(spi->spi_data, strlen(SPI_RESET_STRING));
-				#endif
 				spi_set_pending_transfer(spi);
-			} else {
-				spi->state = spi_initialized;
+				spi_set_slave_request(spi);
 			}
+			#endif
 		}
 	} else {
 		// Initialize a SPI driver instance
@@ -343,8 +333,19 @@ void send_connect(struct spi_struct* spi){
 				spi->connected = 1;
 			}
 			#endif
+			spi->timeout_detect_count = 0;
+			spi->transfer_request = 0;
 		} else {
+			#ifdef SPI_SLAVE
 			// waiting for master to initialize data write
+			spi->timeout_detect_count++;
+			if(spi->timeout_detect_count >= SPI_TIMEOUT_COUNT_VALUE){
+				// timeout detected so toggle the request again to trigger slave event
+				spi->transfer_request = 0;
+				spi_set_slave_request(spi);
+				spi->timeout_detect_count = 0;
+			}
+			#endif
 		}
 	} else {
 		#ifdef SPI_MASTER
@@ -360,10 +361,12 @@ void send_connect(struct spi_struct* spi){
 		#endif
 		#ifdef SPI_SLAVE
 		//spi_check_master_request();
-		strcpy(spi->spi_data, SPI_SLAVE_INIT_STRING);
-		spi_transfer_data(spi->spi_data, strlen(SPI_SLAVE_INIT_STRING));
-		spi_set_slave_request(spi);
-		spi_set_pending_transfer(spi);
+		if(spi_get_master_request_pin()){
+			strcpy(spi->spi_data, SPI_SLAVE_INIT_STRING);
+			spi_transfer_data(spi->spi_data, strlen(SPI_SLAVE_INIT_STRING));
+			spi_set_slave_request(spi);
+			spi_set_pending_transfer(spi);
+		}
 		#endif
 	}
 }
@@ -477,21 +480,27 @@ void spi_prepare_transfer(struct spi_struct* spi){
 		next_write_opcode = write_idle;
 	}
 	if(spi->read_in_progress && !spi->read_complete){
-		send_transfer = 1;
-		if(spi->read_state == transfer_requested){
-			// set initial opcode and length to get actual read length
-			#ifdef SPI_MASTER
-				//printf("setting initial read\n");
-			#endif
-			current_read_opcode = read_ready;
-			next_read_opcode = read_ready;
-		} else {
-			#ifdef SPI_MASTER
-				//printf("sending read data\n");
-			#endif
-			read_size = spi->read_remaining;
-			current_read_opcode = read_ready;
-			next_read_opcode = read_ready;
+		#ifdef SPI_MASTER
+		spi_check_slave_request(spi);
+		if(spi->transfer_request){
+			send_transfer = 1;
+		}
+		#endif
+		#ifdef SPI_SLAVE
+			if(spi_get_master_request_pin()){
+				send_transfer = 1;
+			}
+		#endif
+		if(send_transfer){
+			if(spi->read_state == transfer_requested){
+				// set initial opcode and length to get actual read length
+				current_read_opcode = read_ready;
+				next_read_opcode = read_ready;
+			} else {
+				read_size = spi->read_remaining;
+				current_read_opcode = read_ready;
+				next_read_opcode = read_ready;
+			}
 		}
 		// this will get set whenever an initial read has been received
 		//spi->read_state = transfer_in_progress;
@@ -511,17 +520,19 @@ void spi_prepare_transfer(struct spi_struct* spi){
 		spi->transfer_length = read_size;
 	}
 	#ifdef SPI_MASTER
-	spi_check_slave_request(spi);
-	if(spi->transfer_request){
-		// clear master request since slave responded
-		spi_clear_master_request(spi);
-		// allow transfer to be processed
-		send_transfer = 1;
-	} else {
-		// set master request
-		spi_set_master_request(spi);
-		// wait for slave transfer request
-		send_transfer = 0;
+	if(send_transfer){
+		spi_check_slave_request(spi);
+		if(spi->transfer_request){
+			// clear master request since slave responded
+			spi_clear_master_request(spi);
+			// allow transfer to be processed
+			send_transfer = 1;
+		} else {
+			// set master request
+			spi_set_master_request(spi);
+			// wait for slave transfer request
+			send_transfer = 0;
+		}
 	}
 	#endif
 	if(send_transfer){
