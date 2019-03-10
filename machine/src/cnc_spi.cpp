@@ -443,29 +443,6 @@ void parse_instruction(spi_struct* spi, cnc_state_struct* cnc){
 	strcpy(spi->spi_data, "");
 }
 
-void parse_status(spi_struct* spi, cnc_state_struct* cnc){
-	char status_string[STATUS_LENGTH];
-	sprintf(status_string, "L:%d%d,R:%d%d,ZL:%d%d,ZR:%d%d,X:%ld,Y:%ld, T0:%f, T1:%f",
-			cnc->motors->xl_axis.min_range_flag, cnc->motors->xl_axis.max_range_flag,
-			cnc->motors->yf_axis.min_range_flag, cnc->motors->yf_axis.max_range_flag,
-			cnc->motors->zl_axis.min_range_flag, cnc->motors->zl_axis.max_range_flag,
-			cnc->motors->zr_axis.min_range_flag, cnc->motors->zr_axis.max_range_flag,
-			cnc->motors->xl_axis.position,
-			cnc->motors->yf_axis.position,
-			cnc->heaters->heater_0.current_temp,
-			cnc->heaters->heater_1.current_temp);
-	set_write_opcode(spi, get_cnc_status, STATUS_LENGTH);
-	strcpy(spi->spi_data + (IDLE_LENGTH), status_string);
-}
-
-void parse_print(spi_struct* spi, cnc_state_struct* cnc){
-	set_write_opcode(spi, new_cnc_print, strlen(cnc->print_buffer[cnc->print_rp]));
-	strcpy(spi->spi_data + (IDLE_LENGTH), cnc->print_buffer[cnc->print_rp]);
-	cnc->print_buffer[cnc->print_rp][0] = 0;
-	cnc->print_rp = (cnc->print_rp < (PRINT_DEPTH-1)) ? (cnc->print_rp + 1) : 0;
-	cnc->print_fullness--;
-}
-
 void send_status(spi_struct* spi, cnc_state_struct* cnc){
 	if(spi->transfer_pending){
 		if(spi->transfer_finished){

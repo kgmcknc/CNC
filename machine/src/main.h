@@ -13,8 +13,6 @@
 #include "cnc_functions.h"
 #include "cnc_motors.h"
 
-#define SPI_SLAVE
-
 #define MAJOR_REVISION 0x0000
 #define MINOR_REVISION 0x0000
 

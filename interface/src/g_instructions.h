@@ -1,1 +1,4 @@
-//
+#ifndef SRC_G_INSTRUCTIONS_H_
+#define SRC_G_INSTRUCTIONS_H_
+
+#endif /* SRC_G_INSTRUCTIONS_H_ */

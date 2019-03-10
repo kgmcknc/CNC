@@ -1,57 +1,184 @@
 #include "main.h"
 #include "stdio.h"
 #include "common_spi.h"
+#include "common_cnc.h"
 #include "interface_spi.h"
 #include "gcode.h"
 
 uint8_t print_set = 0;
 
 void handle_cnc_state(struct interface_struct* interface){
-	// check if reading
-	interface->cnc_read_length = spi_check_read(interface->cnc_read_data);
-	spi_check_write();
-	if(interface->cnc_read_length > 0){
-		// read finished, so process
-	} else {
-		// not reading, so set read ready
-		spi_set_read();
-	}
 	switch(interface->machine_state){
 		case MACHINE_IDLE : {
-
+			if(check_spi(interface)){
+				// received spi transaction
+				// process that instead of user input
+				interface->machine_state = PROCESS_SPI;
+			} else {
+				// if not processing spi, process user input
+				socket_handler(&interface->user_command_set, interface->user_input);
+				receive_user_input(interface);
+				if(interface->user_command_finished){
+					interface->machine_state = PROCESS_INPUT;
+				}
+			}
+			break;
+		}
+		case PROCESS_SPI : {
+			process_spi_request(interface);
 			break;
 		}
 		case PROCESS_INPUT : {
-			
+			handle_input(interface);
 			break;
 		}
+		/*case SEND_TEST_STRING : {
+			int32_t value;
+			char read_string[MAX_SPI_TRANSFER];
+			read_string[0] = (char) SEND_TEST_STRING;
+			strcpy(&read_string[1], "thisislongthisislongthisislongthisislongthisislongthisislongthisislongthisislongthisislongthisislong");
+			//value = spi_set_write(interface->user_command, strlen(interface->user_command));
+			value = spi_set_write(read_string, strlen(read_string));
+			if(value > 0){
+				printf("sent data: %s\n", &interface->user_command[1]);
+				interface->machine_state = MACHINE_IDLE;
+			} else {
+				printf("write hasn't finished\n");
+			}
+			break;
+		}*/
 		case POWER_MOTORS_ON : {
-
+			if(interface->write_in_progress){
+				if(spi_check_write() > 0){
+					interface->write_in_progress = 0;
+					enable_motors();
+					interface->machine_state = MACHINE_IDLE;
+				}
+			} else {
+				interface->cnc_write_data[0] = (char) DISABLE_ROUTE;
+				if(spi_set_write(interface->cnc_write_data, 1) > 0){
+					interface->write_in_progress = 1;
+				} else {
+					interface->write_in_progress = 0;
+				}
+				interface->machine_state = POWER_MOTORS_ON;
+			}
 			break;
 		}
 		case POWER_MOTORS_OFF : {
-
+			if(interface->write_in_progress){
+				if(spi_check_write() > 0){
+					interface->write_in_progress = 0;
+					disable_motors();
+					interface->machine_state = MACHINE_IDLE;
+				}
+			} else {
+				interface->cnc_write_data[0] = (char) ENABLE_ROUTE;
+				if(spi_set_write(interface->cnc_write_data, 1) > 0){
+					interface->write_in_progress = 1;
+				} else {
+					interface->write_in_progress = 0;
+				}
+				interface->machine_state = POWER_MOTORS_OFF;
+			}
+			break;
+		}
+		case GET_STATUS : {
+			if(interface->write_in_progress){
+				if(spi_check_write() > 0){
+					interface->write_in_progress = 0;
+					interface->machine_state = MACHINE_IDLE;
+				}
+			} else {
+				interface->cnc_write_data[0] = (char) GET_CNC_STATUS;
+				if(spi_set_write(interface->cnc_write_data, 1) > 0){
+					interface->write_in_progress = 1;
+				} else {
+					interface->write_in_progress = 0;
+				}
+				interface->machine_state = GET_STATUS;
+			}
+			break;
+		}
+		case GET_VERSION : {
+			if(interface->write_in_progress){
+				if(spi_check_write() > 0){
+					interface->write_in_progress = 0;
+					interface->machine_state = MACHINE_IDLE;
+				}
+			} else {
+				interface->cnc_write_data[0] = (char) GET_CNC_VERSION;
+				if(spi_set_write(interface->cnc_write_data, 1) > 0){
+					interface->write_in_progress = 1;
+				} else {
+					interface->write_in_progress = 0;
+				}
+				interface->machine_state = GET_VERSION;
+			}
+			break;
+		}
+		case USER_CONTROL : {
+			if(interface->write_in_progress){
+				if(spi_check_write() > 0){
+					interface->write_in_progress = 0;
+				}
+			} else {
+				socket_handler(&interface->user_command_set, interface->user_input);
+				receive_user_input(interface);
+				// check if enter was set
+				// if so
+				// interface->machine_state = MACHINE_IDLE;
+				// else
+				// send instruction
+				//interface->cnc_write_data[0] = (char) GET_CNC_VERSION;
+				if(spi_set_write(interface->cnc_write_data, 1) > 0){
+					interface->write_in_progress = 1;
+				} else {
+					interface->write_in_progress = 0;
+				}
+				interface->machine_state = USER_CONTROL;
+			}
 			break;
 		}
 		case GET_PROGRAM : {
-
+			interface->machine_state = MACHINE_IDLE;
 			break;
 		}
 		case OPEN_PROGRAM : {
-			
+			interface->machine_state = MACHINE_IDLE;
 			break;
 		}
 		case RUN_PROGRAM : {
-
+			interface->machine_state = MACHINE_IDLE;
 			break;
 		}
 		case UPDATE_FIRMARE : {
 			update_si_firmware(interface);
+			interface->machine_state = MACHINE_IDLE;
 			break;
 		}
 		default : {
 			interface->machine_state = MACHINE_IDLE;
 			break;
+		}
+	}
+}
+
+uint8_t check_spi(struct interface_struct* interface){
+	// always check write to complete transfer if done
+	spi_check_write();
+	// check if read is finished
+	interface->cnc_read_length = spi_check_read(interface->cnc_read_data);
+	if(interface->cnc_read_length == 0){
+		// not reading, so set read ready
+		spi_set_read();
+		return 0;
+	} else {
+		if(interface->cnc_read_length > 0){
+			// read finished, so process
+			return 1;
+		} else {
+			return 0;
 		}
 	}
 }
@@ -98,11 +225,90 @@ void receive_user_input(struct interface_struct* interface){
 	}
 }
 
+void process_spi_request(struct interface_struct* interface){
+	// setting machine state to default...
+	// it will change in switch if needed
+	interface->machine_state = MACHINE_IDLE;
+	switch((CNC_OPCODES) interface->cnc_read_data[0]){
+		case GET_CNC_VERSION : {
+			printf("CNC Version: %s\n", &interface->cnc_read_data[1]);
+			break;
+		}
+		case GET_CNC_STATUS : {
+			printf("CNC Status: %s\n", &interface->cnc_read_data[1]);
+			break;
+		}
+		case NEW_CNC_PRINT : {
+			printf("CNC Printf: %s\n", &interface->cnc_read_data[1]);
+			break;
+		}
+		case FLASH_FIRMWARE : {
 
-void handle_input(struct interface_struct* interface, char* system_command){
-	int32_t value;
+			break;
+		}
+		case START_CNC_PROGRAM : {
+
+			break;
+		}
+		case END_CNC_PROGRAM : {
+
+			break;
+		}
+		case NEW_CNC_INSTRUCTION : {
+
+			break;
+		}
+		case INSTANT_CNC_INSTRUCTION : {
+			interface->machine_state = USER_CONTROL;
+			printf("Getting User Input To Control Machine:\n");
+			break;
+		}
+		case DISABLE_ROUTE : {
+
+			break;
+		}
+		case ENABLE_ROUTE : {
+
+			break;
+		}
+		case START_PROGRAM : {
+
+			break;
+		}
+		case PAUSE_PROGRAM : {
+
+			break;
+		}
+		case RESUME_PROGRAM : {
+
+			break;
+		}
+		case END_PROGRAM : {
+
+			break;
+		}
+		case NEW_INSTRUCTION : {
+
+			break;
+		}
+		case ERROR : {
+
+			break;
+		}
+		default : {
+			interface->machine_state = MACHINE_IDLE;
+			break;
+		}
+	}
+}
+
+void handle_input(struct interface_struct* interface){
+	// set states back to default states...
+	// all tasks that need it to move to another state will set it
+	interface->state = INTERFACE_RUNNING;
+	interface->machine_state = MACHINE_IDLE;
 	if(interface->user_command_finished){
-		switch(system_command[0]){
+		switch(interface->user_command[0]){
 			case 'q' : {
 				interface->state = DISABLE_GPIO;
 				break;
@@ -111,18 +317,10 @@ void handle_input(struct interface_struct* interface, char* system_command){
 				print_interface_menu();
 				break;
 			}
-			case 's' : {
-				char read_string[MAX_SPI_TRANSFER];
-				strcpy(read_string, "thisislongthisislongthisislongthisislongthisislongthisislongthisislongthisislongthisislongthisislong");
-				//value = spi_set_write(system_command, strlen(system_command));
-				value = spi_set_write(read_string, strlen(read_string));
-				if(value > 0){
-					printf("sent data: %s\n", &system_command[1]);
-				} else {
-					printf("write hasn't finished\n");
-				}
+			/*case 's' : {
+				interface->machine_state = SEND_TEST_STRING;
 				break;
-			}
+			}*/
 			case 'u' : {
 				interface->machine_state = UPDATE_FIRMARE;
 				break;
@@ -132,22 +330,18 @@ void handle_input(struct interface_struct* interface, char* system_command){
 				break;
 			}
 			case 'g' : {
-				//cnc->spi->pending_opcode = get_cnc_status;
-				interface->machine_state = PROCESS_INPUT;
+				interface->machine_state = GET_STATUS;
 				break;
 			}
 			case 'v' : {
-				//cnc->spi->pending_opcode = read_version;
-				interface->machine_state = PROCESS_INPUT;
+				interface->machine_state = GET_VERSION;
 				break;
 			}
 			case 'e' : {
-				//cnc->spi->pending_opcode = disable_route;
 				interface->machine_state = POWER_MOTORS_ON;
 				break;
 			}
 			case 'd' : {
-				//cnc->spi->pending_opcode = enable_route;
 				interface->machine_state = POWER_MOTORS_OFF;
 				break;
 			}

@@ -8,7 +8,7 @@
 #define SPI_CHANNEL 0
 #define SPI_SPEED 500000
 
-void check_spi(void);
+void test_wpi_spi(void);
 void init_spi_driver(void);
 //void handle_interface_spi(struct spi_struct* spi);
 //void handle_spi_reset(struct spi_struct* spi);

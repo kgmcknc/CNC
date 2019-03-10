@@ -10,6 +10,25 @@
 
 #include <stdint.h>
 
+enum CNC_OPCODES {
+	GET_CNC_VERSION,
+	GET_CNC_STATUS,
+	NEW_CNC_PRINT,
+	FLASH_FIRMWARE,
+	START_CNC_PROGRAM,
+	END_CNC_PROGRAM,
+	NEW_CNC_INSTRUCTION,
+	INSTANT_CNC_INSTRUCTION,
+	DISABLE_ROUTE,
+	ENABLE_ROUTE,
+	START_PROGRAM,
+	PAUSE_PROGRAM,
+	RESUME_PROGRAM,
+	END_PROGRAM,
+	NEW_INSTRUCTION,
+	ERROR
+};
+
 enum INSTRUCTION_OPCODE {
 	PROGRAM_IDLE,
 	PROGRAM_START,
@@ -68,41 +87,19 @@ struct cnc_heater_instruction_struct {
 	double current_temp;
 };
 
-enum cnc_opcodes {
-	cnc_init,
-	reconnect_spi,
-	read_version,
-	get_cnc_status,
-	new_cnc_print,
-	flash_firmware,
-	start_cnc_program,
-	end_cnc_program,
-	new_cnc_instruction,
-	instant_cnc_instruction,
-	disable_route,
-	enable_route,
-	start_program,
-	pause_program,
-	resume_program,
-	end_program,
-	new_instruction,
-	get_status,
-	error
-};
-
 struct cnc_instruction_struct {
 	uint8_t instruction_valid;
-	double instruction_number;
 	uint64_t program_length; // number of instructions for current program
 	enum INSTRUCTION_OPCODE opcode_flags; // maps to instruction opcode enum
 	char pending_motor_enables[7];
 	char pending_motor_disables[7];
 	char pending_heater_enables[4];
 	char pending_heater_disables[4];
-	double speed;
 	char set_position_flag;
     char instruction_set;
 #ifdef INTERFACE
+    double instruction_number;
+    double speed;
     char comment_flag;
     char comment[256];
     char message_flag;

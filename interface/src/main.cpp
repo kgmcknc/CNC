@@ -3,6 +3,7 @@
 #include "revision.h"
 #include "keyboard.h"
 #include "interface_spi.h"
+#include "interface_functions.h"
 #include "socket.h"
 #include "gcode.h"
 
@@ -22,7 +23,7 @@ int main(int argc, char **argv) {
     
     printf("Checking to see if spi is enabled on the pi...\n");
     printf("If this crashes, than enable spi on raspberry pi\n");
-    check_spi();
+    test_wpi_spi();
     
 	init_interface_struct(&interface);
 
@@ -81,6 +82,7 @@ int main(int argc, char **argv) {
 			}
 			case DISABLE_GPIO : {
 				disable_interface_gpio();
+				sleep(1);
 				interface.state = EXIT_INTERFACE;
 				break;
 			}
@@ -112,15 +114,16 @@ void init_interface_struct(struct interface_struct* interface){
 	interface->user_command_set = 0;
 	interface->user_command_finished = 0;
 	interface->user_command[0] = '\0';
+	interface->read_in_progress = 0;
+	interface->read_complete = 0;
+	interface->write_in_progress = 0;
+	interface->write_complete = 0;
 }
 
 uint8_t interface_main(struct interface_struct* interface){
-	char read_string[MAX_SPI_TRANSFER];
-	socket_handler(&interface->user_command_set, interface->user_input);
 	handle_spi();
-	receive_user_input(interface);
-	handle_input(interface, interface->user_command);
 	handle_cnc_state(interface);
+	
 	return 0;
 }
 

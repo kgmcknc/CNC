@@ -11,8 +11,8 @@
  * Created on December 22, 2018, 10:22 AM
  */
 
-#ifndef GCODE_H
-#define GCODE_H
+#ifndef SRC_GCODE_H
+#define SRC_GCODE_H
 
 #include "stdint.h"
 #include "stdio.h"
@@ -66,4 +66,4 @@ int parse_letter(char* line, uint16_t* line_count, char* value);
 int parse_gcode_word(char* line, uint16_t* line_count, struct gcode_program_struct* program);
 int check_instruction(struct cnc_instruction_struct* instruction);
 
-#endif /* GCODE_H */
+#endif /* SRC_GCODE_H */

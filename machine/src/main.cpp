@@ -38,12 +38,12 @@ int main(void)
 
 	/* Infinite loop */
 	while (1) {
-		handle_state(&cnc);
 		handle_spi();
-		handle_instructions(&cnc);
-		handle_program(&cnc);
-		handle_motors(&cnc);
-		handle_heaters(&cnc_heaters);
+		handle_state(&cnc);
+		//handle_instructions(&cnc);
+		//handle_program(&cnc);
+		//handle_motors(&cnc);
+		//handle_heaters(&cnc_heaters);
 	}
 }
 

@@ -6,4 +6,9 @@
 #define FW_REV_MINOR (2)
 #define FW_REV_PATCH (0x00)
 
+#define HW_REV_BETA  (1)
+#define HW_REV_MAJOR (0)
+#define HW_REV_MINOR (2)
+#define HW_REV_PATCH (0x00)
+
 #endif // #ifndef REVISION_H

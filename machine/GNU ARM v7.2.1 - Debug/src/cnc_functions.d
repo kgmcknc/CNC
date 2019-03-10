@@ -64,7 +64,8 @@ src/cnc_functions.o: ../src/cnc_functions.cpp ../src/cnc_functions.h \
  c:\siliconlabs\simplicitystudio\v4\developer\sdks\gecko_sdk_suite\v2.3\platform\device\siliconlabs\efm32pg12b\include\efm32pg12b_af_ports.h \
  c:\siliconlabs\simplicitystudio\v4\developer\sdks\gecko_sdk_suite\v2.3\platform\device\siliconlabs\efm32pg12b\include\efm32pg12b_af_pins.h \
  c:\siliconlabs\simplicitystudio\v4\developer\sdks\gecko_sdk_suite\v2.3\platform\emlib\inc\em_bus.h \
- c:\siliconlabs\simplicitystudio\v4\developer\sdks\gecko_sdk_suite\v2.3\platform\emlib\inc\em_assert.h
+ c:\siliconlabs\simplicitystudio\v4\developer\sdks\gecko_sdk_suite\v2.3\platform\emlib\inc\em_assert.h \
+ C:\Users\Kyle\Documents\GitHub\CNC/common/src/revision.h
 
 ../src/cnc_functions.h:
 
@@ -201,3 +202,5 @@ c:\siliconlabs\simplicitystudio\v4\developer\sdks\gecko_sdk_suite\v2.3\platform\
 c:\siliconlabs\simplicitystudio\v4\developer\sdks\gecko_sdk_suite\v2.3\platform\emlib\inc\em_bus.h:
 
 c:\siliconlabs\simplicitystudio\v4\developer\sdks\gecko_sdk_suite\v2.3\platform\emlib\inc\em_assert.h:
+
+C:\Users\Kyle\Documents\GitHub\CNC/common/src/revision.h:

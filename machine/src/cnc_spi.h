@@ -45,8 +45,6 @@ void handle_cnc_spi(struct spi_struct* spi, struct cnc_state_struct* cnc);
 //void set_write_opcode(struct spi_struct* spi, spi_opcodes instruction, uint8_t byte_length);
 void receive_instruction(struct spi_struct* spi, struct cnc_state_struct* cnc);
 void parse_instruction(struct spi_struct* spi, struct cnc_state_struct* cnc);
-void parse_status(struct spi_struct* spi, struct cnc_state_struct* cnc);
-void parse_print(struct spi_struct* spi, struct cnc_state_struct* cnc);
 void send_status(struct spi_struct* spi, struct cnc_state_struct* cnc);
 void send_print(struct spi_struct* spi, struct cnc_state_struct* cnc);
 

@@ -1,4 +1,6 @@
 
+#ifndef SRC_CNC_PIN_MAP_H_
+#define SRC_CNC_PIN_MAP_H_
 // mapping of cnc pins on the raspberry pi 3
 // has physical name and wiringpi number
 
@@ -96,3 +98,4 @@
 #define MOTOR_MOVE_F          HIGH
 #define MOTOR_MOVE_B          LOW
 
+#endif /* SRC_CNC_PIN_MAP_H_ */

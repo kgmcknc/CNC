@@ -1,7 +1,7 @@
 #include "main.h"
 #include "interface_spi.h"
 
-void check_spi(void){
+void test_wpi_spi(void){
 	// wiringPiSPISetupMode exits without return if spi not enabled...
 	// this checks and closes (or exits out before forking in main)
 	// so that the c program doesn't start a child and then crash...

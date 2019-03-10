@@ -1,4 +1,6 @@
 
+#ifndef SRC_INSTRUCTIONS_H_
+#define SRC_INSTRUCTIONS_H_
 /*
  * Instruction starts and ends with $
  * Fields are separated by $'s
@@ -38,3 +40,5 @@ void send_instruction(char inst_type, char** inst_data);
 void receive_instruction(void);
 
 void save_last_instruction(void);
+
+#endif /* SRC_INSTRUCTIONS_H_ */

@@ -150,7 +150,7 @@ int32_t spi_check_read(char* spi_data){
 		if(spi.read_complete){
 			memcpy(spi_data, spi.read_data, spi.read_length);
 			#ifdef SPI_MASTER
-			printf("read data: %s, %d\n", spi_data, spi.read_length);
+			//printf("read data: %s, %d\n", spi_data, spi.read_length);
 			#endif
 			data_length = spi.read_length;
 			spi.read_in_progress = 0;
@@ -177,7 +177,7 @@ int32_t spi_check_write(void){
 			spi.write_remaining = 0;
 			spi.write_state = transfer_idle;
 			#ifdef SPI_MASTER
-				printf("Spi write complete\n");
+				//printf("Spi write complete\n");
 			#endif
 			return 1;
 		} else {
@@ -257,7 +257,7 @@ void handle_spi_reset(struct spi_struct* spi){
 					spi->state = spi_initialized;
 					spi_clear_master_request(spi);
 				} else {
-					printf("CNC Spi isn't reset... Received: %s\n", spi->spi_data);
+					//printf("CNC Spi isn't reset... Received: %s\n", spi->spi_data);
 				}
 				#endif
 				#ifdef SPI_SLAVE
@@ -323,7 +323,7 @@ void send_connect(struct spi_struct* spi){
 				spi->state = spi_running;
 				spi->connected = 1;
 			} else {
-				printf("CNC Spi Wasn't Ready... Received: %s, length: %d\n", spi->spi_data, spi->transfer_length);
+				//printf("CNC Spi Wasn't Ready... Received: %s, length: %d\n", spi->spi_data, spi->transfer_length);
 			}
 			#endif
 			#ifdef SPI_SLAVE

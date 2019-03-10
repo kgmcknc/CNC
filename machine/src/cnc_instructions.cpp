@@ -23,7 +23,7 @@ void init_instructions(struct cnc_state_struct* cnc){
 
 void clear_instruction(struct cnc_instruction_struct* instruction){
 	instruction->instruction_valid = 0;
-	instruction->instruction_number = 0;
+	//instruction->instruction_number = 0;
 	instruction->opcode_flags = PROGRAM_IDLE;
 	instruction->program_length = 0;
 }
@@ -227,10 +227,10 @@ void handle_instructions(struct cnc_state_struct* cnc){
 }
 
 void handle_program(struct cnc_state_struct* cnc){
-	if(cnc->state == cnc_idle){
+	if(cnc->state == CNC_IDLE){
 		if(cnc->start_program){
 			cnc->start_program = 0;
-			cnc->state = cnc_program_running;
+			cnc->state = CNC_PROGRAM_RUNNING;
 			cnc_printf(cnc, "Started CNC Program!");
 			cnc->instruction_array[cnc->instruction_rp].instruction_valid = 0;
 			cnc->instruction_rp = (cnc->instruction_rp<(INSTRUCTION_FIFO_DEPTH-1)) ? cnc->instruction_rp + 1 : 0;
@@ -265,7 +265,7 @@ void handle_program(struct cnc_state_struct* cnc){
 			cnc->instruction_rp = 0;
 			cnc->instruction_array[cnc->instruction_rp].instruction_valid = 0;
 			cnc->current_instruction.instruction_valid = 0;
-			cnc->state = cnc_idle;
+			cnc->state = CNC_IDLE;
 		}
 	}
 }
@@ -306,7 +306,7 @@ void check_instruction(struct cnc_instruction_struct* current_instruction){
 }
 
 void copy_instruction(struct cnc_instruction_struct* new_instruction, struct cnc_instruction_struct* current_instruction){
-	current_instruction->instruction_number = new_instruction->instruction_number;
+	//current_instruction->instruction_number = new_instruction->instruction_number;
 	current_instruction->instruction_valid = new_instruction->instruction_valid;
 	current_instruction->program_length = new_instruction->program_length;
 	current_instruction->opcode_flags = new_instruction->opcode_flags;
