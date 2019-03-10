@@ -22,7 +22,7 @@ void handle_cnc_state(struct interface_struct* interface){
 			break;
 		}
 		case PROCESS_INPUT : {
-
+			
 			break;
 		}
 		case POWER_MOTORS_ON : {
@@ -56,11 +56,9 @@ void handle_cnc_state(struct interface_struct* interface){
 	}
 }
 
-void handle_user_input(struct interface_struct* interface){
+void receive_user_input(struct interface_struct* interface){
 	if(print_set){
-		socket_handler(&interface->user_command_set, interface->user_input);
-		if(interface->user_command_set){
-			//sprintf("Current Command: %s\n", interface->user_command[0]);
+		if(interface->user_command_set && !interface->user_command_finished){
 			if(interface->user_input[0] == 13 || interface->user_input[0] == 10){
 				// new line or CR so finish string
 				printf("\n");
@@ -68,14 +66,11 @@ void handle_user_input(struct interface_struct* interface){
 				if((interface->user_command[0] > 64) && (interface->user_command[0] < 91)){
 					interface->user_command[0] = interface->user_command[0] + 32;
 				}
-				handle_input(interface, interface->user_command);
 				while(interface->command_counter>1){
 					interface->user_command[interface->command_counter] = '\0';
 					interface->command_counter--;
 				};
-				interface->user_command[0] = '\0';
-				interface->user_input[0] = '\0';
-				interface->command_counter = 0;
+				interface->user_command_finished = 1;
 				print_set = 0;
 			} else {
 				if(interface->user_input[0] == 8 || interface->user_input[0] == 127){
@@ -94,14 +89,8 @@ void handle_user_input(struct interface_struct* interface){
 			interface->user_command_set = 0;
 			printf("\rCommand: %s", interface->user_command);
 			fflush(stdout);
-		} else {
-			//check_idle(cnc.spi);
-			/*if(cnc.spi->state != spi_idle){
-				command_set = 0;
-			}*/
 		}
 	} else {
-		//check_idle(cnc.spi);
 		print_set = 1;
 		printf("Enter Command and Press Enter. Enter h For Help\n");
 		printf("\rCommand: %s", interface->user_command);
@@ -112,7 +101,7 @@ void handle_user_input(struct interface_struct* interface){
 
 void handle_input(struct interface_struct* interface, char* system_command){
 	int32_t value;
-	if(interface->user_command_set){
+	if(interface->user_command_finished){
 		switch(system_command[0]){
 			case 'q' : {
 				interface->state = DISABLE_GPIO;
@@ -212,6 +201,11 @@ void handle_input(struct interface_struct* interface, char* system_command){
 				break;
 			}
 		}
+		interface->user_command[0] = '\0';
+		interface->user_input[0] = '\0';
+		interface->command_counter = 0;
+		interface->user_command_set = 0;
+		interface->user_command_finished = 0;
 	}
 }
 

@@ -20,6 +20,16 @@
 	</natures>
 	<linkedResources>
 		<link>
+			<name>src/common_cnc.cpp</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/common/src/common_cnc.cpp</locationURI>
+		</link>
+		<link>
+			<name>src/common_cnc.h</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/common/src/common_cnc.h</locationURI>
+		</link>
+		<link>
 			<name>src/common_spi.cpp</name>
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/common/src/common_spi.cpp</locationURI>

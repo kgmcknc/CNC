@@ -110,14 +110,17 @@ void init_interface_struct(struct interface_struct* interface){
 	interface->state = FORK_INPUT;
 	interface->machine_state = MACHINE_IDLE;
 	interface->user_command_set = 0;
+	interface->user_command_finished = 0;
 	interface->user_command[0] = '\0';
 }
 
 uint8_t interface_main(struct interface_struct* interface){
 	char read_string[MAX_SPI_TRANSFER];
+	socket_handler(&interface->user_command_set, interface->user_input);
 	handle_spi();
+	receive_user_input(interface);
+	handle_input(interface, interface->user_command);
 	handle_cnc_state(interface);
-	handle_user_input(interface);
 	return 0;
 }
 

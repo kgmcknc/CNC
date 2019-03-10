@@ -16,7 +16,6 @@
 #include "cnc_timers.h"
 
 struct cnc_state_struct cnc;
-struct spi_struct cnc_spi;
 struct cnc_instruction_struct cnc_instruction, cnc_instruction_next;
 struct cnc_instruction_struct instruction_array[INSTRUCTION_FIFO_DEPTH];
 uint32_t instruction_array_fullness = 0, instruction_array_wp = 0, instruction_array_rp = 0;
@@ -32,38 +31,23 @@ int main(void)
 	cnc.motors = &cnc_motors;
 	cnc.heaters = &cnc_heaters;
 
-	system_init(&cnc_spi, cnc.motors);
-	variable_init(&cnc, &cnc_spi, cnc.motors);
+	system_init(cnc.motors);
+	variable_init(&cnc, cnc.motors);
 
-	/*enum spi_opcodes {
-		idle,
-		init,
-		reconnect_spi,
-		loopback_test,
-		read_version,
-		flash_firmware,
-		start_cnc_program,
-		end_cnc_program,
-		new_cnc_instruction,
-		get_cnc_status,
-		new_cnc_print,
-		disable_route,
-		enable_route
-	};*/
-	//cnc_printf(&cnc, "System Initialized");
+	cnc_printf(&cnc, "System Initialized");
 
 	/* Infinite loop */
 	while (1) {
 		handle_state(&cnc);
-		cnc.spi_connected = handle_spi();
-		//handle_instructions(&cnc);
-		//handle_program(&cnc);
-		//handle_motors(&cnc);
-		//handle_heaters(&cnc_heaters);
+		handle_spi();
+		handle_instructions(&cnc);
+		handle_program(&cnc);
+		handle_motors(&cnc);
+		handle_heaters(&cnc_heaters);
 	}
 }
 
-void system_init(spi_struct* spi, cnc_motor_list_struct* cnc_motors){
+void system_init(cnc_motor_list_struct* cnc_motors){
 	init_clocks();
 	init_spi_driver();
 	init_gpio();
@@ -83,7 +67,7 @@ void init_clocks(void){
 	CMU_OscillatorEnable(cmuOsc_HFRCO, false, false);
 }
 
-void variable_init(cnc_state_struct* cnc, spi_struct* spi, cnc_motor_list_struct* cnc_motors){
+void variable_init(cnc_state_struct* cnc, cnc_motor_list_struct* cnc_motors){
 	init_motors(cnc_motors);
 	init_instructions(cnc);
 	init_cnc(cnc);

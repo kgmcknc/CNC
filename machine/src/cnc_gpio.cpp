@@ -77,7 +77,6 @@ void init_gpio(void){
 	GPIO_PinModeSet(MOTOR_6_MS1_PORT, MOTOR_6_MS1_PIN, gpioModePushPull, 0);
 }
 
-
 void disable_debug_pins(void){
 	uint32_t *lock_bit_addr;
 	uint32_t lock_bit_data;

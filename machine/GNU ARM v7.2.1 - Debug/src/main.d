@@ -73,8 +73,9 @@ src/main.o: ../src/main.cpp \
  c:\siliconlabs\simplicitystudio\v4\developer\sdks\gecko_sdk_suite\v2.3\platform\emdrv\dmadrv\config\dmadrv_config.h \
  ../src/cnc_functions.h ../src/cnc_instructions.h \
  C:\Users\Kyle\Documents\GitHub\CNC/common/src/common_spi.h \
- ../src/cnc_heaters.h ../src/cnc_pid.h ../src/cnc_motors.h \
- ../src/cnc_gpio.h \
+ ../src/cnc_heaters.h ../src/cnc_pid.h \
+ C:\Users\Kyle\Documents\GitHub\CNC/common/src/common_cnc.h \
+ ../src/cnc_motors.h ../src/cnc_gpio.h \
  C:\Users\Kyle\Documents\GitHub\CNC/common/src/revision.h ../src/util.h \
  ../src/cnc_adc.h ../src/cnc_timers.h
 
@@ -233,6 +234,8 @@ C:\Users\Kyle\Documents\GitHub\CNC/common/src/common_spi.h:
 ../src/cnc_heaters.h:
 
 ../src/cnc_pid.h:
+
+C:\Users\Kyle\Documents\GitHub\CNC/common/src/common_cnc.h:
 
 ../src/cnc_motors.h:
 

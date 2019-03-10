@@ -62,7 +62,9 @@ src/cnc_motors.o: ../src/cnc_motors.cpp ../src/cnc_motors.h \
  c:\siliconlabs\simplicitystudio\v4\developer\sdks\gecko_sdk_suite\v2.3\platform\emlib\inc\em_assert.h \
  ../src/cnc_functions.h ../src/cnc_instructions.h \
  C:\Users\Kyle\Documents\GitHub\CNC/common/src/common_spi.h \
- ../src/cnc_heaters.h ../src/cnc_pid.h ../src/cnc_timers.h
+ ../src/cnc_heaters.h ../src/cnc_pid.h \
+ C:\Users\Kyle\Documents\GitHub\CNC/common/src/common_cnc.h \
+ ../src/cnc_timers.h
 
 ../src/cnc_motors.h:
 
@@ -197,5 +199,7 @@ C:\Users\Kyle\Documents\GitHub\CNC/common/src/common_spi.h:
 ../src/cnc_heaters.h:
 
 ../src/cnc_pid.h:
+
+C:\Users\Kyle\Documents\GitHub\CNC/common/src/common_cnc.h:
 
 ../src/cnc_timers.h:

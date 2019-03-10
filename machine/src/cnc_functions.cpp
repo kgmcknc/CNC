@@ -19,7 +19,6 @@ void init_cnc(struct cnc_state_struct* cnc){
 	cnc->print_rp = 0;
 	cnc->print_wp = 0;
 	cnc->print_fullness = 0;
-	cnc->spi_connected = 0;
 
 	for(print_count=0;print_count<PRINT_DEPTH;print_count++){
 		cnc->print_buffer[print_count][0] = 0; // use % to mark end of print string
@@ -35,23 +34,21 @@ void handle_state(struct cnc_state_struct* cnc){
 	} else {
 		cnc->request_print = 0;
 	}
-	if(cnc->spi_connected){
-		int32_t value = spi_check_read(spi_data);
-		if(value >= 0){
-			spi_set_read();
-			if(value > 0) set_write = 1;
-		}
-		if(spi_check_write() >= 0){
-			if(set_write){
-				if(strlen(spi_data) > 0){
-					spi_set_write(spi_data, (uint16_t) strlen(spi_data));
-				}
-				set_write = 0;
+	int32_t value = spi_check_read(spi_data);
+	if(value >= 0){
+		spi_set_read();
+		if(value > 0) set_write = 1;
+	}
+	if(spi_check_write() >= 0){
+		if(set_write){
+			if(strlen(spi_data) > 0){
+				spi_set_write(spi_data, (uint16_t) strlen(spi_data));
 			}
-			/*sprintf(spi_data, "Spi Slave Test: %u Count", spi_counter);
-			spi_counter++;
-			spi_set_write(spi_data, (uint16_t) strlen(spi_data));*/
+			set_write = 0;
 		}
+		/*sprintf(spi_data, "Spi Slave Test: %u Count", spi_counter);
+		spi_counter++;
+		spi_set_write(spi_data, (uint16_t) strlen(spi_data));*/
 	}
 }
 

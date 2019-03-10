@@ -24,11 +24,12 @@ struct interface_struct {
     int32_t cnc_write_length;
     uint16_t command_counter = 0;
     uint8_t user_command_set = 0;
+    uint8_t user_command_finished = 0;
 };
 
 void init_interface_struct(struct interface_struct* interface);
 uint8_t interface_main(struct interface_struct* interface);
-void handle_user_input(struct interface_struct* interface);
+void receive_user_input(struct interface_struct* interface);
 void handle_cnc_state(struct interface_struct* interface);
 void system_control(int control_socket);
 void system_shutdown(int sig);

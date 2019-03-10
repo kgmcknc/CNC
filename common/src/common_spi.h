@@ -17,7 +17,7 @@
 
 #define OPCODE_LENGTH 1
 #define SPI_SIZE_LENGTH 2
-#define SPI_HEADER_LENGTH (OPCODE_LENGTH*4 + SPI_SIZE_LENGTH*2)
+#define SPI_HEADER_LENGTH (OPCODE_LENGTH*2 + SPI_SIZE_LENGTH*2)
 #define SPI_DATA_LENGTH (MAX_SPI_LENGTH - SPI_HEADER_LENGTH)
 
 #define SPI_RESET_STRING "RRRRR"
@@ -29,12 +29,10 @@
 /*************************************************
 Packet Structure
 Byte 0   - Current Write Opcode
-Byte 1   - Next Write Opcode
-Byte 2   - Current Read Opcode
-Byte 3   - Next Read Opcode
-Byte 4-5 - Current Write Size
-Byte 6-7 - Total Write Size
-Byte 8-X - Packet Data
+Byte 1   - Current Read Opcode
+Byte 2-3 - Current Write Size
+Byte 4-5 - Total Write Size
+Byte 6-X - Packet Data
 **************************************************/
 /*
 must define themselves

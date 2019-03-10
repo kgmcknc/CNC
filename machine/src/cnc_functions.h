@@ -9,6 +9,7 @@
 #define SRC_CNC_FUNCTIONS_H_
 
 #include "cnc_instructions.h"
+#include "common_cnc.h"
 #include "cnc_motors.h"
 
 typedef enum {
@@ -23,7 +24,6 @@ struct cnc_state_struct {
 	uint8_t abort_program;
 	uint8_t request_instruction;
 	uint8_t request_print;
-	uint8_t spi_connected;
 	struct cnc_instruction_struct current_instruction;
 	struct cnc_motor_list_struct* motors;
 	struct cnc_heater_list_struct* heaters;
@@ -36,16 +36,6 @@ struct cnc_state_struct {
 	uint8_t print_wp;
 	uint8_t print_fullness;
 };
-
-typedef enum {
-	start_program,
-	pause_program,
-	resume_program,
-	end_program,
-	new_instruction,
-	get_status,
-	error
-} cnc_opcodes;
 
 extern struct cnc_state_struct cnc;
 

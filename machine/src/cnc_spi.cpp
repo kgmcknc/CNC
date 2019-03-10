@@ -255,7 +255,7 @@ void parse_instruction(spi_struct* spi, cnc_state_struct* cnc){
 			break;
 		}
 		case INSTRUCTION : {
-			/*sscanf(spi->read_data, "%c%llu%lu%lu%lu%lu%lu%lu%lu%lu",
+			sscanf(spi->read_data, "%c%llu%lu%lu%lu%lu%lu%lu%lu%lu",
 				&opcode_temp,
 				&cnc->instruction_array[next_wp].instruction_number,
 				&cnc->instruction_array[next_wp].xl_axis.end_position,
@@ -442,7 +442,7 @@ void parse_instruction(spi_struct* spi, cnc_state_struct* cnc){
 
 	strcpy(spi->spi_data, "");
 }
-/*
+
 void parse_status(spi_struct* spi, cnc_state_struct* cnc){
 	char status_string[STATUS_LENGTH];
 	sprintf(status_string, "L:%d%d,R:%d%d,ZL:%d%d,ZR:%d%d,X:%ld,Y:%ld, T0:%f, T1:%f",

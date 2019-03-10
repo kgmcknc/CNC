@@ -438,9 +438,7 @@ void spi_prepare_transfer(struct spi_struct* spi){
 	uint16_t total_write_length = 0;
 	uint8_t send_transfer = 0;
 	enum spi_opcodes current_write_opcode = write_idle;
-	enum spi_opcodes next_write_opcode = write_idle;
 	enum spi_opcodes current_read_opcode = read_idle;
-	enum spi_opcodes next_read_opcode = read_idle;
 
 	if(spi->write_in_progress && !spi->write_complete){
 		send_transfer = 1;
@@ -453,10 +451,8 @@ void spi_prepare_transfer(struct spi_struct* spi){
 			write_size = 0; // don't write on first packet
 			if(total_write_length > SPI_DATA_LENGTH){
 				current_write_opcode = start_multi_write;
-				next_write_opcode = continue_write;
 			} else {
 				current_write_opcode = start_single_write;
-				next_write_opcode = write_idle;
 			}
 		} else {
 			// set transfer opcodes
@@ -465,10 +461,8 @@ void spi_prepare_transfer(struct spi_struct* spi){
 			#endif
 			if(spi->write_remaining > SPI_DATA_LENGTH){
 				current_write_opcode = continue_write;
-				next_write_opcode = continue_write;
 			} else {
 				current_write_opcode = continue_write;
-				next_write_opcode = write_idle;
 			}
 			total_write_length = spi->write_length;
 			write_size = spi->write_remaining;
@@ -477,7 +471,6 @@ void spi_prepare_transfer(struct spi_struct* spi){
 		//spi->write_state = transfer_in_progress;
 	} else {
 		current_write_opcode = write_idle;
-		next_write_opcode = write_idle;
 	}
 	if(spi->read_in_progress && !spi->read_complete){
 		#ifdef SPI_MASTER
@@ -495,18 +488,15 @@ void spi_prepare_transfer(struct spi_struct* spi){
 			if(spi->read_state == transfer_requested){
 				// set initial opcode and length to get actual read length
 				current_read_opcode = read_ready;
-				next_read_opcode = read_ready;
 			} else {
 				read_size = spi->read_remaining;
 				current_read_opcode = read_ready;
-				next_read_opcode = read_ready;
 			}
 		}
 		// this will get set whenever an initial read has been received
 		//spi->read_state = transfer_in_progress;
 	} else {
 		current_read_opcode = read_idle;
-		next_read_opcode = read_idle;
 	}
 	if(write_size > SPI_DATA_LENGTH){
 		write_size = SPI_DATA_LENGTH;
@@ -543,18 +533,16 @@ void spi_prepare_transfer(struct spi_struct* spi){
 		// fix this line to a vsprintf or something...
 		// write out all the fields...
 		spi->spi_data[0] = current_write_opcode;
-		spi->spi_data[1] = next_write_opcode;
-		spi->spi_data[2] = current_read_opcode;
-		spi->spi_data[3] = next_read_opcode;
-		spi->spi_data[4] = write_size & 0xFF;
-		spi->spi_data[5] = (write_size >> 8) & 0xFF;
-		spi->spi_data[6] = total_write_length & 0xFF;
-		spi->spi_data[7] = (total_write_length >> 8) & 0xFF;
+		spi->spi_data[1] = current_read_opcode;
+		spi->spi_data[2] = write_size & 0xFF;
+		spi->spi_data[3] = (write_size >> 8) & 0xFF;
+		spi->spi_data[4] = total_write_length & 0xFF;
+		spi->spi_data[5] = (total_write_length >> 8) & 0xFF;
 		#ifdef SPI_MASTER
 			//printf("s: Cur W %d, Cur R %d, Wsize %d, TotalS: %d\n", current_write_opcode, current_read_opcode, write_size, total_write_length);
 		#endif
 		if((write_size > 0) && (total_write_length > 0)){
-			memcpy(&spi->spi_data[8], &spi->write_data[(total_write_length)-(spi->write_remaining)], write_size);
+			memcpy(&spi->spi_data[6], &spi->write_data[(total_write_length)-(spi->write_remaining)], write_size);
 		}
 		if(spi_transfer_data(spi->spi_data, spi->transfer_length)){
 			// if didn't get zero, than couldn't transfer, so retry
@@ -573,9 +561,7 @@ void spi_parse_transfer(struct spi_struct* spi){
 	uint16_t current_write_size = 0;
 	uint16_t read_size = 0;
 	enum spi_opcodes current_write_opcode = write_idle;
-	enum spi_opcodes next_write_opcode = write_idle;
 	enum spi_opcodes current_read_opcode = write_idle;
-	enum spi_opcodes next_read_opcode = write_idle;
 
 	if(spi->transfer_length < SPI_HEADER_LENGTH){
 		// check to see if this is reset request?
@@ -587,11 +573,9 @@ void spi_parse_transfer(struct spi_struct* spi){
 	} else {
 		// parse data into the different fields
 		current_write_opcode = spi_parse_opcode(&spi->spi_data[0]);
-		next_write_opcode = spi_parse_opcode(&spi->spi_data[OPCODE_LENGTH]);
-		current_read_opcode = spi_parse_opcode(&spi->spi_data[2*OPCODE_LENGTH]);
-		next_read_opcode = spi_parse_opcode(&spi->spi_data[3*OPCODE_LENGTH]);
-		current_write_size = spi_string_to_int32(&spi->spi_data[4*OPCODE_LENGTH], SPI_SIZE_LENGTH);
-		read_size = spi_string_to_int32(&spi->spi_data[4*OPCODE_LENGTH+SPI_SIZE_LENGTH], SPI_SIZE_LENGTH);
+		current_read_opcode = spi_parse_opcode(&spi->spi_data[OPCODE_LENGTH]);
+		current_write_size = spi_string_to_int32(&spi->spi_data[2*OPCODE_LENGTH], SPI_SIZE_LENGTH);
+		read_size = spi_string_to_int32(&spi->spi_data[2*OPCODE_LENGTH+SPI_SIZE_LENGTH], SPI_SIZE_LENGTH);
 		#ifdef SPI_MASTER
 		//printf("Valid Transfer\n");
 		#endif
@@ -700,7 +684,7 @@ void set_idle_read(struct spi_struct* spi){
 	} else {
 		//SPIDRV_STransfer( handle, spi->spi_data, spi->spi_data, IDLE_LENGTH, slave_transfer_done, 0);
 		//printf("Set idle print\n");
-		/*if(cnc->request_print){
+		if(cnc->request_print){
 			spi->state = send_cnc_print;
 		} else {
 			if(cnc->request_instruction) {

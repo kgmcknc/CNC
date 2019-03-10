@@ -7,6 +7,7 @@
 
 #include "cnc_functions.h"
 #include "cnc_instructions.h"
+#include "common_cnc.h"
 
 void init_instructions(struct cnc_state_struct* cnc){
 	uint32_t clear_count = 0;

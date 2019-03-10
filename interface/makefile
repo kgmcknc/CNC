@@ -6,7 +6,7 @@ PRJNAME = $(shell basename $(CURDIR))
 LIBRARIES = -lwiringPi
 
 CC=g++
-CFLAGS=-I$(COMDIR) -DSPI_MASTER
+CFLAGS=-I$(COMDIR) -I$(SRCDIR) -DSPI_MASTER -DINTERFACE
 
 SRC = $(wildcard $(SRCDIR)/*.cpp) $(wildcard $(COMDIR)/*.cpp)
 DEPS = $(wildcard $(SRCDIR)/*.h) $(wildcard $(COMDIR)/*.h)
