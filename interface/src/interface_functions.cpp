@@ -32,21 +32,6 @@ void handle_cnc_state(struct interface_struct* interface){
 			handle_input(interface);
 			break;
 		}
-		/*case SEND_TEST_STRING : {
-			int32_t value;
-			char read_string[MAX_SPI_TRANSFER];
-			read_string[0] = (char) SEND_TEST_STRING;
-			strcpy(&read_string[1], "thisislongthisislongthisislongthisislongthisislongthisislongthisislongthisislongthisislongthisislong");
-			//value = spi_set_write(interface->user_command, strlen(interface->user_command));
-			value = spi_set_write(read_string, strlen(read_string));
-			if(value > 0){
-				printf("sent data: %s\n", &interface->user_command[1]);
-				interface->machine_state = MACHINE_IDLE;
-			} else {
-				printf("write hasn't finished\n");
-			}
-			break;
-		}*/
 		case POWER_MOTORS_ON : {
 			if(interface->write_in_progress){
 				if(spi_check_write() > 0){
@@ -121,22 +106,27 @@ void handle_cnc_state(struct interface_struct* interface){
 			if(interface->write_in_progress){
 				if(spi_check_write() > 0){
 					interface->write_in_progress = 0;
+					interface->user_instruction.instruction_valid = 0;
+					printf("finished sending instruction\n");
 				}
 			} else {
 				socket_handler(&interface->user_command_set, interface->user_input);
-				receive_user_input(interface);
-				// check if enter was set
-				// if so
-				// interface->machine_state = MACHINE_IDLE;
-				// else
-				// send instruction
-				//interface->cnc_write_data[0] = (char) GET_CNC_VERSION;
-				if(spi_set_write(interface->cnc_write_data, 1) > 0){
-					interface->write_in_progress = 1;
+				if(interface->user_command_set){
+					printf("receiving user control\n");
+					receive_user_control(interface);
 				} else {
-					interface->write_in_progress = 0;
+					interface->machine_state = USER_CONTROL;
 				}
-				interface->machine_state = USER_CONTROL;
+				if(interface->user_instruction.instruction_valid){
+					printf("valid user instruction\n");
+					interface->cnc_write_data[0] = (char) NEW_CNC_INSTRUCTION;
+					if(spi_set_write(interface->cnc_write_data, 1) > 0){
+						interface->write_in_progress = 1;
+						printf("sent user instruction\n");
+					} else {
+						interface->write_in_progress = 0;
+					}
+				}
 			}
 			break;
 		}
@@ -225,6 +215,21 @@ void receive_user_input(struct interface_struct* interface){
 	}
 }
 
+void receive_user_control(struct interface_struct* interface){
+	if(interface->user_command_set){
+		if(interface->user_input[0] == 13 || interface->user_input[0] == 10 || interface->user_input[0] == 'q'){
+			// new line or CR so finish
+			printf("get end in user instruction\n");
+			interface->machine_state = MACHINE_IDLE;
+			interface->user_instruction.instruction_valid = 0;
+			print_set = 0;
+		} else {
+			interface->user_instruction.instruction_valid = 1;
+		}
+		interface->user_command_set = 0;
+	}
+}
+
 void process_spi_request(struct interface_struct* interface){
 	// setting machine state to default...
 	// it will change in switch if needed
@@ -246,14 +251,6 @@ void process_spi_request(struct interface_struct* interface){
 
 			break;
 		}
-		case START_CNC_PROGRAM : {
-
-			break;
-		}
-		case END_CNC_PROGRAM : {
-
-			break;
-		}
 		case NEW_CNC_INSTRUCTION : {
 
 			break;
@@ -271,23 +268,11 @@ void process_spi_request(struct interface_struct* interface){
 
 			break;
 		}
-		case START_PROGRAM : {
-
-			break;
-		}
 		case PAUSE_PROGRAM : {
 
 			break;
 		}
 		case RESUME_PROGRAM : {
-
-			break;
-		}
-		case END_PROGRAM : {
-
-			break;
-		}
-		case NEW_INSTRUCTION : {
 
 			break;
 		}
@@ -317,10 +302,11 @@ void handle_input(struct interface_struct* interface){
 				print_interface_menu();
 				break;
 			}
-			/*case 's' : {
-				interface->machine_state = SEND_TEST_STRING;
+			case 'i' : {
+				interface->machine_state = USER_CONTROL;
+				printf("Getting User Instruction!\n");
 				break;
-			}*/
+			}
 			case 'u' : {
 				interface->machine_state = UPDATE_FIRMARE;
 				break;
@@ -367,12 +353,6 @@ void handle_input(struct interface_struct* interface){
 			}
 			case 'o' : {
 				cnc->state = GET_PROGRAM;
-				break;
-			}
-			
-			case 'i' : {
-				
-				cnc->state = SEND_TO_MICRO;
 				break;
 			}
 			/*case 's' : {

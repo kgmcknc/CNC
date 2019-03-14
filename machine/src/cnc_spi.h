@@ -24,6 +24,7 @@
 void init_spi_driver(void);
 
 void init_spi(struct spi_struct* spi);
+uint8_t check_spi(struct cnc_state_struct* cnc);
 //void handle_spi_reset(struct spi_struct*spi);
 void handle_cnc_spi(struct spi_struct* spi, struct cnc_state_struct* cnc);
 //void send_connected(struct spi_struct* spi);

@@ -23,11 +23,20 @@ extern struct cnc_instruction_struct cnc_instruction, cnc_instruction_next;
 extern struct cnc_instruction_struct instruction_array[INSTRUCTION_FIFO_DEPTH];
 extern uint32_t instruction_array_fullness, instruction_array_wp, instruction_array_rp;
 
+void receive_instruction(struct cnc_state_struct* cnc);
+void parse_instruction(struct cnc_state_struct* cnc);
+void get_next_instruction(struct cnc_state_struct* cnc);
+void check_instruction_fifo(struct cnc_state_struct* cnc);
+void handle_instructions(struct cnc_state_struct* cnc);
+void clear_program(struct cnc_state_struct* cnc);
+void handle_program(struct cnc_state_struct* cnc);
+void process_instruction(struct cnc_state_struct* cnc);
+void init_instructions(struct cnc_state_struct* cnc);
 void clear_instruction(struct cnc_instruction_struct* instruction);
 void copy_instruction(struct cnc_instruction_struct* new_instruction, struct cnc_instruction_struct* current_instruction);
 void check_motor_instruction(struct cnc_motor_instruction_struct* current_instruction, struct cnc_motor_struct* motor);
 void check_heater_instruction(struct cnc_heater_instruction_struct* current_instruction, struct cnc_heater_struct* heater);
-void check_instruction(struct cnc_instruction_struct* current_instruction);
+void check_instruction(struct cnc_state_struct* cnc);
 void copy_motor_instruction(struct cnc_motor_instruction_struct* new_instruction, struct cnc_motor_instruction_struct* current_instruction);
 void copy_heater_instruction(struct cnc_heater_instruction_struct* new_instruction, struct cnc_heater_instruction_struct* current_instruction);
 

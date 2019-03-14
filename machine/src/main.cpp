@@ -40,10 +40,9 @@ int main(void)
 	while (1) {
 		handle_spi();
 		handle_state(&cnc);
-		//handle_instructions(&cnc);
-		//handle_program(&cnc);
-		//handle_motors(&cnc);
-		//handle_heaters(&cnc_heaters);
+		handle_instructions(&cnc);
+		handle_motors(&cnc);
+		handle_heaters(&cnc_heaters);
 	}
 }
 

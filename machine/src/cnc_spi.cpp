@@ -69,152 +69,26 @@ void init_spi_driver(void){
 	//initData.slaveStartMode = spidrvSlaveStartDelayed;
 	SPIDRV_Init( handle, &initData );
 }
+
+uint8_t check_spi(struct cnc_state_struct* cnc){
+	// always check write to complete transfer if done
+	spi_check_write();
+	// check if read is finished
+	cnc->cnc_read_length = spi_check_read(cnc->cnc_read_data);
+	if(cnc->cnc_read_length == 0){
+		// not reading, so set read ready
+		spi_set_read();
+		return 0;
+	} else {
+		if(cnc->cnc_read_length > 0){
+			// read finished, so process
+			return 1;
+		} else {
+			return 0;
+		}
+	}
+}
 /*
-void handle_cnc_spi(spi_struct* spi, cnc_state_struct* cnc){
-	get_spi_reset(spi);
-	if(spi->reset_request){
-		// shouldn't ever get here... error state so reset from master
-		spi->state = spi_reset;
-	}
-	switch(spi->state){
-		case spi_reset : {
-			handle_spi_reset(spi);
-			break;
-		}
-		case spi_initialized : {
-			send_connected(spi);
-			break;
-		}
-		case spi_idle : {
-			set_idle_read(spi, cnc);
-			break;
-		}
-		case spi_handle_request : {
-			handle_request(spi, cnc);
-			break;
-		}
-		case spi_loopback_active : {
-			loop_back_data(spi);
-			break;
-		}
-		case get_cnc_instruction : {
-			receive_instruction(spi, cnc);
-			break;
-		}
-		case send_cnc_status : {
-			send_status(spi, cnc);
-			break;
-		}
-		case firmware_update : {
-			clear_write_request(spi);
-			while(1); // wait for power down and reboot with fw flash
-			break;
-		}
-		case send_cnc_print : {
-			send_print(spi, cnc);
-			break;
-		}
-		default : {
-			spi->state = spi_reset;
-		}
-	}
-}
-
-void send_connected(spi_struct* spi){
-	if(spi->transfer_pending){
-		if(spi->transfer_finished){
-			clear_pending_transfer(spi);
-			// master sent data
-			if(!strncmp(spi->spi_data, SPI_MASTER_INIT_STRING, strlen(SPI_MASTER_INIT_STRING))){
-				spi->state = spi_idle;
-			}
-		} else {
-			// waiting for master to initialize data write
-		}
-	} else {
-		strcpy(spi->spi_data, SPI_SLAVE_INIT_STRING);
-		SPIDRV_STransfer(handle, spi->spi_data, spi->spi_data, strlen(SPI_SLAVE_INIT_STRING), slave_transfer_done, 0);
-		set_pending_transfer(spi);
-	}
-}
-*/
-/*
-void set_idle_read(spi_struct* spi, cnc_state_struct* cnc){
-	spi_opcodes opcode;
-	char * length_string = 0;
-
-	if(spi->transfer_pending){
-		if(spi->transfer_finished){
-			// master sent data
-			spi->transfer_finished = 0;
-			opcode = parse_opcode(spi->spi_data);
-			length_string = &spi->spi_data[OPCODE_LENGTH];
-			spi->pending_length = string_to_int32(length_string, (IDLE_LENGTH-OPCODE_LENGTH));
-			handle_opcode(spi, opcode, cnc);
-		} else {
-
-		}
-	} else {
-		//SPIDRV_STransfer( handle, spi->spi_data, spi->spi_data, IDLE_LENGTH, slave_transfer_done, 0);
-		//printf("Set idle print\n");
-		if(cnc->request_print){
-			spi->state = send_cnc_print;
-		} else {
-			if(cnc->request_instruction) {
-				spi->state = get_cnc_instruction;
-			}
-		}
-	}
-}
-
-void loop_back_data(spi_struct* spi){
-	if(spi->transfer_pending){
-		if(spi->transfer_finished){
-			spi->transfer_finished = 0;
-			SPIDRV_STransfer( handle, spi->spi_data, spi->spi_data, spi->pending_length+IDLE_LENGTH, slave_transfer_done, 0);
-			clear_pending_transfer(spi);
-		}
-	} else {
-		if(spi->transfer_pending){
-			if(spi->transfer_finished){
-				spi->transfer_finished = 0;
-				spi->state = spi_idle;
-				spi->pending_length = 0;
-				clear_write_request(spi);
-			}
-		} else {
-			SPIDRV_STransfer( handle, spi->spi_data, spi->spi_data, spi->pending_length+IDLE_LENGTH, slave_transfer_done, 0);
-			clear_pending_transfer(spi);
-		}
-	}
-}
-
-void receive_instruction(spi_struct* spi, cnc_state_struct* cnc){
-	if(spi->transfer_pending){
-		if(spi->transfer_finished){
-			spi->transfer_finished = 0;
-			parse_instruction(spi, cnc);
-			clear_pending_transfer(spi);
-			spi->state = spi_idle;
-		} else {
-
-		}
-	} else {
-		if(spi->transfer_pending){
-			if(spi->transfer_finished){
-				spi->transfer_finished = 0;
-				//clear_write_request(spi);
-				SPIDRV_SReceive( handle, spi->spi_data, INSTRUCTION_LENGTH+IDLE_LENGTH, slave_transfer_done, 0);
-				//set_read_request(spi);
-			}
-		} else {
-			//set_write_opcode(spi, new_cnc_instruction, INSTRUCTION_LENGTH);
-			SPIDRV_STransfer( handle, spi->spi_data, spi->spi_data, IDLE_LENGTH, slave_transfer_done, 0);
-			//set_pending_transfer(spi);
-		}
-	}
-}
-
 void parse_instruction(spi_struct* spi, cnc_state_struct* cnc){
 	char valid_flag = 0;
 	char opcode_temp = 0;
@@ -441,145 +315,6 @@ void parse_instruction(spi_struct* spi, cnc_state_struct* cnc){
 	}
 
 	strcpy(spi->spi_data, "");
-}
-
-void send_status(spi_struct* spi, cnc_state_struct* cnc){
-	if(spi->transfer_pending){
-		if(spi->transfer_finished){
-			spi->transfer_finished = 0;
-			//clear_read_request(spi);
-		}
-	}
-	if(spi->transfer_pending){
-		if(spi->transfer_finished){
-			spi->transfer_finished = 0;
-			spi->pending_length = 0;
-			clear_write_request(spi);
-			spi->state = spi_idle;
-		}
-	} else {
-		parse_status(spi, cnc);
-		spi->pending_length = STATUS_LENGTH;
-		SPIDRV_STransfer( handle, spi->spi_data, spi->spi_data, STATUS_LENGTH+IDLE_LENGTH, slave_transfer_done, 0);
-	}
-}
-
-void send_print(spi_struct* spi, cnc_state_struct* cnc){
-	if(spi->transfer_pending){
-		if(spi->transfer_finished){
-			spi->transfer_finished = 0;
-			//clear_read_request(spi);
-		}
-	}
-	if(spi->transfer_pending){
-		if(spi->transfer_finished){
-			spi->transfer_finished = 0;
-			if(spi->opcode_sent){
-				spi->opcode_sent = 0;
-				spi->pending_length = strlen(cnc->print_buffer[cnc->print_rp]);
-				parse_print(spi, cnc);
-				SPIDRV_STransfer(handle, spi->spi_data, spi->spi_data, spi->pending_length+IDLE_LENGTH, slave_transfer_done, 0);
-			} else {
-				clear_write_request(spi);
-				spi->state = spi_idle;
-			}
-		}
-	} else {
-		set_write_opcode(spi, new_cnc_print, strlen(cnc->print_buffer[cnc->print_rp]));
-		spi->pending_length = IDLE_LENGTH;
-		SPIDRV_STransfer(handle, spi->spi_data, spi->spi_data, spi->pending_length, slave_transfer_done, 0);
-		spi->opcode_sent = 1;
-	}
-}
-
-void handle_opcode(spi_struct* spi, spi_opcodes new_opcode, cnc_state_struct* cnc){
-	switch(new_opcode){
-		case loopback_test : {
-			//spi->state = spi_loopback_active;
-			spi->pending_opcode = loopback_test;
-			break;
-		}
-		case flash_firmware : {
-			//spi->state = firmware_update;
-			spi->pending_opcode = flash_firmware;
-			break;
-		}
-		case reconnect_spi : {
-			spi->state = spi_initialized;
-			spi->pending_opcode = reconnect_spi;
-			break;
-		}
-		case start_cnc_program : {
-			spi->state = spi_handle_request;
-			spi->pending_opcode = start_cnc_program;
-			break;
-		}
-		case end_cnc_program : {
-			spi->state = spi_handle_request;
-			spi->pending_opcode = end_cnc_program;
-			break;
-		}
-		case new_cnc_instruction : {
-			spi->state = spi_handle_request;
-			spi->pending_opcode = new_cnc_instruction;
-			break;
-		}
-		case new_cnc_print : {
-			spi->state = spi_handle_request;
-			spi->pending_opcode = new_cnc_print;
-			break;
-		}
-		case get_cnc_status : {
-			//spi->state = send_cnc_status;
-			spi->pending_opcode = get_cnc_status;
-			break;
-		}
-		case disable_route : {
-			spi->state = spi_handle_request;
-			spi->pending_opcode = disable_route;
-			break;
-		}
-		case enable_route : {
-			spi->state = spi_handle_request;
-			spi->pending_opcode = enable_route;
-			break;
-		}
-		default : {
-			spi->state = spi_idle;
-			spi->pending_opcode = idle;
-		}
-	}
-}
-*/
-/*
-void handle_request(spi_struct* spi, cnc_state_struct* cnc){
-	switch(spi->pending_opcode){
-		case start_cnc_program : {
-			cnc->start_program = 1;
-			spi->state = spi_idle;
-			break;
-		}
-		case end_cnc_program : {
-			cnc->abort_program = 1;
-			spi->state = spi_idle;
-			break;
-		}
-		case disable_route : {
-			disable_route_pins();
-			cnc_printf(cnc,"Disabled Route Pins");
-			spi->state = spi_idle;
-			break;
-		}
-		case enable_route : {
-			enable_route_pins();
-			cnc_printf(cnc,"Enabled Route Pins");
-			spi->state = spi_idle;
-			break;
-		}
-		default : {
-
-		}
-	}
 }
 
 spi_opcodes parse_opcode(char opcode_string[MAX_STRING_LENGTH]){

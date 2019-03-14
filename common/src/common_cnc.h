@@ -15,21 +15,17 @@ enum CNC_OPCODES {
 	GET_CNC_STATUS,
 	NEW_CNC_PRINT,
 	FLASH_FIRMWARE,
-	START_CNC_PROGRAM,
-	END_CNC_PROGRAM,
 	NEW_CNC_INSTRUCTION,
 	INSTANT_CNC_INSTRUCTION,
 	DISABLE_ROUTE,
 	ENABLE_ROUTE,
-	START_PROGRAM,
 	PAUSE_PROGRAM,
 	RESUME_PROGRAM,
-	END_PROGRAM,
-	NEW_INSTRUCTION,
 	ERROR
 };
 
 enum INSTRUCTION_OPCODE {
+	// change these some
 	PROGRAM_IDLE,
 	PROGRAM_START,
 	PROGRAM_PAUSE,
@@ -74,9 +70,9 @@ struct cnc_motor_instruction_struct {
 };
 
 struct cnc_heater_instruction_struct {
+	uint8_t valid_instruction;
 	uint8_t active;
 	uint8_t enabled;
-	uint8_t valid_instruction;
 	uint8_t heater_on;
 	uint8_t heater_active;
 	uint8_t wait_for_temp;
@@ -89,7 +85,7 @@ struct cnc_heater_instruction_struct {
 
 struct cnc_instruction_struct {
 	uint8_t instruction_valid;
-	uint64_t program_length; // number of instructions for current program
+	uint8_t instant_instruction;
 	enum INSTRUCTION_OPCODE opcode_flags; // maps to instruction opcode enum
 	char pending_motor_enables[7];
 	char pending_motor_disables[7];

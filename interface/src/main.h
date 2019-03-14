@@ -10,6 +10,7 @@
 #include "common_spi.h"
 #include "interface_gpio.h"
 #include "interface_functions.h"
+#include "instructions.h"
 
 #define MAX_USER_COMMAND 4096
 
@@ -32,11 +33,11 @@ struct interface_struct {
     uint16_t command_counter = 0;
     uint8_t user_command_set = 0;
     uint8_t user_command_finished = 0;
+    struct cnc_instruction_struct user_instruction;
 };
 
 void init_interface_struct(struct interface_struct* interface);
 uint8_t interface_main(struct interface_struct* interface);
-void receive_user_input(struct interface_struct* interface);
 void system_control(int control_socket);
 void system_shutdown(int sig);
 void system_control_shutdown(int sig);

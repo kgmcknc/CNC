@@ -20,6 +20,8 @@ enum CNC_MACHINE_STATE {
 void handle_cnc_state(struct interface_struct* interface);
 uint8_t check_spi(struct interface_struct* interface);
 void process_spi_request(struct interface_struct* interface);
+void receive_user_input(struct interface_struct* interface);
+void receive_user_control(struct interface_struct* interface);
 void handle_input(struct interface_struct* interface);
 void interface_functions(uint8_t command_ready, char* system_command, struct spi_struct* spi, struct cnc_state* cnc);
 void send_spi_string(char* spi_string, uint8_t string_length);

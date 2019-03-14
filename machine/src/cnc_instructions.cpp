@@ -5,6 +5,11 @@
  *      Author: Kyle
  */
 
+// need to do:
+// parse instruction
+// check instruction
+// process instruction
+
 #include "cnc_functions.h"
 #include "cnc_instructions.h"
 #include "common_cnc.h"
@@ -12,9 +17,7 @@
 void init_instructions(struct cnc_state_struct* cnc){
 	uint32_t clear_count = 0;
 
-	cnc->instruction_fullness = 0;
-	cnc->instruction_wp = 0;
-	cnc->instruction_rp = 0;
+	clear_program(cnc);
 
 	for(clear_count=0;clear_count<INSTRUCTION_FIFO_DEPTH-1;clear_count++){
 		clear_instruction(&cnc->instruction_array[clear_count]);
@@ -25,10 +28,122 @@ void clear_instruction(struct cnc_instruction_struct* instruction){
 	instruction->instruction_valid = 0;
 	//instruction->instruction_number = 0;
 	instruction->opcode_flags = PROGRAM_IDLE;
-	instruction->program_length = 0;
+	//instruction->program_length = 0;
 }
 
-void handle_instructions(struct cnc_state_struct* cnc){
+void receive_instruction(struct cnc_state_struct* cnc){
+	parse_instruction(cnc);
+	if(cnc->new_instruction.instruction_valid){
+		if(cnc->new_instruction.instant_instruction){
+			if(cnc->instant_instruction.instruction_valid){
+				// instant instruction already set... can't overwrite...
+			} else {
+				copy_instruction(&cnc->new_instruction, &cnc->instant_instruction);
+			}
+		} else {
+			if(cnc->program_running){
+				// add to running program
+				copy_instruction(&cnc->new_instruction, &cnc->instruction_array[cnc->instruction_wp]);
+				cnc->instruction_wp = (cnc->instruction_wp<(INSTRUCTION_FIFO_DEPTH-1)) ? cnc->instruction_wp + 1 : 0;
+				cnc->instruction_fullness++;
+				cnc->program_loaded = cnc->new_instruction.opcode_flags == PROGRAM_END;
+				cnc->new_instruction.instruction_valid = 0;
+				// check to see if this is last instruction in program
+				// if so, mark program loaded
+			} else {
+				if(cnc->new_instruction.opcode_flags == PROGRAM_START){
+					copy_instruction(&cnc->new_instruction, &cnc->instruction_array[cnc->instruction_wp]);
+					cnc->instruction_wp = (cnc->instruction_wp<(INSTRUCTION_FIFO_DEPTH-1)) ? cnc->instruction_wp + 1 : 0;
+					cnc->instruction_fullness++;
+					cnc->program_running = 1;
+					cnc->new_instruction.instruction_valid = 0;
+				} else {
+					// program isn't running and it's not an immediate instruction  or start of program... so ignore...
+				}
+			}
+		}
+		cnc->new_instruction.instruction_valid = 0;
+	} else {
+		// not valid instruction
+	}
+}
+
+void clear_program(struct cnc_state_struct* cnc){
+	cnc->instruction_fullness = 0;
+	cnc->instruction_wp = 0;
+	cnc->instruction_rp = 0;
+	cnc->instruction_array[cnc->instruction_rp].instruction_valid = 0;
+	cnc->current_instruction.instruction_valid = 0;
+}
+
+void parse_instruction(struct cnc_state_struct* cnc){
+	// convert received spi data to cnc instruction
+	cnc->new_instruction.instruction_valid = 1;
+	cnc->new_instruction.instant_instruction = 1;
+}
+
+void get_next_instruction(struct cnc_state_struct* cnc){
+	if(cnc->instant_instruction.instruction_valid){
+		// instant instruction ready
+		// copy to current
+		copy_instruction(&cnc->instant_instruction, &cnc->current_instruction);
+		cnc->instant_instruction.instruction_valid = 0;
+	} else {
+		if(cnc->instruction_fullness > 0){
+			// we have an instruction ready to copy over
+			copy_instruction(&cnc->instruction_array[cnc->instruction_rp], &cnc->current_instruction);
+			cnc->instruction_array[cnc->instruction_rp].instruction_valid = 0;
+			cnc->instruction_rp = (cnc->instruction_rp<(INSTRUCTION_FIFO_DEPTH-1)) ? cnc->instruction_rp + 1 : 0;
+			cnc->instruction_fullness--;
+		} else {
+			// shouldn't ever hit this! means instruction request overflowed!!!
+		}
+	}
+}
+
+void check_instruction_fifo(struct cnc_state_struct* cnc){
+	// check to see if instruction threshold is too low and not finished reading full program
+	// if so, check if already writing spi
+	// if not, write to request instruction
+	if(cnc->program_running){
+		if(cnc->request_instruction){
+			if(cnc->instruction_fullness >= (INSTRUCTION_FIFO_DEPTH-2)){
+				cnc->request_instruction = 0;
+			} else {
+				if(cnc->write_in_progress){
+					// already writing... wait till it's finished
+					if(spi_check_write() > 0){
+						cnc->write_in_progress = 0;
+					}
+				} else {
+					// not writing, so we can write
+					if(spi_check_write() < 0){
+						// can't write, already writing
+						cnc->state = SEND_CNC_PRINT;
+					} else {
+						cnc->cnc_write_data[0] = (char) NEW_CNC_INSTRUCTION;
+						cnc->cnc_write_length = 1;
+						if(spi_set_write(cnc->cnc_write_data, cnc->cnc_write_length) > 0){
+							cnc->write_in_progress = 1;
+						} else {
+							cnc->write_in_progress = 0;
+						}
+					}
+				}
+			}
+		} else {
+			if(cnc->instruction_fullness < (INSTRUCTION_FIFO_DEPTH/2)){
+				cnc->request_instruction = 1;
+			} else {
+				// we have enough instructions, so do nothing
+			}
+		}
+	} else {
+		// don't need to do anything if not running a program
+	}
+}
+
+void process_instruction(struct cnc_state_struct* cnc){
 	if(cnc->current_instruction.instruction_valid){
 		switch(cnc->current_instruction.opcode_flags){
 			case PROGRAM_IDLE : {
@@ -71,7 +186,7 @@ void handle_instructions(struct cnc_state_struct* cnc){
 				check_heater_instruction(&cnc->current_instruction.heater_1, &cnc->heaters->heater_1);
 				check_heater_instruction(&cnc->current_instruction.heater_2, &cnc->heaters->heater_2);
 				check_heater_instruction(&cnc->current_instruction.heater_3, &cnc->heaters->heater_3);
-				check_instruction(&cnc->current_instruction);
+				check_instruction(cnc);
 				break;
 			}
 			case CHECK_ENDSTOPS : {
@@ -115,7 +230,7 @@ void handle_instructions(struct cnc_state_struct* cnc){
 						cnc->current_instruction.zr_axis.valid_instruction = 0;
 					}
 				}
-				check_instruction(&cnc->current_instruction);
+				check_instruction(cnc);
 				break;
 			}
 			case MAX_MOTORS : {
@@ -147,7 +262,7 @@ void handle_instructions(struct cnc_state_struct* cnc){
 						cnc->current_instruction.zr_axis.valid_instruction = 0;
 					}
 				}
-				check_instruction(&cnc->current_instruction);
+				check_instruction(cnc);
 				break;
 			}
 			case ENABLE_MOTORS : {
@@ -226,48 +341,10 @@ void handle_instructions(struct cnc_state_struct* cnc){
 	}
 }
 
-void handle_program(struct cnc_state_struct* cnc){
-	if(cnc->state == CNC_IDLE){
-		if(cnc->start_program){
-			cnc->start_program = 0;
-			cnc->state = CNC_PROGRAM_RUNNING;
-			cnc_printf(cnc, "Started CNC Program!");
-			cnc->instruction_array[cnc->instruction_rp].instruction_valid = 0;
-			cnc->instruction_rp = (cnc->instruction_rp<(INSTRUCTION_FIFO_DEPTH-1)) ? cnc->instruction_rp + 1 : 0;
-		}
-	} else {
-		if(cnc->request_instruction == 1){
-			if((((cnc->instruction_array[cnc->instruction_wp].instruction_valid)) && (cnc->instruction_array[cnc->instruction_wp].opcode_flags == PROGRAM_END)) ||
-					(cnc->instruction_fullness >= (INSTRUCTION_FIFO_DEPTH-2))){
-				cnc->request_instruction = 0;
-			}
-		} else {
-			if((cnc->instruction_array[cnc->instruction_wp].instruction_valid) &&
-					(cnc->instruction_array[cnc->instruction_wp].opcode_flags == PROGRAM_END)){
-				cnc->request_instruction = 0;
-			} else {
-				if(cnc->instruction_fullness < (INSTRUCTION_FIFO_DEPTH/2)){
-					cnc->request_instruction = 1;
-				}
-			}
-		}
-		if(!cnc->current_instruction.instruction_valid && cnc->instruction_array[cnc->instruction_rp].instruction_valid){
-			copy_instruction(&cnc->instruction_array[cnc->instruction_rp], &cnc->current_instruction);
-			cnc->instruction_array[cnc->instruction_rp].instruction_valid = 0;
-			cnc->instruction_rp = (cnc->instruction_rp<(INSTRUCTION_FIFO_DEPTH-1)) ? cnc->instruction_rp + 1 : 0;
-			cnc->instruction_fullness--;
-		}
-		if((cnc->abort_program) || ((cnc->current_instruction.opcode_flags == PROGRAM_END) && (cnc->current_instruction.instruction_valid))){
-			cnc->abort_program = 0;
-			cnc_printf(cnc, "Finished CNC Program!");
-			cnc->instruction_fullness = 0;
-			cnc->instruction_wp = 0;
-			cnc->instruction_rp = 0;
-			cnc->instruction_array[cnc->instruction_rp].instruction_valid = 0;
-			cnc->current_instruction.instruction_valid = 0;
-			cnc->state = CNC_IDLE;
-		}
-	}
+void handle_instructions(struct cnc_state_struct* cnc){
+	check_instruction_fifo(cnc);
+	check_instruction(cnc);
+	process_instruction(cnc);
 }
 
 void check_motor_instruction(struct cnc_motor_instruction_struct* current_instruction, struct cnc_motor_struct* motor){
@@ -289,26 +366,39 @@ void check_heater_instruction(struct cnc_heater_instruction_struct* current_inst
 	}
 }
 
-void check_instruction(struct cnc_instruction_struct* current_instruction){
+void check_instruction(struct cnc_state_struct* cnc){
+	if(cnc->current_instruction.instruction_valid){
+		// if so, check all the various things to see if instruction is done
+		// if so, mark instruction as inactive
+		// also, if it was last instruction, clear program loaded and program running
+		cnc->current_instruction.instruction_valid = 0;
+	}
+
+	if(cnc->current_instruction.instruction_valid){
+		// instruction didn't finish with this check
+	} else {
+		// instruction finished, so get new instruction
+		get_next_instruction(cnc);
+	}
+
 	char valid_instruction = 0;
-	valid_instruction |= current_instruction->aux.valid_instruction;
-	valid_instruction |= current_instruction->extruder_0.valid_instruction;
-	valid_instruction |= current_instruction->extruder_1.valid_instruction;
-	valid_instruction |= current_instruction->xl_axis.valid_instruction;
-	valid_instruction |= current_instruction->yf_axis.valid_instruction;
-	valid_instruction |= current_instruction->zl_axis.valid_instruction;
-	valid_instruction |= current_instruction->zr_axis.valid_instruction;
-	valid_instruction |= current_instruction->heater_0.valid_instruction;
-	valid_instruction |= current_instruction->heater_1.valid_instruction;
-	valid_instruction |= current_instruction->heater_2.valid_instruction;
-	valid_instruction |= current_instruction->heater_3.valid_instruction;
-	current_instruction->instruction_valid = valid_instruction;
+	valid_instruction |= cnc->current_instruction.aux.valid_instruction;
+	valid_instruction |= cnc->current_instruction.extruder_0.valid_instruction;
+	valid_instruction |= cnc->current_instruction.extruder_1.valid_instruction;
+	valid_instruction |= cnc->current_instruction.xl_axis.valid_instruction;
+	valid_instruction |= cnc->current_instruction.yf_axis.valid_instruction;
+	valid_instruction |= cnc->current_instruction.zl_axis.valid_instruction;
+	valid_instruction |= cnc->current_instruction.zr_axis.valid_instruction;
+	valid_instruction |= cnc->current_instruction.heater_0.valid_instruction;
+	valid_instruction |= cnc->current_instruction.heater_1.valid_instruction;
+	valid_instruction |= cnc->current_instruction.heater_2.valid_instruction;
+	valid_instruction |= cnc->current_instruction.heater_3.valid_instruction;
+	//cnc->current_instruction.instruction_valid = valid_instruction;
 }
 
 void copy_instruction(struct cnc_instruction_struct* new_instruction, struct cnc_instruction_struct* current_instruction){
 	//current_instruction->instruction_number = new_instruction->instruction_number;
 	current_instruction->instruction_valid = new_instruction->instruction_valid;
-	current_instruction->program_length = new_instruction->program_length;
 	current_instruction->opcode_flags = new_instruction->opcode_flags;
 	current_instruction->pending_motor_enables[0] = new_instruction->pending_motor_enables[0];
 	current_instruction->pending_motor_enables[1] = new_instruction->pending_motor_enables[1];
@@ -348,4 +438,3 @@ void copy_heater_instruction(struct cnc_heater_instruction_struct* new_instructi
 	current_instruction->target_temp = new_instruction->target_temp;
 	current_instruction->temp_locked = new_instruction->temp_locked;
 }
-

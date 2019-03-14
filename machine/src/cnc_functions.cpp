@@ -6,6 +6,7 @@
  */
 
 #include "cnc_functions.h"
+#include "cnc_spi.h"
 #include "revision.h"
 #include "stdio.h"
 #include "stdarg.h"
@@ -15,7 +16,7 @@ void init_cnc(struct cnc_state_struct* cnc){
 	uint8_t print_count = 0;
 
 	cnc->state = CNC_IDLE;
-	cnc->end_of_program_read = 0;
+	cnc->program_running = 0;
 	cnc->print_rp = 0;
 	cnc->print_wp = 0;
 	cnc->print_fullness = 0;
@@ -29,18 +30,11 @@ void init_cnc(struct cnc_state_struct* cnc){
 	}
 
 }
-uint16_t spi_counter = 0;
-char spi_data[MAX_SPI_TRANSFER];
-char set_write = 0;
+
 void handle_state(struct cnc_state_struct* cnc){
-	if(cnc->print_fullness > 0){
-		cnc->request_print = 1;
-	} else {
-		cnc->request_print = 0;
-	}
 	switch(cnc->state){
 		case CNC_IDLE : {
-			if(cnc->request_print > 0){
+			if(cnc->print_fullness > 0){
 				// send print if print is ready
 				cnc->state = SEND_CNC_PRINT;
 			} else {
@@ -64,14 +58,19 @@ void handle_state(struct cnc_state_struct* cnc){
 					cnc->state = CNC_IDLE;
 				}
 			} else {
-				cnc->cnc_write_data[0] = (char) GET_CNC_STATUS;
-				parse_status(cnc);
-				if(spi_set_write(cnc->cnc_write_data, cnc->cnc_write_length) > 0){
-					cnc->write_in_progress = 1;
+				if(spi_check_write() < 0){
+					// can't write, already writing
+					cnc->state = GET_STATUS;
 				} else {
-					cnc->write_in_progress = 0;
+					cnc->cnc_write_data[0] = (char) GET_CNC_STATUS;
+					parse_status(cnc);
+					if(spi_set_write(cnc->cnc_write_data, cnc->cnc_write_length) > 0){
+						cnc->write_in_progress = 1;
+					} else {
+						cnc->write_in_progress = 0;
+					}
+					cnc->state = GET_STATUS;
 				}
-				cnc->state = GET_STATUS;
 			}
 			break;
 		}
@@ -82,14 +81,19 @@ void handle_state(struct cnc_state_struct* cnc){
 					cnc->state = CNC_IDLE;
 				}
 			} else {
-				cnc->cnc_write_data[0] = (char) GET_CNC_VERSION;
-				parse_version(cnc);
-				if(spi_set_write(cnc->cnc_write_data, cnc->cnc_write_length) > 0){
-					cnc->write_in_progress = 1;
+				if(spi_check_write() < 0){
+					// can't write, already writing
+					cnc->state = GET_VERSION;
 				} else {
-					cnc->write_in_progress = 0;
+					cnc->cnc_write_data[0] = (char) GET_CNC_VERSION;
+					parse_version(cnc);
+					if(spi_set_write(cnc->cnc_write_data, cnc->cnc_write_length) > 0){
+						cnc->write_in_progress = 1;
+					} else {
+						cnc->write_in_progress = 0;
+					}
+					cnc->state = GET_VERSION;
 				}
-				cnc->state = GET_VERSION;
 			}
 			break;
 		}
@@ -100,59 +104,25 @@ void handle_state(struct cnc_state_struct* cnc){
 					cnc->state = CNC_IDLE;
 				}
 			} else {
-				cnc->cnc_write_data[0] = (char) NEW_CNC_PRINT;
-				parse_print(cnc);
-				if(spi_set_write(cnc->cnc_write_data, cnc->cnc_write_length) > 0){
-					cnc->write_in_progress = 1;
+				if(spi_check_write() < 0){
+					// can't write, already writing
+					cnc->state = SEND_CNC_PRINT;
 				} else {
-					cnc->write_in_progress = 0;
+					cnc->cnc_write_data[0] = (char) NEW_CNC_PRINT;
+					parse_print(cnc);
+					if(spi_set_write(cnc->cnc_write_data, cnc->cnc_write_length) > 0){
+						cnc->write_in_progress = 1;
+					} else {
+						cnc->write_in_progress = 0;
+					}
+					cnc->state = SEND_CNC_PRINT;
 				}
-				cnc->state = SEND_CNC_PRINT;
 			}
-			break;
-		}
-		case CNC_PROGRAM_RUNNING : {
-			cnc->state = CNC_IDLE;
 			break;
 		}
 		default : {
 			cnc->state = CNC_IDLE;
 			break;
-		}
-	}
-	/*int32_t value = spi_check_read(spi_data);
-	if(value >= 0){
-		spi_set_read();
-		if(value > 0) set_write = 1;
-	}
-	if(spi_check_write() >= 0){
-		if(set_write){
-			if(strlen(spi_data) > 0){
-				spi_set_write(spi_data, (uint16_t) strlen(spi_data));
-			}
-			set_write = 0;
-		}
-		//sprintf(spi_data, "Spi Slave Test: %u Count", spi_counter);
-		spi_counter++;
-		spi_set_write(spi_data, (uint16_t) strlen(spi_data));
-	}*/
-}
-
-uint8_t check_spi(struct cnc_state_struct* cnc){
-	// always check write to complete transfer if done
-	spi_check_write();
-	// check if read is finished
-	cnc->cnc_read_length = spi_check_read(cnc->cnc_read_data);
-	if(cnc->cnc_read_length == 0){
-		// not reading, so set read ready
-		spi_set_read();
-		return 0;
-	} else {
-		if(cnc->cnc_read_length > 0){
-			// read finished, so process
-			return 1;
-		} else {
-			return 0;
 		}
 	}
 }
@@ -178,20 +148,8 @@ void process_spi_request(struct cnc_state_struct* cnc){
 			// could do something to shutdown before reflash/reboot...
 			break;
 		}
-		case START_CNC_PROGRAM : {
-
-			break;
-		}
-		case END_CNC_PROGRAM : {
-
-			break;
-		}
 		case NEW_CNC_INSTRUCTION : {
-
-			break;
-		}
-		case INSTANT_CNC_INSTRUCTION : {
-
+			receive_instruction(cnc);
 			break;
 		}
 		case DISABLE_ROUTE : {
@@ -202,23 +160,11 @@ void process_spi_request(struct cnc_state_struct* cnc){
 
 			break;
 		}
-		case START_PROGRAM : {
-
-			break;
-		}
 		case PAUSE_PROGRAM : {
 
 			break;
 		}
 		case RESUME_PROGRAM : {
-
-			break;
-		}
-		case END_PROGRAM : {
-
-			break;
-		}
-		case NEW_INSTRUCTION : {
 
 			break;
 		}
@@ -273,4 +219,3 @@ void cnc_printf(struct cnc_state_struct* cnc, const char* print_string, ...){
 	cnc->print_wp = (cnc->print_wp < (PRINT_DEPTH-1)) ? (cnc->print_wp + 1) : 0;
 	cnc->print_fullness++;
 }
-
