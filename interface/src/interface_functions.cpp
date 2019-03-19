@@ -131,14 +131,25 @@ void handle_cnc_state(struct interface_struct* interface){
 			break;
 		}
 		case GET_PROGRAM : {
-			interface->machine_state = MACHINE_IDLE;
+			socket_handler(&interface->user_command_set, interface->user_input);
+			receive_user_input(interface);
+			if(interface->user_command_finished){
+				interface->machine_state = OPEN_PROGRAM;
+				strcpy(interface->file_name, interface->user_command);
+				clear_user_command(interface);
+			}
 			break;
 		}
 		case OPEN_PROGRAM : {
-			interface->machine_state = MACHINE_IDLE;
+			if(open_gcode(interface) < 0){
+				interface->machine_state = MACHINE_IDLE;
+			} else {
+				interface->machine_state = RUN_PROGRAM;
+			}
 			break;
 		}
 		case RUN_PROGRAM : {
+			printf("would run program here\n");
 			interface->machine_state = MACHINE_IDLE;
 			break;
 		}
@@ -180,13 +191,6 @@ void receive_user_input(struct interface_struct* interface){
 				// new line or CR so finish string
 				printf("\n");
 				interface->user_command[interface->command_counter] = '\0';
-				if((interface->user_command[0] > 64) && (interface->user_command[0] < 91)){
-					interface->user_command[0] = interface->user_command[0] + 32;
-				}
-				while(interface->command_counter>1){
-					interface->user_command[interface->command_counter] = '\0';
-					interface->command_counter--;
-				};
 				interface->user_command_finished = 1;
 				print_set = 0;
 			} else {
@@ -203,13 +207,14 @@ void receive_user_input(struct interface_struct* interface){
 					interface->user_command[interface->command_counter] = '\0';
 				}
 			}
+			interface->user_input[0] = '\0';
 			interface->user_command_set = 0;
 			printf("\rCommand: %s", interface->user_command);
 			fflush(stdout);
 		}
 	} else {
 		print_set = 1;
-		printf("Enter Command and Press Enter. Enter h For Help\n");
+		printf("\nEnter Command and Press Enter. Enter h For Help\n");
 		printf("\rCommand: %s", interface->user_command);
 		fflush(stdout);
 	}
@@ -293,6 +298,9 @@ void handle_input(struct interface_struct* interface){
 	interface->state = INTERFACE_RUNNING;
 	interface->machine_state = MACHINE_IDLE;
 	if(interface->user_command_finished){
+		if((interface->user_command[0] > 64) && (interface->user_command[0] < 91)){
+			interface->user_command[0] = interface->user_command[0] + 32;
+		}
 		switch(interface->user_command[0]){
 			case 'q' : {
 				interface->state = DISABLE_GPIO;
@@ -323,6 +331,11 @@ void handle_input(struct interface_struct* interface){
 				interface->machine_state = GET_VERSION;
 				break;
 			}
+			case 'o' : {
+				printf("\nEnter Name Of File to Open\n");
+				interface->machine_state = GET_PROGRAM;
+				break;
+			}
 			case 'e' : {
 				interface->machine_state = POWER_MOTORS_ON;
 				break;
@@ -351,10 +364,6 @@ void handle_input(struct interface_struct* interface){
 				cnc->state = PROCESS_INPUT;
 				break;
 			}
-			case 'o' : {
-				cnc->state = GET_PROGRAM;
-				break;
-			}
 			/*case 's' : {
 				send_spi_string(system_command, MAX_SPI_LENGTH);
 				break;
@@ -375,115 +384,21 @@ void handle_input(struct interface_struct* interface){
 				break;
 			}
 		}
-		interface->user_command[0] = '\0';
-		interface->user_input[0] = '\0';
-		interface->command_counter = 0;
-		interface->user_command_set = 0;
-		interface->user_command_finished = 0;
+		clear_user_command(interface);
 	}
 }
 
-/*
-void interface_functions(uint8_t command_ready, char* system_command, struct cnc_spi_struct* spi_struct, struct cnc_state* cnc){
-	if(command_ready){
-		switch(system_command[0]){
-			case 'q' :
-				quit_system = 1;
-				break;
-			case 'e' :
-				spi_struct->pending_opcode = disable_route;
-				enable_motors();
-				break;
-			case 'd' :
-				disable_motors();
-				spi_struct->pending_opcode = enable_route;
-				break;
-			case 'g' :
-				spi_struct->pending_opcode = get_cnc_status;
-				break;
-			case 's' :
-				send_spi_string(system_command, MAX_SPI_LENGTH);
-				break;
-			case 'o' :
-				//open_gcode(cnc, system_command+1);
-				break;
-			case 'r' :
-				receive_spi_string(MAX_SPI_LENGTH);
-				break;
-			case 'u' :
-				spi_struct->pending_opcode = flash_firmware;
-				break;
-			case 'v' :
-				spi_struct->pending_opcode = read_version;
-				break;
-			case 'c' :
-				spi_struct->pending_opcode = reconnect_spi;
-				break;
-			case 'i' :
-				spi_struct->pending_opcode = start_cnc_program;
-				printf("got start interface function: %d\n", spi_struct->pending_opcode);
-				break;
-			case 't' :
-				printf("got end interface function\n");
-				spi_struct->pending_opcode = end_cnc_program;
-				break;
-			default : {
-				spi_struct->pending_opcode = idle;
-			}
-		}
-	}
-}
-
-void send_spi_string(char spi_string[MAX_SPI_LENGTH], uint8_t string_length){
-	unsigned char spi_data[MAX_SPI_LENGTH] = {0};
-	unsigned char snd_data[MAX_SPI_LENGTH] = {0};
-	unsigned char ret_data[MAX_SPI_LENGTH] = {0};
-	unsigned char loop_cmd[6] = {0};
-	int spi_length = 0;
-	enum spi_opcodes opcode;
-	
-	strcpy(spi_data, spi_string+1);
-	strcpy(snd_data, spi_data);
-	spi_length = strlen(spi_data);
-	
-	opcode = loopback_test;
-	opcode_to_string(opcode, &loop_cmd[0]);
-	length_to_string(spi_length, &loop_cmd[OPCODE_LENGTH]);
-	
-	wiringPiSPIDataRW(SPI_CHANNEL, loop_cmd, IDLE_LENGTH);
-	delay(1);
-	wiringPiSPIDataRW(SPI_CHANNEL, spi_data, spi_length);
-	delay(1);
-	wiringPiSPIDataRW(SPI_CHANNEL, ret_data, spi_length);
-	delay(1);
-	
-	spi_length = strlen(spi_data);
-	printf("Sent: %s, Read: %s\n", snd_data, ret_data);
-}
-*/
-void receive_spi_string(uint8_t string_length){
-	unsigned char spi_data[64] = {0};
-	int spi_length = 8;
-	int read_length = 0;
-	int last_length = 0;
-	char read_done = 0;
-	printf("Reading Spi Bus\n");
-	//while((last_length < spi_length) && (read_done == 0)){
-	//wiringPiSPIDataRW(SPI_CHANNEL, spi_data, IDLE_LENGTH);
-	delay(1);
-	//last_length = wiringPiSPIDataRW(SPI_CHANNEL, spi_data, 60);
-		
-		/*for(read_length = 0;read_length < 8; read_length++){
-			if(spi_data[last_length + read_length] == '\0'){
-				read_done = 1;
-				break;
-			}
-		}*/
-		
-		//last_length = last_length + read_length;
-	//}
-	
-	printf("Read %d: Data: %s\n", last_length, spi_data);
+void clear_user_command(struct interface_struct* interface){
+	while(interface->command_counter>0){
+		//printf("\rCommand: %s", interface->user_command);
+		//fflush(stdout);
+		interface->user_command[interface->command_counter] = '\0';
+		interface->command_counter--;
+	};
+	interface->user_command[0] = '\0';
+	interface->command_counter = 0;
+	interface->user_command_set = 0;
+	interface->user_command_finished = 0;
 }
 
 void length_to_string(uint8_t byte_length, char* length_string){
@@ -527,9 +442,9 @@ void update_si_firmware(struct interface_struct* interface){
 	interface->machine_state = MACHINE_IDLE;
 }
 
-int open_gcode(struct interface_struct* interface, char gcode_file[200]){
-	printf("openeing file: %s\n", gcode_file);
-	interface->gcode_fp = fopen(gcode_file, "r");
+int open_gcode(struct interface_struct* interface){
+	printf("openeing file: %s\n", interface->file_name);
+	interface->gcode_fp = fopen(interface->file_name, "r");
 	if(interface->gcode_fp == NULL){
 		printf("Couln't Open File\n");
 		return -1;

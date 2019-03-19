@@ -23,12 +23,13 @@ void process_spi_request(struct interface_struct* interface);
 void receive_user_input(struct interface_struct* interface);
 void receive_user_control(struct interface_struct* interface);
 void handle_input(struct interface_struct* interface);
+void clear_user_command(struct interface_struct* interface);
 void interface_functions(uint8_t command_ready, char* system_command, struct spi_struct* spi, struct cnc_state* cnc);
 void send_spi_string(char* spi_string, uint8_t string_length);
 void receive_spi_string(uint8_t string_length);
 void length_to_string(uint8_t byte_length, char *length_string);
 void opcode_to_string(enum spi_opcodes opcode, char *opcode_string); 
 void update_si_firmware(struct interface_struct* interface);
-int open_gcode(struct interface_struct* cnc, char gcode_file[200]);
+int open_gcode(struct interface_struct* interface);
 
 #endif /* SRC_INTERFACE_FUNCTIONS_H_ */

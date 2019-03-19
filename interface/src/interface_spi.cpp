@@ -34,7 +34,7 @@ uint8_t spi_transfer_data(char* spi_data, uint16_t data_length){
 		printf("Zero Length!!!");
 	} else {
 		if(data_length > 250){
-			printf("Too High Length!!!");
+			printf("Too High Length!!! %d", data_length);
 		}
 	}
 	value = wiringPiSPIDataRW(SPI_CHANNEL, (unsigned char*) spi_data, data_length);

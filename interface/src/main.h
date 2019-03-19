@@ -20,6 +20,7 @@ struct interface_struct {
     struct gcode_program_struct program;
 	uint8_t motors_enabled;
 	FILE* gcode_fp;
+    char file_name[MAX_USER_COMMAND];
     char user_command[MAX_USER_COMMAND];
     char user_input[MAX_USER_COMMAND];
     char cnc_read_data[MAX_SPI_TRANSFER];
