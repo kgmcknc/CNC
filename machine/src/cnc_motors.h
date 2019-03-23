@@ -49,7 +49,6 @@ struct cnc_motor_pin_struct {
 
 struct cnc_motor_struct {
 	uint8_t enabled;
-	uint8_t active;
 	uint8_t homed;
 	uint8_t find_zero;
 	uint8_t find_max;
@@ -58,7 +57,8 @@ struct cnc_motor_struct {
 	uint8_t min_range_flag;
 	uint8_t max_range_flag;
 	int8_t direction; // -1 , 0, 1
-	uint32_t position;
+	int64_t position;
+	int32_t move_count;
 	uint32_t period;
 	uint32_t step_timer;
 	char name[MAX_MOTOR_NAME_LENGTH] = {};
@@ -170,7 +170,6 @@ extern uint8_t motors_updated;
 extern uint8_t update_motors;
 extern uint8_t update_pid;
 
-void set_motors(struct cnc_state_struct* cnc);
 void process_motors(struct cnc_motor_list_struct* motors);
 void enable_motor(struct cnc_motor_struct* motor);
 void disable_motor(struct cnc_motor_struct* motor);
@@ -183,7 +182,6 @@ void init_motors(struct cnc_motor_list_struct* motors);
 void init_motor(struct cnc_motor_struct* motor, const char* name);
 void handle_motors(struct cnc_state_struct* cnc);
 void handle_step(struct cnc_motor_struct* motor);
-void set_motor_active(struct cnc_motor_instruction_struct* motor_instruction, struct cnc_motor_struct* motor);
 void check_period(struct cnc_motor_list_struct* motors);
 void step_motor_high(struct cnc_motor_struct* motor);
 void step_motor_low(struct cnc_motor_struct* motor);

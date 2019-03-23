@@ -29,7 +29,7 @@ uint16_t av_pnt[NUM_ADCS] = {0};
 uint32_t print_count = 0;
 uint32_t update_count = 0;
 
-void handle_heaters(cnc_heater_list_struct* heaters){
+void handle_heaters(struct cnc_state_struct* cnc){
 	uint8_t heater_count = 0;
 	uint32_t current_average[NUM_ADCS];
 	double current_temp[NUM_ADCS];
@@ -77,34 +77,13 @@ void handle_heaters(cnc_heater_list_struct* heaters){
 			}
 		}
 	}
-	if(heaters->heater_0.enabled){
-		if(heaters->heater_0.fan_on == FAN_OFF){
+	if(cnc->heaters->heater_0.enabled){
+		if(cnc->heaters->heater_0.fan_on == FAN_OFF){
 			// turn on fan
 		}
 	} else {
-		if(heaters->heater_0.fan_on == FAN_ON){
+		if(cnc->heaters->heater_0.fan_on == FAN_ON){
 			// turn off fan
-		}
-	}
-}
-
-void set_heaters(struct cnc_state_struct* cnc){
-	set_heater_active(&cnc->current_instruction.heater_0, &cnc->heaters->heater_0);
-	set_heater_active(&cnc->current_instruction.heater_1, &cnc->heaters->heater_1);
-	set_heater_active(&cnc->current_instruction.heater_2, &cnc->heaters->heater_2);
-	set_heater_active(&cnc->current_instruction.heater_3, &cnc->heaters->heater_3);
-}
-
-void set_heater_active(struct cnc_heater_instruction_struct* heater_instruction, struct cnc_heater_struct* heater){
-	if(heater_instruction->valid_instruction && !heater->active){
-		if(heater_instruction->target_temp == heater->current_temp){
-			// moving to same place... just happened to be there already...
-			heater_instruction->valid_instruction = 0;
-			heater->active = 1;
-		} else {
-			heater->active = 1;
-			heater->target_temp = heater_instruction->target_temp;
-			heater->reset_heater = 1;
 		}
 	}
 }

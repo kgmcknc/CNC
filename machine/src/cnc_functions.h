@@ -23,7 +23,7 @@ enum cnc_state {
 struct cnc_state_struct {
 	cnc_state state = CNC_IDLE;
 	uint8_t program_running;
-	uint8_t program_loaded; // finished loading the whole program
+	uint8_t program_received; // finished loading the whole program
 	uint64_t program_length; // number of instructions for current program
 	uint8_t request_instruction;
 	// cnc_spi variables

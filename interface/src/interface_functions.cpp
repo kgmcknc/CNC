@@ -8,26 +8,33 @@
 uint8_t print_set = 0;
 
 void handle_cnc_state(struct interface_struct* interface){
+	if(check_spi(interface)){
+		// received spi transaction
+		// process that instead of user input
+		//interface->machine_state = PROCESS_SPI;
+		process_spi_request(interface);
+	}
 	switch(interface->machine_state){
 		case MACHINE_IDLE : {
-			if(check_spi(interface)){
+			/*if(check_spi(interface)){
 				// received spi transaction
 				// process that instead of user input
-				interface->machine_state = PROCESS_SPI;
-			} else {
+				//interface->machine_state = PROCESS_SPI;
+				process_spi_request(interface);
+			} else {*/
 				// if not processing spi, process user input
 				socket_handler(&interface->user_command_set, interface->user_input);
 				receive_user_input(interface);
 				if(interface->user_command_finished){
 					interface->machine_state = PROCESS_INPUT;
 				}
-			}
+			//}
 			break;
 		}
-		case PROCESS_SPI : {
+		/*case PROCESS_SPI : {
 			process_spi_request(interface);
 			break;
-		}
+		}*/
 		case PROCESS_INPUT : {
 			handle_input(interface);
 			break;
@@ -54,10 +61,10 @@ void handle_cnc_state(struct interface_struct* interface){
 			if(interface->write_in_progress){
 				if(spi_check_write() > 0){
 					interface->write_in_progress = 0;
-					disable_motors();
 					interface->machine_state = MACHINE_IDLE;
 				}
 			} else {
+				disable_motors();
 				interface->cnc_write_data[0] = (char) ENABLE_ROUTE;
 				if(spi_set_write(interface->cnc_write_data, 1) > 0){
 					interface->write_in_progress = 1;
@@ -106,6 +113,7 @@ void handle_cnc_state(struct interface_struct* interface){
 			if(interface->write_in_progress){
 				if(spi_check_write() > 0){
 					interface->write_in_progress = 0;
+					clear_instruction(&interface->user_instruction);
 					interface->user_instruction.instruction_valid = 0;
 					printf("finished sending instruction\n");
 				}
@@ -120,7 +128,10 @@ void handle_cnc_state(struct interface_struct* interface){
 				if(interface->user_instruction.instruction_valid){
 					printf("valid user instruction\n");
 					interface->cnc_write_data[0] = (char) NEW_CNC_INSTRUCTION;
-					if(spi_set_write(interface->cnc_write_data, 1) > 0){
+					interface->cnc_write_length = instruction_to_string(&interface->user_instruction, &interface->cnc_write_data[1]);
+					interface->cnc_write_length = interface->cnc_write_length + 1;
+					printf("Write length is %d\n", interface->cnc_write_length);
+					if(spi_set_write(interface->cnc_write_data, interface->cnc_write_length) > 0){
 						interface->write_in_progress = 1;
 						printf("sent user instruction\n");
 					} else {
@@ -153,6 +164,26 @@ void handle_cnc_state(struct interface_struct* interface){
 			interface->machine_state = MACHINE_IDLE;
 			break;
 		}
+		case SEND_INSTRUCTION : {
+			if(interface->write_in_progress){
+				if(spi_check_write() > 0){
+					interface->write_in_progress = 0;
+					interface->machine_state = MACHINE_IDLE;
+				}
+			} else {
+				// set with instruction or instant instruction
+				interface->cnc_write_data[0] = (char) GET_CNC_VERSION;
+				// instruction to string here...
+				// increment program read counter here...
+				if(spi_set_write(interface->cnc_write_data, 1) > 0){
+					interface->write_in_progress = 1;
+				} else {
+					interface->write_in_progress = 0;
+				}
+				interface->machine_state = SEND_INSTRUCTION;
+			}
+			break;
+		}
 		case UPDATE_FIRMARE : {
 			update_si_firmware(interface);
 			interface->machine_state = MACHINE_IDLE;
@@ -167,7 +198,7 @@ void handle_cnc_state(struct interface_struct* interface){
 
 uint8_t check_spi(struct interface_struct* interface){
 	// always check write to complete transfer if done
-	spi_check_write();
+	//spi_check_write();
 	// check if read is finished
 	interface->cnc_read_length = spi_check_read(interface->cnc_read_data);
 	if(interface->cnc_read_length == 0){
@@ -222,14 +253,129 @@ void receive_user_input(struct interface_struct* interface){
 
 void receive_user_control(struct interface_struct* interface){
 	if(interface->user_command_set){
+		// convert letters to lowercase
+		if((interface->user_input[0] > 64) && (interface->user_input[0] < 91)){
+			interface->user_input[0] = interface->user_input[0] + 32;
+		}
 		if(interface->user_input[0] == 13 || interface->user_input[0] == 10 || interface->user_input[0] == 'q'){
 			// new line or CR so finish
-			printf("get end in user instruction\n");
+			printf("got end in user instruction\n");
 			interface->machine_state = MACHINE_IDLE;
 			interface->user_instruction.instruction_valid = 0;
 			print_set = 0;
 		} else {
-			interface->user_instruction.instruction_valid = 1;
+			switch(interface->user_input[0]){
+				interface->user_instruction.opcode = EMPTY_OPCODE;
+				case 'e' : {
+					printf("enabling motors instruction\n");
+					interface->user_instruction.instruction_valid = 1;
+					interface->user_instruction.opcode = ENABLE_MOTORS;
+					interface->user_instruction.xl_axis.pending_enable = 1;
+					interface->user_instruction.xl_axis.opcode = ENABLE_MOTORS;
+					interface->user_instruction.yf_axis.pending_enable = 1;
+					interface->user_instruction.yf_axis.opcode = ENABLE_MOTORS;
+					interface->user_instruction.zl_axis.pending_enable = 1;
+					interface->user_instruction.zl_axis.opcode = ENABLE_MOTORS;
+					interface->user_instruction.zr_axis.pending_enable = 1;
+					interface->user_instruction.zr_axis.opcode = ENABLE_MOTORS;
+					break;
+				}
+				case 'o' : {
+					printf("disabling motors instruction\n");
+					interface->user_instruction.instruction_valid = 1;
+					interface->user_instruction.opcode = DISABLE_MOTORS;
+					interface->user_instruction.xl_axis.pending_disable = 1;
+					interface->user_instruction.xl_axis.opcode = DISABLE_MOTORS;
+					interface->user_instruction.yf_axis.pending_disable = 1;
+					interface->user_instruction.yf_axis.opcode = DISABLE_MOTORS;
+					interface->user_instruction.zl_axis.pending_disable = 1;
+					interface->user_instruction.zl_axis.opcode = DISABLE_MOTORS;
+					interface->user_instruction.zr_axis.pending_disable = 1;
+					interface->user_instruction.zr_axis.opcode = DISABLE_MOTORS;
+					break;
+				}
+				case 'l' : {
+					interface->user_instruction.instruction_valid = 1;
+					interface->user_instruction.xl_axis.instruction_valid = 1;
+					interface->user_instruction.xl_axis.move_count = -10;
+					interface->user_instruction.xl_axis.current_period = 100;
+					break;
+				}
+				case 'r' : {
+					interface->user_instruction.instruction_valid = 1;
+					interface->user_instruction.xl_axis.instruction_valid = 1;
+					interface->user_instruction.xl_axis.move_count = 10;
+					interface->user_instruction.xl_axis.current_period = 100;
+					break;
+				}
+				case 'f' : {
+					interface->user_instruction.instruction_valid = 1;
+					interface->user_instruction.yf_axis.instruction_valid = 1;
+					interface->user_instruction.yf_axis.move_count = 10;
+					interface->user_instruction.yf_axis.current_period = 100;
+					break;
+				}
+				case 'b' : {
+					interface->user_instruction.instruction_valid = 1;
+					interface->user_instruction.yf_axis.instruction_valid = 1;
+					interface->user_instruction.yf_axis.move_count = -10;
+					interface->user_instruction.yf_axis.current_period = 100;
+					break;
+				}
+				case 'u' : {
+					interface->user_instruction.instruction_valid = 1;
+					interface->user_instruction.zl_axis.instruction_valid = 1;
+					interface->user_instruction.zl_axis.move_count = 10;
+					interface->user_instruction.zl_axis.current_period = 100;
+					interface->user_instruction.zr_axis.instruction_valid = 1;
+					interface->user_instruction.zr_axis.move_count = 10;
+					interface->user_instruction.zr_axis.current_period = 100;
+					break;
+				}
+				case 'd' : {
+					interface->user_instruction.instruction_valid = 1;
+					interface->user_instruction.zl_axis.move_count = -10;
+					interface->user_instruction.zl_axis.current_period = 100;
+					interface->user_instruction.zl_axis.instruction_valid = 1;
+					interface->user_instruction.zr_axis.move_count = -10;
+					interface->user_instruction.zr_axis.current_period = 100;
+					interface->user_instruction.zr_axis.instruction_valid = 1;
+					break;
+				}
+				case 'z' : {
+					interface->user_instruction.instruction_valid = 1;
+					interface->user_instruction.xl_axis.move_count = -100000;
+					interface->user_instruction.xl_axis.current_period = 100;
+					interface->user_instruction.xl_axis.instruction_valid = 1;
+					interface->user_instruction.yf_axis.move_count = -100000;
+					interface->user_instruction.yf_axis.current_period = 100;
+					interface->user_instruction.yf_axis.instruction_valid = 1;
+					interface->user_instruction.zl_axis.move_count = -100000;
+					interface->user_instruction.zl_axis.current_period = 100;
+					interface->user_instruction.zl_axis.instruction_valid = 1;
+					interface->user_instruction.zr_axis.move_count = -100000;
+					interface->user_instruction.zr_axis.current_period = 100;
+					interface->user_instruction.zr_axis.instruction_valid = 1;
+					break;
+				}
+				case 'm' : {
+					interface->user_instruction.instruction_valid = 1;
+					interface->user_instruction.xl_axis.move_count = -100000;
+					interface->user_instruction.xl_axis.current_period = 100;
+					interface->user_instruction.yf_axis.move_count = -100000;
+					interface->user_instruction.yf_axis.current_period = 100;
+					interface->user_instruction.zl_axis.move_count = -100000;
+					interface->user_instruction.zl_axis.current_period = 100;
+					interface->user_instruction.zr_axis.move_count = -100000;
+					interface->user_instruction.zr_axis.current_period = 100;
+					break;
+				}
+				default : {
+					interface->user_instruction.instruction_valid = 0;
+					break;
+				}
+			}
+			interface->user_instruction.instant_instruction = 1;
 		}
 		interface->user_command_set = 0;
 	}
@@ -238,7 +384,7 @@ void receive_user_control(struct interface_struct* interface){
 void process_spi_request(struct interface_struct* interface){
 	// setting machine state to default...
 	// it will change in switch if needed
-	interface->machine_state = MACHINE_IDLE;
+	//interface->machine_state = MACHINE_IDLE;
 	switch((CNC_OPCODES) interface->cnc_read_data[0]){
 		case GET_CNC_VERSION : {
 			printf("CNC Version: %s\n", &interface->cnc_read_data[1]);

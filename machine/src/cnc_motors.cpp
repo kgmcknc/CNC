@@ -131,7 +131,7 @@ void init_motor(cnc_motor_struct* motor, const char* name){
 	disable_motor(motor);
 	motor->direction = 0;
 	motor->position = 10000;
-	motor->active = 0;
+	motor->move_count = 0;
 	motor->homed = 0;
 	check_endstop(motor);
 	motor->period = 10000; // HIGH VALUE AT FIRST AS DEFAULT
@@ -175,7 +175,6 @@ void set_motor_direction(cnc_motor_struct* motor, int8_t direction){
 	}
 }
 
-
 void enable_axis_motors(struct cnc_motor_list_struct* motors){
 	enable_motor(&motors->xl_axis);
 	enable_motor(&motors->yf_axis);
@@ -193,7 +192,6 @@ void disable_axis_motors(struct cnc_motor_list_struct* motors){
 void handle_motors(struct cnc_state_struct* cnc){
 	if(update_motors){
 		update_motors = 0;
-		set_motors(cnc);
 		process_motors(cnc->motors);
 		check_endstops(cnc->motors);
 		check_period(cnc->motors);
@@ -240,7 +238,7 @@ void handle_step(struct cnc_motor_struct* motor){
 		step_motor_low(motor);
 		motor->step_high = 0;
 	}
-	if(motor->enabled && motor->active){
+	if(motor->enabled && motor->move_count){
 		if(motor->step_timer > 0){
 			// decrease step timer until 0
 			motor->step_timer--;
@@ -253,6 +251,7 @@ void handle_step(struct cnc_motor_struct* motor){
 					// step motor, adjust position, set flag to clear rising edge next loop
 					step_motor_high(motor);
 					motor->position = motor->position + motor->direction;
+					motor->move_count = motor->move_count + motor->direction;
 					motor->step_high = 1;
 				}
 				// clear set flag to reload period
@@ -272,65 +271,12 @@ void process_motors(struct cnc_motor_list_struct* motors){
 	handle_step(&motors->zr_axis);
 }
 
-void set_motors(struct cnc_state_struct* cnc){
-	set_motor_active(&cnc->current_instruction.aux, &cnc->motors->aux);
-	set_motor_active(&cnc->current_instruction.extruder_0, &cnc->motors->extruder_0);
-	set_motor_active(&cnc->current_instruction.extruder_1, &cnc->motors->extruder_1);
-	set_motor_active(&cnc->current_instruction.xl_axis, &cnc->motors->xl_axis);
-	set_motor_active(&cnc->current_instruction.yf_axis, &cnc->motors->yf_axis);
-	set_motor_active(&cnc->current_instruction.zl_axis, &cnc->motors->zl_axis);
-	set_motor_active(&cnc->current_instruction.zr_axis, &cnc->motors->zr_axis);
-}
-
 void step_motor_high(struct cnc_motor_struct* motor){
 	GPIO_PinOutSet(motor->ports.step_port, motor->pins.step_pin);
 }
 
 void step_motor_low(struct cnc_motor_struct* motor){
 	GPIO_PinOutClear(motor->ports.step_port, motor->pins.step_pin);
-}
-
-void set_motor_active(struct cnc_motor_instruction_struct* motor_instruction, struct cnc_motor_struct* motor){
-	if(motor_instruction->valid_instruction){
-		if(motor->active){
-			if(motor->find_max || motor->find_zero){
-				// should start and move away? keeping instruction valid?? idk
-			} else {
-				if(motor_instruction->end_position == motor->position){
-					// moving to same place... not valid instruction probably...
-					// unless finding zero or max...
-					motor_instruction->valid_instruction = 0;
-					motor->active = 0;
-				}
-			}
-		} else {
-			motor->find_max = motor_instruction->find_max;
-			motor->find_zero = motor_instruction->find_zero;
-			if(motor->find_max || motor->find_zero){
-				motor->active = 1;
-				motor->period = motor_instruction->step_period;
-				if(motor->find_zero){
-					set_motor_direction(motor, MOTOR_MOVE_DECREASE);
-				} else {
-					set_motor_direction(motor, MOTOR_MOVE_INCREASE);
-				}
-			} else {
-				if(motor_instruction->end_position == motor->position){
-					// moving to same place... not valid instruction probably...
-					motor_instruction->valid_instruction = 0;
-					motor->active = 0;
-				} else {
-					motor->active = 1;
-					motor->period = motor_instruction->step_period;
-					if(motor_instruction->end_position > motor->position){
-						set_motor_direction(motor, MOTOR_MOVE_INCREASE);
-					} else {
-						set_motor_direction(motor, MOTOR_MOVE_DECREASE);
-					}
-				}
-			}
-		}
-	}
 }
 
 void check_period(struct cnc_motor_list_struct* motors){
@@ -344,18 +290,18 @@ void check_period(struct cnc_motor_list_struct* motors){
 }
 
 void check_direction(struct cnc_motor_struct* motor){
-	if(!motor->set && motor->active){
+	if(!motor->set && motor->move_count){
 		if(motor->max_range_flag){
 			if(motor->direction == MOTOR_MOVE_INCREASE){
 				set_motor_direction(motor, MOTOR_MOVE_DECREASE);
-				motor->active = 0;
+				motor->move_count = 0;
 				cnc_printf(&cnc,"%s: Max Range Hit", motor->name);
 			}
 		}
 		if(motor->min_range_flag){
 			if(motor->direction == MOTOR_MOVE_DECREASE){
 				set_motor_direction(motor, MOTOR_MOVE_INCREASE);
-				motor->active = 0;
+				motor->move_count = 0;
 				cnc_printf(&cnc,"%s: Min Range Hit", motor->name);
 			}
 		}

@@ -146,22 +146,16 @@ int parse_gcode_line(char* line, struct gcode_program_struct* program){
                 program->instruction[program->instruction_count].heater_2.fan_on = 0;
                 program->instruction[program->instruction_count].heater_3.heater_active = 0;
                 program->instruction[program->instruction_count].heater_3.fan_on = 0;
-                program->instruction[program->instruction_count].extruder_0.axis_active = 0;
                 program->instruction[program->instruction_count].extruder_0.linear_move = 0;
                 program->instruction[program->instruction_count].extruder_0.arc_move = 0;
-                program->instruction[program->instruction_count].extruder_1.axis_active = 0;
                 program->instruction[program->instruction_count].extruder_1.linear_move = 0;
                 program->instruction[program->instruction_count].extruder_1.arc_move = 0;
-                program->instruction[program->instruction_count].xl_axis.axis_active = 0;
                 program->instruction[program->instruction_count].xl_axis.linear_move = 0;
                 program->instruction[program->instruction_count].xl_axis.arc_move = 0;
-                program->instruction[program->instruction_count].yf_axis.axis_active = 0;
                 program->instruction[program->instruction_count].yf_axis.linear_move = 0;
                 program->instruction[program->instruction_count].yf_axis.arc_move = 0;
-                program->instruction[program->instruction_count].zl_axis.axis_active = 0;
                 program->instruction[program->instruction_count].zl_axis.linear_move = 0;
                 program->instruction[program->instruction_count].zl_axis.arc_move = 0;
-                program->instruction[program->instruction_count].zr_axis.axis_active = 0;
                 program->instruction[program->instruction_count].zr_axis.linear_move = 0;
                 program->instruction[program->instruction_count].zr_axis.arc_move = 0;
                 program->instruction[program->instruction_count].speed = 0;
@@ -465,30 +459,12 @@ int check_instruction(struct cnc_instruction_struct* instruction){
     valid = valid | instruction->heater_3.heater_active;
     valid = valid | instruction->set_position_flag;
     
-    if(instruction->extruder_0.axis_active){
-        instruction->extruder_0.feed_rate = instruction->speed;
-        valid = 1;
-    }
-    if(instruction->extruder_1.axis_active){
-        instruction->extruder_1.feed_rate = instruction->speed;
-        valid = 1;
-    }
-    if(instruction->xl_axis.axis_active){
-        instruction->xl_axis.feed_rate = instruction->speed;
-        valid = 1;
-    }
-    if(instruction->yf_axis.axis_active){
-        instruction->yf_axis.feed_rate = instruction->speed;
-        valid = 1;
-    }
-    if(instruction->zl_axis.axis_active){
-        instruction->zl_axis.feed_rate = instruction->speed;
-        valid = 1;
-    }
-    if(instruction->zr_axis.axis_active){
-        instruction->zr_axis.feed_rate = instruction->speed;
-        valid = 1;
-    }
+    instruction->extruder_0.feed_rate = instruction->speed;
+    instruction->extruder_1.feed_rate = instruction->speed;
+    instruction->xl_axis.feed_rate = instruction->speed;
+    instruction->yf_axis.feed_rate = instruction->speed;
+    instruction->zl_axis.feed_rate = instruction->speed;
+    instruction->zr_axis.feed_rate = instruction->speed;
     
     instruction->instruction_set = valid;
     
@@ -540,7 +516,6 @@ int parse_gcode_word(char* line, uint16_t* line_count, struct gcode_program_stru
             if((program->linear_move_active == 1) || (program->arc_move_active == 1)){
                 error = parse_number(line, line_count, &code_number);
                 if(!error){
-                    program->instruction[program->instruction_count].extruder_0.axis_active = 1;
                     program->instruction[program->instruction_count].extruder_0.linear_move = 1;
                     program->instruction[program->instruction_count].extruder_0.arc_move = 0;
                     if(program->absolute_positions){
@@ -1358,7 +1333,6 @@ int parse_gcode_word(char* line, uint16_t* line_count, struct gcode_program_stru
             error = parse_number(line, line_count, &code_number);
             if((program->linear_move_active == 1) || (program->arc_move_active == 1)){
                 if(!error){
-                    program->instruction[program->instruction_count].xl_axis.axis_active = 1;
                     program->instruction[program->instruction_count].xl_axis.linear_move = 1;
                     program->instruction[program->instruction_count].xl_axis.arc_move = 0;
                     if(program->absolute_positions){
@@ -1382,7 +1356,6 @@ int parse_gcode_word(char* line, uint16_t* line_count, struct gcode_program_stru
             error = parse_number(line, line_count, &code_number);
             if((program->linear_move_active == 1) || (program->arc_move_active == 1)){
                 if(!error){
-                    program->instruction[program->instruction_count].yf_axis.axis_active = 1;
                     program->instruction[program->instruction_count].yf_axis.linear_move = 1;
                     program->instruction[program->instruction_count].yf_axis.arc_move = 0;
                     if(program->absolute_positions){
@@ -1406,10 +1379,8 @@ int parse_gcode_word(char* line, uint16_t* line_count, struct gcode_program_stru
             error = parse_number(line, line_count, &code_number);
             if((program->linear_move_active == 1) || (program->arc_move_active == 1)){
                 if(!error){
-                    program->instruction[program->instruction_count].zl_axis.axis_active = 1;
                     program->instruction[program->instruction_count].zl_axis.linear_move = 1;
                     program->instruction[program->instruction_count].zl_axis.arc_move = 0;
-                    program->instruction[program->instruction_count].zr_axis.axis_active = 1;
                     program->instruction[program->instruction_count].zr_axis.linear_move = 1;
                     program->instruction[program->instruction_count].zr_axis.arc_move = 0;
                     if(program->absolute_positions){

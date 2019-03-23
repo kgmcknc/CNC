@@ -26,6 +26,10 @@ enum NUMBER_PARSE_STATE {
     BEGIN_NUMBER, CHECK_SPACE, CHECK_SIGN, GET_INTEGER, GET_DECIMAL, SAVE_NUMBER
 };
 
+enum PROGRAM_UNITS {
+    UNSET, INCHES, MILLIMETER
+};
+
 struct axis_movement_struct{
     char axis_active;
     char force_position;

@@ -28,16 +28,22 @@ void parse_instruction(struct cnc_state_struct* cnc);
 void get_next_instruction(struct cnc_state_struct* cnc);
 void check_instruction_fifo(struct cnc_state_struct* cnc);
 void handle_instructions(struct cnc_state_struct* cnc);
+void set_instruction(struct cnc_state_struct* cnc);
+void set_motor_instruction(struct cnc_motor_instruction_struct* current_instruction, struct cnc_motor_struct* motor);
+void set_heater_instruction(struct cnc_heater_instruction_struct* current_instruction, struct cnc_heater_struct* heater);
 void clear_program(struct cnc_state_struct* cnc);
 void handle_program(struct cnc_state_struct* cnc);
 void process_instruction(struct cnc_state_struct* cnc);
 void init_instructions(struct cnc_state_struct* cnc);
-void clear_instruction(struct cnc_instruction_struct* instruction);
 void copy_instruction(struct cnc_instruction_struct* new_instruction, struct cnc_instruction_struct* current_instruction);
 void check_motor_instruction(struct cnc_motor_instruction_struct* current_instruction, struct cnc_motor_struct* motor);
 void check_heater_instruction(struct cnc_heater_instruction_struct* current_instruction, struct cnc_heater_struct* heater);
 void check_instruction(struct cnc_state_struct* cnc);
+void check_errors(struct cnc_state_struct* cnc);
 void copy_motor_instruction(struct cnc_motor_instruction_struct* new_instruction, struct cnc_motor_instruction_struct* current_instruction);
 void copy_heater_instruction(struct cnc_heater_instruction_struct* new_instruction, struct cnc_heater_instruction_struct* current_instruction);
+void handle_instruction_opcodes(struct cnc_state_struct* cnc, struct cnc_instruction_struct* instruction);
+void handle_motor_opcode(struct cnc_state_struct* cnc, struct cnc_motor_instruction_struct* instruction, struct cnc_motor_struct* motor);
+void handle_heater_opcode(struct cnc_state_struct* cnc, struct cnc_heater_instruction_struct* instruction, struct cnc_heater_struct* heater);
 
 #endif /* CNC_INSTRUCTIONS_H_ */
