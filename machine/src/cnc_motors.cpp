@@ -132,6 +132,7 @@ void init_motor(cnc_motor_struct* motor, const char* name){
 	motor->direction = 0;
 	motor->position = 10000;
 	motor->move_count = 0;
+	motor->set = 0;
 	motor->homed = 0;
 	check_endstop(motor);
 	motor->period = 10000; // HIGH VALUE AT FIRST AS DEFAULT
@@ -251,7 +252,7 @@ void handle_step(struct cnc_motor_struct* motor){
 					// step motor, adjust position, set flag to clear rising edge next loop
 					step_motor_high(motor);
 					motor->position = motor->position + motor->direction;
-					motor->move_count = motor->move_count + motor->direction;
+					motor->move_count = motor->move_count - motor->direction;
 					motor->step_high = 1;
 				}
 				// clear set flag to reload period

@@ -33,7 +33,7 @@ uint8_t spi_transfer_data(char* spi_data, uint16_t data_length){
 	if(data_length == 0){
 		printf("Zero Length!!!");
 	} else {
-		if(data_length > 250){
+		if(data_length > 255){
 			printf("Too High Length!!! %d", data_length);
 		}
 	}

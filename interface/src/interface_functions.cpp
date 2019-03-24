@@ -115,25 +115,20 @@ void handle_cnc_state(struct interface_struct* interface){
 					interface->write_in_progress = 0;
 					clear_instruction(&interface->user_instruction);
 					interface->user_instruction.instruction_valid = 0;
-					printf("finished sending instruction\n");
 				}
 			} else {
 				socket_handler(&interface->user_command_set, interface->user_input);
 				if(interface->user_command_set){
-					printf("receiving user control\n");
 					receive_user_control(interface);
 				} else {
 					interface->machine_state = USER_CONTROL;
 				}
 				if(interface->user_instruction.instruction_valid){
-					printf("valid user instruction\n");
 					interface->cnc_write_data[0] = (char) NEW_CNC_INSTRUCTION;
 					interface->cnc_write_length = instruction_to_string(&interface->user_instruction, &interface->cnc_write_data[1]);
 					interface->cnc_write_length = interface->cnc_write_length + 1;
-					printf("Write length is %d\n", interface->cnc_write_length);
 					if(spi_set_write(interface->cnc_write_data, interface->cnc_write_length) > 0){
 						interface->write_in_progress = 1;
-						printf("sent user instruction\n");
 					} else {
 						interface->write_in_progress = 0;
 					}
@@ -259,7 +254,6 @@ void receive_user_control(struct interface_struct* interface){
 		}
 		if(interface->user_input[0] == 13 || interface->user_input[0] == 10 || interface->user_input[0] == 'q'){
 			// new line or CR so finish
-			printf("got end in user instruction\n");
 			interface->machine_state = MACHINE_IDLE;
 			interface->user_instruction.instruction_valid = 0;
 			print_set = 0;
@@ -267,7 +261,6 @@ void receive_user_control(struct interface_struct* interface){
 			switch(interface->user_input[0]){
 				interface->user_instruction.opcode = EMPTY_OPCODE;
 				case 'e' : {
-					printf("enabling motors instruction\n");
 					interface->user_instruction.instruction_valid = 1;
 					interface->user_instruction.opcode = ENABLE_MOTORS;
 					interface->user_instruction.xl_axis.pending_enable = 1;
@@ -281,7 +274,6 @@ void receive_user_control(struct interface_struct* interface){
 					break;
 				}
 				case 'o' : {
-					printf("disabling motors instruction\n");
 					interface->user_instruction.instruction_valid = 1;
 					interface->user_instruction.opcode = DISABLE_MOTORS;
 					interface->user_instruction.xl_axis.pending_disable = 1;

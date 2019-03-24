@@ -123,5 +123,7 @@ void string_to_motor_instruction(struct cnc_motor_instruction_struct* instructio
 void string_to_heater_instruction(struct cnc_heater_instruction_struct* instruction, char* string, uint16_t* offset);
 
 void clear_instruction(struct cnc_instruction_struct* instruction);
+void clear_motor_instruction(struct cnc_motor_instruction_struct* instruction);
+void clear_heater_instruction(struct cnc_heater_instruction_struct* instruction);
 
 #endif /* SRC_COMMON_CNC_H_ */

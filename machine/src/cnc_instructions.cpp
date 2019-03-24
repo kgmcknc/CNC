@@ -18,6 +18,9 @@ void init_instructions(struct cnc_state_struct* cnc){
 	uint32_t clear_count = 0;
 
 	clear_program(cnc);
+	clear_instruction(&cnc->current_instruction);
+	clear_instruction(&cnc->new_instruction);
+	clear_instruction(&cnc->instant_instruction);
 
 	for(clear_count=0;clear_count<INSTRUCTION_FIFO_DEPTH-1;clear_count++){
 		clear_instruction(&cnc->instruction_array[clear_count]);
@@ -161,7 +164,6 @@ void set_instruction(struct cnc_state_struct* cnc){
 		if(cnc->current_instruction.instruction_set){
 			// instruction already been set to functions
 		} else {
-			cnc_printf(cnc, "Set New Instruction!");
 			set_motor_instruction(&cnc->current_instruction.aux, &cnc->motors->aux);
 			set_motor_instruction(&cnc->current_instruction.extruder_0, &cnc->motors->extruder_0);
 			set_motor_instruction(&cnc->current_instruction.extruder_1, &cnc->motors->extruder_1);
@@ -330,7 +332,6 @@ void handle_instruction_opcodes(struct cnc_state_struct* cnc, struct cnc_instruc
 	handle_heater_opcode(cnc, &instruction->heater_3, &cnc->heaters->heater_3);
 
 	if(instruction->instruction_valid){
-		cnc_printf(cnc, "Processing Opcode!");
 		switch(instruction->opcode){
 			case EMPTY_OPCODE : {
 				// nothing to do
@@ -351,26 +352,52 @@ void handle_instruction_opcodes(struct cnc_state_struct* cnc, struct cnc_instruc
 
 
 			case ENABLE_MOTORS : {
-				cnc_printf(cnc, "Enabling Motors!");
-				if(instruction->xl_axis.pending_enable) enable_motor(&cnc->motors->xl_axis);
-				if(instruction->yf_axis.pending_enable) enable_motor(&cnc->motors->yf_axis);
-				if(instruction->zl_axis.pending_enable) enable_motor(&cnc->motors->zl_axis);
-				if(instruction->zr_axis.pending_enable) enable_motor(&cnc->motors->zr_axis);
-				if(instruction->extruder_0.pending_enable) enable_motor(&cnc->motors->extruder_0);
-				if(instruction->extruder_1.pending_enable) enable_motor(&cnc->motors->extruder_1);
-				if(instruction->aux.pending_enable) enable_motor(&cnc->motors->aux);
+				if(instruction->xl_axis.pending_enable){
+					enable_motor(&cnc->motors->xl_axis);
+				}
+				if(instruction->yf_axis.pending_enable){
+					enable_motor(&cnc->motors->yf_axis);
+				}
+				if(instruction->zl_axis.pending_enable){
+					enable_motor(&cnc->motors->zl_axis);
+				}
+				if(instruction->zr_axis.pending_enable){
+					enable_motor(&cnc->motors->zr_axis);
+				}
+				if(instruction->extruder_0.pending_enable){
+					enable_motor(&cnc->motors->extruder_0);
+				}
+				if(instruction->extruder_1.pending_enable){
+					enable_motor(&cnc->motors->extruder_1);
+				}
+				if(instruction->aux.pending_enable){
+					enable_motor(&cnc->motors->aux);
+				}
 				instruction->opcode = EMPTY_OPCODE;
 				break;
 			}
 			case DISABLE_MOTORS : {
-				cnc_printf(cnc, "Disabling Motors!");
-				if(instruction->xl_axis.pending_disable) disable_motor(&cnc->motors->xl_axis);
-				if(instruction->yf_axis.pending_disable) disable_motor(&cnc->motors->yf_axis);
-				if(instruction->zl_axis.pending_disable) disable_motor(&cnc->motors->zl_axis);
-				if(instruction->zr_axis.pending_disable) disable_motor(&cnc->motors->zr_axis);
-				if(instruction->extruder_0.pending_disable) disable_motor(&cnc->motors->extruder_0);
-				if(instruction->extruder_1.pending_disable) disable_motor(&cnc->motors->extruder_1);
-				if(instruction->aux.pending_disable) disable_motor(&cnc->motors->aux);
+				if(instruction->xl_axis.pending_disable){
+					disable_motor(&cnc->motors->xl_axis);
+				}
+				if(instruction->yf_axis.pending_disable){
+					disable_motor(&cnc->motors->yf_axis);
+				}
+				if(instruction->zl_axis.pending_disable){
+					disable_motor(&cnc->motors->zl_axis);
+				}
+				if(instruction->zr_axis.pending_disable){
+					disable_motor(&cnc->motors->zr_axis);
+				}
+				if(instruction->extruder_0.pending_disable){
+					disable_motor(&cnc->motors->extruder_0);
+				}
+				if(instruction->extruder_1.pending_disable){
+					disable_motor(&cnc->motors->extruder_1);
+				}
+				if(instruction->aux.pending_disable){
+					disable_motor(&cnc->motors->aux);
+				}
 				instruction->opcode = EMPTY_OPCODE;
 				break;
 			}

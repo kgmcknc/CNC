@@ -21,21 +21,19 @@ uint16_t instruction_to_string(struct cnc_instruction_struct* instruction, char*
     offset++;
     string[offset] = instruction->set_position_flag;
     offset++;
-    string[offset] = instruction->instruction_set;
-    offset++;
 
-    motor_instruction_to_string(&instruction->aux, &string[offset], &offset);
-    motor_instruction_to_string(&instruction->extruder_0, &string[offset], &offset);
-    motor_instruction_to_string(&instruction->extruder_1, &string[offset], &offset);
-    motor_instruction_to_string(&instruction->xl_axis, &string[offset], &offset);
-    motor_instruction_to_string(&instruction->yf_axis, &string[offset], &offset);
-    motor_instruction_to_string(&instruction->zl_axis, &string[offset], &offset);
-    motor_instruction_to_string(&instruction->zr_axis, &string[offset], &offset);
+    motor_instruction_to_string(&instruction->xl_axis, string, &offset);
+    motor_instruction_to_string(&instruction->yf_axis, string, &offset);
+    motor_instruction_to_string(&instruction->zl_axis, string, &offset);
+    motor_instruction_to_string(&instruction->zr_axis, string, &offset);
+    motor_instruction_to_string(&instruction->aux, string, &offset);
+    motor_instruction_to_string(&instruction->extruder_0, string, &offset);
+    motor_instruction_to_string(&instruction->extruder_1, string, &offset);
 	
-    heater_instruction_to_string(&instruction->heater_0, &string[offset], &offset);
-    heater_instruction_to_string(&instruction->heater_1, &string[offset], &offset);
-    heater_instruction_to_string(&instruction->heater_2, &string[offset], &offset);
-    heater_instruction_to_string(&instruction->heater_3, &string[offset], &offset);
+    heater_instruction_to_string(&instruction->heater_0, string, &offset);
+    heater_instruction_to_string(&instruction->heater_1, string, &offset);
+    heater_instruction_to_string(&instruction->heater_2, string, &offset);
+    heater_instruction_to_string(&instruction->heater_3, string, &offset);
     
     return offset;
 }
@@ -50,21 +48,19 @@ void string_to_instruction(struct cnc_instruction_struct* instruction, char* str
     offset++;
     instruction->set_position_flag = string[offset];
     offset++;
-    instruction->instruction_set = string[offset];
-    offset++;
 
-    string_to_motor_instruction(&instruction->aux, &string[offset], &offset);
-    string_to_motor_instruction(&instruction->extruder_0, &string[offset], &offset);
-    string_to_motor_instruction(&instruction->extruder_1, &string[offset], &offset);
-    string_to_motor_instruction(&instruction->xl_axis, &string[offset], &offset);
-    string_to_motor_instruction(&instruction->yf_axis, &string[offset], &offset);
-    string_to_motor_instruction(&instruction->zl_axis, &string[offset], &offset);
-    string_to_motor_instruction(&instruction->zr_axis, &string[offset], &offset);
+    string_to_motor_instruction(&instruction->xl_axis, string, &offset);
+    string_to_motor_instruction(&instruction->yf_axis, string, &offset);
+    string_to_motor_instruction(&instruction->zl_axis, string, &offset);
+    string_to_motor_instruction(&instruction->zr_axis, string, &offset);
+    string_to_motor_instruction(&instruction->aux, string, &offset);
+    string_to_motor_instruction(&instruction->extruder_0, string, &offset);
+    string_to_motor_instruction(&instruction->extruder_1, string, &offset);
 	
-    string_to_heater_instruction(&instruction->heater_0, &string[offset], &offset);
-    string_to_heater_instruction(&instruction->heater_1, &string[offset], &offset);
-    string_to_heater_instruction(&instruction->heater_2, &string[offset], &offset);
-    string_to_heater_instruction(&instruction->heater_3, &string[offset], &offset);
+    string_to_heater_instruction(&instruction->heater_0, string, &offset);
+    string_to_heater_instruction(&instruction->heater_1, string, &offset);
+    string_to_heater_instruction(&instruction->heater_2, string, &offset);
+    string_to_heater_instruction(&instruction->heater_3, string, &offset);
 }
 
 void motor_instruction_to_string(struct cnc_motor_instruction_struct* instruction, char* string, uint16_t* offset){
@@ -181,18 +177,52 @@ void clear_instruction(struct cnc_instruction_struct* instruction){
 	instruction->instruction_valid = 0;
     instruction->instant_instruction = 0;
 	instruction->opcode = EMPTY_OPCODE;
+    instruction->set_position_flag = 0;
     instruction->instruction_set = 0;
-    instruction->xl_axis.pending_enable = 0;
-    instruction->xl_axis.pending_disable = 0;
-    instruction->xl_axis.opcode = ENABLE_MOTORS;
-    instruction->yf_axis.pending_enable = 0;
-    instruction->yf_axis.pending_disable = 0;
-    instruction->yf_axis.opcode = ENABLE_MOTORS;
-    instruction->zl_axis.pending_enable = 0;
-    instruction->zl_axis.pending_disable = 0;
-    instruction->zl_axis.opcode = ENABLE_MOTORS;
-    instruction->zl_axis.pending_enable = 0;
-    instruction->zl_axis.pending_disable = 0;
-    instruction->zl_axis.opcode = ENABLE_MOTORS;
+	
+    clear_motor_instruction(&instruction->xl_axis);
+    clear_motor_instruction(&instruction->yf_axis);
+    clear_motor_instruction(&instruction->zl_axis);
+    clear_motor_instruction(&instruction->zr_axis);
+    clear_motor_instruction(&instruction->extruder_0);
+    clear_motor_instruction(&instruction->extruder_1);
+    clear_motor_instruction(&instruction->aux);
+    clear_heater_instruction(&instruction->heater_0);
+    clear_heater_instruction(&instruction->heater_1);
+    clear_heater_instruction(&instruction->heater_2);
+    clear_heater_instruction(&instruction->heater_3);
+}
+
+void clear_motor_instruction(struct cnc_motor_instruction_struct* instruction){
+    instruction->pending_enable = 0;
+    instruction->pending_disable = 0;
+    instruction->opcode = EMPTY_OPCODE;
+    instruction->instruction_valid = 0; // flag saying whether instruction is valid or stale
+	instruction->current_position = 0;
+	instruction->move_count = 0;
+	instruction->current_period = 0;
+	instruction->ramp_up_speed = 0;
+	instruction->ramp_down_speed = 0;
+	instruction->find_zero = 0;
+	instruction->find_max = 0;
+	instruction->linear_move = 0;
+	instruction->arc_move = 0;
+
+}
+
+void clear_heater_instruction(struct cnc_heater_instruction_struct* instruction){
+    instruction->instruction_valid = 0;
+	instruction->opcode = EMPTY_OPCODE;
+	instruction->pending_enable = 0;
+	instruction->pending_disable = 0;
+	instruction->enabled = 0;
+	instruction->heater_on = 0;
+	instruction->heater_active = 0;
+	instruction->wait_for_temp = 0;
+	instruction->fan_duty = 0;
+	instruction->fan_on = 0;
+	instruction->temp_locked = 0;
+	instruction->target_temp = 0;
+	instruction->current_temp = 0;
 }
 

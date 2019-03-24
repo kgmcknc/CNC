@@ -22,6 +22,7 @@ void disable_interface_gpio(void){
 	close(spi_fd);
 	
 	digitalWrite(MOTOR_POWER, POWER_OFF);
+    sleep(1);
     digitalWrite(SILABS_POWER, POWER_OFF);
     digitalWrite(CNC_SPI_RESET, LOW);
     

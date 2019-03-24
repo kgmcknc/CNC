@@ -1,0 +1,58 @@
+TOP VIEW
+5v, g, bden,  rst, stp0, stp1, stp2, stp3, ena0, ena1, ena2, ena3, ena4, ena5, g, 3.3
+5v, g, stp4, stp5, stp6, tool1, dir0, dir1, dir2, dir3, dir4, dir5, dir6, ena6, g, 3.3
+
+6           5           4           3
+0ena        0ena        0ena        0ena
+1dir        1dir        1dir        1dir
+2stp        2stp        2stp        2stp
+3ms0        3ms0        3ms0        3ms0
+4ms1        4ms1        4ms1        4ms1
+
+0        1        0           1           2
+0temp    0temp    0ena        0ena        0ena
+1adc     1adc     1dir        1dir        1dir
+2fan     2fan     2stp        2stp        2stp
+                  3ms0        3ms0        3ms0
+2        3        4ms1        4ms1        4ms1
+0temp    0temp
+1adc     1adc
+2fan     2fan
+
+vmcu, g, 0ms0, 0ms1, 1ms0, 1ms1, 2ms0, 4ms0, 4ms1, 3ms0, 3ms1, 6ms0, 6ms1, tool0, gndi
+vmcu, g, adc0, adc1, adc2, adc3, 5ms0, 5ms1, 2ms1, tmp0, tmp1, tmp2, tmp3, nc,    gnd
+
+--------------------
+BOTTOM VIEW
+vmcu, g, adc0, adc1, adc2, adc3, 5ms0, 5ms1, 2ms1, tmp0, tmp1, tmp2, tmp3, nc,    gnd
+vmcu, g, 0ms0, 0ms1, 1ms0, 1ms1, 2ms0, 4ms0, 4ms1, 3ms0, 3ms1, 6ms0, 6ms1, tool0, gnd
+
+2fan     2fan
+1adc     1adc
+0temp    0temp
+2        3        4ms1        4ms1        4ms1
+                  3ms0        3ms0        3ms0
+2fan     2fan     2stp        2stp        2stp
+1adc     1adc     1dir        1dir        1dir
+0temp    0temp    0ena        0ena        0ena
+0        1        0           1           2
+
+4ms1        4ms1        4ms1        4ms1
+3ms0        3ms0        3ms0        3ms0
+2stp        2stp        2stp        2stp
+1dir        1dir        1dir        1dir
+0ena        0ena        0ena        0ena
+3           4           5           6
+
+5v, g, stp4, stp5, stp6, tol1, dir0, dir1, dir2, dir3, dir4, dir5, dir6, ena6, g, 3.3
+5v, g, bden,  rst, stp0, stp1, stp2, stp3, ena0, ena1, ena2, ena3, ena4, ena5, g, 3.3
+
+
+adc/heater board
+left: fan, center: adc input, right: heater power
+left: 12v, center: 3v, right: gnd
+
+heater wires
+fan wires       adc input
+
+
