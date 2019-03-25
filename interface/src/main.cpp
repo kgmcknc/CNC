@@ -137,7 +137,9 @@ void system_shutdown(int sig){
 }
 
 void system_control(int control_socket){
-    char control_char;
+    char control_char[8];
+	char control_count = 0;
+	char send_data = 0;
 	uint8_t exit_child = 0;
     // execute system shutdown on sigterm
 	signal(SIGTERM, &system_control_shutdown);
@@ -145,9 +147,52 @@ void system_control(int control_socket){
 
     while(!exit_child){
 		// use getche to echo each input character
-		control_char = getch();
+		control_char[control_count] = getch();
 		// send character to main process
-        send(control_socket, &control_char, sizeof(control_char), 0);
+		control_count++;
+		if(control_char[0] == 27){
+			// escape character
+			if(control_char[1] != 0){
+				if(control_char[1] == 91){
+					if(control_char[2] != 0){
+						if(control_char[2] == 49){
+							if(control_char[3] != 0){
+								if(control_char[3] == 59){
+									if(control_char[4] != 0){
+										if(control_char[4] == 50){
+											if(control_char[5] != 0){
+												send_data = 1;
+											}
+										} else {
+											send_data = 1;
+										}
+									}
+								} else {
+									send_data = 1;
+								}
+							}
+						} else {
+							send_data = 1;
+						}
+					}
+				} else {
+					send_data = 1;
+				}
+			}
+			if(send_data){
+				send(control_socket, &control_char, sizeof(control_char), 0);
+				for(control_count = 0; control_count < 8; control_count++){
+					control_char[control_count] = 0;
+				}
+				control_count = 0;
+				send_data = 0;
+			}
+		} else {
+			send(control_socket, &control_char[0], sizeof(control_char[0]), 0);
+			control_char[0] = 0;
+			control_count = 0;
+			send_data = 0;
+		}
     }
 }
 

@@ -31,10 +31,18 @@ void receive_instruction(struct cnc_state_struct* cnc){
 	parse_instruction(cnc);
 	if(cnc->new_instruction.instruction_valid){
 		if(cnc->new_instruction.instant_instruction){
-			if(cnc->instant_instruction.instruction_valid){
-				// instant instruction already set... can't overwrite...
+			if(cnc->new_instruction.opcode == ABORT_INSTRUCTION){
+				cnc_printf(cnc, "Received Abort");
+				// we just received an abort from an instant instruction... STOP!
+				cnc->instant_instruction.opcode = ABORT_INSTRUCTION;
+				cnc->current_instruction.opcode = ABORT_INSTRUCTION;
 			} else {
-				copy_instruction(&cnc->new_instruction, &cnc->instant_instruction);
+				if(cnc->instant_instruction.instruction_valid){
+					// instant instruction already set... can't overwrite...
+					// but we can check to see if this is an abort...
+				} else {
+					copy_instruction(&cnc->new_instruction, &cnc->instant_instruction);
+				}
 			}
 		} else {
 			if(cnc->program_running){
@@ -229,6 +237,21 @@ void check_heater_instruction(struct cnc_heater_instruction_struct* current_inst
 	}
 }
 
+void abort_motor_instruction(struct cnc_motor_instruction_struct* current_instruction, struct cnc_motor_struct* motor){
+	if(current_instruction->instruction_valid){
+		current_instruction->opcode = EMPTY_OPCODE;
+		motor->move_count = 0;
+	}
+}
+
+void abort_heater_instruction(struct cnc_heater_instruction_struct* current_instruction, struct cnc_heater_struct* heater){
+	if(current_instruction->instruction_valid){
+		current_instruction->opcode = EMPTY_OPCODE;
+		heater->target_temp = 0;
+		heater->wait_for_temp = 0;
+	}
+}
+
 void check_instruction(struct cnc_state_struct* cnc){
 	if(cnc->current_instruction.instruction_valid){
 		// if so, check all the various things to see if instruction is done
@@ -349,7 +372,23 @@ void handle_instruction_opcodes(struct cnc_state_struct* cnc, struct cnc_instruc
 				instruction->opcode = EMPTY_OPCODE;
 				break;
 			}
-
+			case ABORT_INSTRUCTION : {
+				abort_motor_instruction(&cnc->current_instruction.xl_axis, &cnc->motors->xl_axis);
+				abort_motor_instruction(&cnc->current_instruction.yf_axis, &cnc->motors->yf_axis);
+				abort_motor_instruction(&cnc->current_instruction.zl_axis, &cnc->motors->zl_axis);
+				abort_motor_instruction(&cnc->current_instruction.zr_axis, &cnc->motors->zr_axis);
+				abort_motor_instruction(&cnc->current_instruction.extruder_0, &cnc->motors->extruder_0);
+				abort_motor_instruction(&cnc->current_instruction.extruder_1, &cnc->motors->extruder_1);
+				abort_motor_instruction(&cnc->current_instruction.aux, &cnc->motors->aux);
+				abort_heater_instruction(&cnc->current_instruction.heater_0, &cnc->heaters->heater_0);
+				abort_heater_instruction(&cnc->current_instruction.heater_1, &cnc->heaters->heater_1);
+				abort_heater_instruction(&cnc->current_instruction.heater_2, &cnc->heaters->heater_2);
+				abort_heater_instruction(&cnc->current_instruction.heater_3, &cnc->heaters->heater_3);
+				clear_instruction(&cnc->instant_instruction);
+				clear_instruction(&cnc->current_instruction);
+				instruction->opcode = EMPTY_OPCODE;
+				break;
+			}
 
 			case ENABLE_MOTORS : {
 				if(instruction->xl_axis.pending_enable){

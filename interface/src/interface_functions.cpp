@@ -258,8 +258,15 @@ void receive_user_control(struct interface_struct* interface){
 			interface->user_instruction.instruction_valid = 0;
 			print_set = 0;
 		} else {
+			//printf("Data: %d, %d, %d, %d, %d, %d, %d\n", interface->user_input[0], interface->user_input[1], interface->user_input[2], interface->user_input[3], interface->user_input[4], interface->user_input[5], interface->user_input[6]);
 			switch(interface->user_input[0]){
 				interface->user_instruction.opcode = EMPTY_OPCODE;
+				case 'a' : {
+					// abort current instruction
+					interface->user_instruction.instruction_valid = 1;
+					interface->user_instruction.opcode = ABORT_INSTRUCTION;
+					break;
+				}
 				case 'e' : {
 					interface->user_instruction.instruction_valid = 1;
 					interface->user_instruction.opcode = ENABLE_MOTORS;
@@ -273,7 +280,7 @@ void receive_user_control(struct interface_struct* interface){
 					interface->user_instruction.zr_axis.opcode = ENABLE_MOTORS;
 					break;
 				}
-				case 'o' : {
+				case 'd' : {
 					interface->user_instruction.instruction_valid = 1;
 					interface->user_instruction.opcode = DISABLE_MOTORS;
 					interface->user_instruction.xl_axis.pending_disable = 1;
@@ -286,80 +293,93 @@ void receive_user_control(struct interface_struct* interface){
 					interface->user_instruction.zr_axis.opcode = DISABLE_MOTORS;
 					break;
 				}
-				case 'l' : {
-					interface->user_instruction.instruction_valid = 1;
-					interface->user_instruction.xl_axis.instruction_valid = 1;
-					interface->user_instruction.xl_axis.move_count = -10;
-					interface->user_instruction.xl_axis.current_period = 100;
-					break;
-				}
-				case 'r' : {
-					interface->user_instruction.instruction_valid = 1;
-					interface->user_instruction.xl_axis.instruction_valid = 1;
-					interface->user_instruction.xl_axis.move_count = 10;
-					interface->user_instruction.xl_axis.current_period = 100;
-					break;
-				}
-				case 'f' : {
-					interface->user_instruction.instruction_valid = 1;
-					interface->user_instruction.yf_axis.instruction_valid = 1;
-					interface->user_instruction.yf_axis.move_count = 10;
-					interface->user_instruction.yf_axis.current_period = 100;
-					break;
-				}
-				case 'b' : {
-					interface->user_instruction.instruction_valid = 1;
-					interface->user_instruction.yf_axis.instruction_valid = 1;
-					interface->user_instruction.yf_axis.move_count = -10;
-					interface->user_instruction.yf_axis.current_period = 100;
-					break;
-				}
-				case 'u' : {
-					interface->user_instruction.instruction_valid = 1;
-					interface->user_instruction.zl_axis.instruction_valid = 1;
-					interface->user_instruction.zl_axis.move_count = 10;
-					interface->user_instruction.zl_axis.current_period = 100;
-					interface->user_instruction.zr_axis.instruction_valid = 1;
-					interface->user_instruction.zr_axis.move_count = 10;
-					interface->user_instruction.zr_axis.current_period = 100;
-					break;
-				}
-				case 'd' : {
-					interface->user_instruction.instruction_valid = 1;
-					interface->user_instruction.zl_axis.move_count = -10;
-					interface->user_instruction.zl_axis.current_period = 100;
-					interface->user_instruction.zl_axis.instruction_valid = 1;
-					interface->user_instruction.zr_axis.move_count = -10;
-					interface->user_instruction.zr_axis.current_period = 100;
-					interface->user_instruction.zr_axis.instruction_valid = 1;
+				case 27 : { // escape character 
+					if(!strcmp(&interface->user_input[1], "[A")){
+						// up arrow - forward
+						interface->user_instruction.instruction_valid = 1;
+						interface->user_instruction.yf_axis.instruction_valid = 1;
+						interface->user_instruction.yf_axis.move_count = 10;
+						interface->user_instruction.yf_axis.current_period = MOVE_PERIOD;
+						break;
+					}
+					if(!strcmp(&interface->user_input[1], "[B")){
+						// down arrow - backward
+						interface->user_instruction.instruction_valid = 1;
+						interface->user_instruction.yf_axis.instruction_valid = 1;
+						interface->user_instruction.yf_axis.move_count = -10;
+						interface->user_instruction.yf_axis.current_period = MOVE_PERIOD;
+						break;
+					}
+					if(!strcmp(&interface->user_input[1], "[C")){
+						// right arrow - right
+						interface->user_instruction.instruction_valid = 1;
+						interface->user_instruction.xl_axis.instruction_valid = 1;
+						interface->user_instruction.xl_axis.move_count = 10;
+						interface->user_instruction.xl_axis.current_period = MOVE_PERIOD;
+						break;
+					}
+					if(!strcmp(&interface->user_input[1], "[D")){
+						// left arrow - left
+						interface->user_instruction.instruction_valid = 1;
+						interface->user_instruction.xl_axis.instruction_valid = 1;
+						interface->user_instruction.xl_axis.move_count = -10;
+						interface->user_instruction.xl_axis.current_period = MOVE_PERIOD;
+						break;
+					}
+					if(!strcmp(&interface->user_input[1], "[1;2A")){
+						// shift and up arrow - up
+						interface->user_instruction.instruction_valid = 1;
+						interface->user_instruction.zl_axis.instruction_valid = 1;
+						interface->user_instruction.zl_axis.move_count = 10;
+						interface->user_instruction.zl_axis.current_period = MOVE_PERIOD;
+						interface->user_instruction.zr_axis.instruction_valid = 1;
+						interface->user_instruction.zr_axis.move_count = 10;
+						interface->user_instruction.zr_axis.current_period = MOVE_PERIOD;
+						break;
+					}
+					if(!strcmp(&interface->user_input[1], "[1;2B")){
+						// shift and down arrow - down
+						interface->user_instruction.instruction_valid = 1;
+						interface->user_instruction.zl_axis.move_count = -10;
+						interface->user_instruction.zl_axis.current_period = MOVE_PERIOD;
+						interface->user_instruction.zl_axis.instruction_valid = 1;
+						interface->user_instruction.zr_axis.move_count = -10;
+						interface->user_instruction.zr_axis.current_period = MOVE_PERIOD;
+						interface->user_instruction.zr_axis.instruction_valid = 1;
+						break;
+					}
 					break;
 				}
 				case 'z' : {
 					interface->user_instruction.instruction_valid = 1;
 					interface->user_instruction.xl_axis.move_count = -100000;
-					interface->user_instruction.xl_axis.current_period = 100;
+					interface->user_instruction.xl_axis.current_period = MOVE_PERIOD;
 					interface->user_instruction.xl_axis.instruction_valid = 1;
 					interface->user_instruction.yf_axis.move_count = -100000;
-					interface->user_instruction.yf_axis.current_period = 100;
+					interface->user_instruction.yf_axis.current_period = MOVE_PERIOD;
 					interface->user_instruction.yf_axis.instruction_valid = 1;
 					interface->user_instruction.zl_axis.move_count = -100000;
-					interface->user_instruction.zl_axis.current_period = 100;
+					interface->user_instruction.zl_axis.current_period = MOVE_PERIOD;
 					interface->user_instruction.zl_axis.instruction_valid = 1;
 					interface->user_instruction.zr_axis.move_count = -100000;
-					interface->user_instruction.zr_axis.current_period = 100;
+					interface->user_instruction.zr_axis.current_period = MOVE_PERIOD;
 					interface->user_instruction.zr_axis.instruction_valid = 1;
 					break;
 				}
 				case 'm' : {
 					interface->user_instruction.instruction_valid = 1;
-					interface->user_instruction.xl_axis.move_count = -100000;
-					interface->user_instruction.xl_axis.current_period = 100;
-					interface->user_instruction.yf_axis.move_count = -100000;
-					interface->user_instruction.yf_axis.current_period = 100;
-					interface->user_instruction.zl_axis.move_count = -100000;
-					interface->user_instruction.zl_axis.current_period = 100;
-					interface->user_instruction.zr_axis.move_count = -100000;
-					interface->user_instruction.zr_axis.current_period = 100;
+					interface->user_instruction.xl_axis.move_count = 100000;
+					interface->user_instruction.xl_axis.current_period = MOVE_PERIOD;
+					interface->user_instruction.xl_axis.instruction_valid = 1;
+					interface->user_instruction.yf_axis.move_count = 100000;
+					interface->user_instruction.yf_axis.current_period = MOVE_PERIOD;
+					interface->user_instruction.yf_axis.instruction_valid = 1;
+					interface->user_instruction.zl_axis.move_count = 100000;
+					interface->user_instruction.zl_axis.current_period = MOVE_PERIOD;
+					interface->user_instruction.zl_axis.instruction_valid = 1;
+					interface->user_instruction.zr_axis.move_count = 100000;
+					interface->user_instruction.zr_axis.current_period = MOVE_PERIOD;
+					interface->user_instruction.zr_axis.instruction_valid = 1;
 					break;
 				}
 				default : {

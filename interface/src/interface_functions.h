@@ -6,6 +6,8 @@
 #include "common_spi.h"
 #include "gcode.h"
 
+#define MOVE_PERIOD 20
+
 enum CNC_INTERFACE_STATE {
 	FORK_INPUT = 0, CREATE_SOCKET, CREATE_CHILD_SOCKET,
 	INTERFACE_INIT, ENABLE_GPIO, CONNECT_MICRO,
