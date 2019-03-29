@@ -14,7 +14,6 @@
 
 enum cnc_state {
 	CNC_IDLE,
-	PROCESS_SPI,
 	GET_STATUS,
 	GET_VERSION,
 	SEND_CNC_PRINT
@@ -26,6 +25,7 @@ struct cnc_state_struct {
 	uint8_t program_received; // finished loading the whole program
 	uint64_t program_length; // number of instructions for current program
 	uint8_t request_instruction;
+	uint8_t instruction_request_sent;
 	// cnc_spi variables
 	char cnc_read_data[MAX_SPI_TRANSFER];
 	int32_t cnc_read_length;

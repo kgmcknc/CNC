@@ -32,23 +32,17 @@ void init_cnc(struct cnc_state_struct* cnc){
 }
 
 void handle_state(struct cnc_state_struct* cnc){
+	if(check_spi(cnc)){
+		process_spi_request(cnc);
+	}
 	switch(cnc->state){
 		case CNC_IDLE : {
-			if(cnc->print_fullness > 0){
+			if((cnc->print_fullness > 0) && (!cnc->write_in_progress) && (!cnc->instruction_request_sent)){
 				// send print if print is ready
 				cnc->state = SEND_CNC_PRINT;
 			} else {
-				// if not printing, then process spi inputs
-				if(check_spi(cnc)){
-					cnc->state = PROCESS_SPI;
-				} else {
-					cnc->state = CNC_IDLE;
-				}
+				cnc->state = CNC_IDLE;
 			}
-			break;
-		}
-		case PROCESS_SPI : {
-			process_spi_request(cnc);
 			break;
 		}
 		case GET_STATUS : {

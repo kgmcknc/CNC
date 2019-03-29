@@ -52,8 +52,10 @@ struct heater_struct{
 struct gcode_program_struct {
     uint64_t program_length;
     uint64_t instruction_count;
+    uint64_t instruction_wp;
+    uint64_t instruction_rp;
     char units_in_inches;
-    char units_in_metric;
+    char units_in_mm;
     char absolute_positions;
     char delta_positions;
     char arc_move_active;
@@ -68,6 +70,8 @@ int parse_gcode_line(char* line, struct gcode_program_struct* program);
 int parse_number(char* line, uint16_t* line_count, double* value);
 int parse_letter(char* line, uint16_t* line_count, char* value);
 int parse_gcode_word(char* line, uint16_t* line_count, struct gcode_program_struct* program);
-int check_instruction(struct cnc_instruction_struct* instruction);
+int check_gcode_instruction(struct cnc_instruction_struct* instruction);
+int check_gcode_motor_instruction(struct cnc_motor_instruction_struct* instruction);
+int check_gcode_heater_instruction(struct cnc_heater_instruction_struct* instruction);
 
 #endif /* SRC_GCODE_H */

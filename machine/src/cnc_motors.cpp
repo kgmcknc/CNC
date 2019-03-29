@@ -242,6 +242,7 @@ void handle_step(struct cnc_motor_struct* motor){
 	if(motor->enabled && motor->move_count){
 		if(motor->step_timer > 0){
 			// decrease step timer until 0
+			// moved to interrupt
 			motor->step_timer--;
 		} else {
 			// if timer has reached 0 and motor set

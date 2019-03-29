@@ -24,13 +24,18 @@ int parse_gcode_file(FILE* gcode_fp, struct gcode_program_struct* program){
     char line[4096];
     char* file_data;
     int error = 0;
+    
+    program->block_delete = 0;
+    program->stop_switch = 0;
+    program->program_length = 0;
     program->linear_move_active = 0;
     program->arc_move_active = 0;
     program->absolute_positions = 0;
     program->delta_positions = 0;
-    program->instruction_count = 0;
+    program->instruction_wp = 0;
+    program->instruction_rp = 0;
     program->units_in_inches = 0;
-    program->units_in_metric = 0;
+    program->units_in_mm = 1; // default to metric
     
     data = 0;
     file_counter = 0;
@@ -71,11 +76,11 @@ int parse_gcode_file(FILE* gcode_fp, struct gcode_program_struct* program){
             line_counter++;
         }
     }
-    
     program->instruction = (struct cnc_instruction_struct*) malloc(line_count*sizeof(struct cnc_instruction_struct));
-    printf("Starting Parsing\n");
     line_counter = 0;
     line_count = 0;
+    // first instruction is start program that we will set below
+    program->instruction_wp = program->instruction_wp + 1;
     for(file_counter=0;file_counter < file_size; file_counter++){
         // read data into line
         if((file_data[file_counter] >= 10) && (file_data[file_counter] <= 13)){ // look for end of line marker
@@ -104,9 +109,18 @@ int parse_gcode_file(FILE* gcode_fp, struct gcode_program_struct* program){
             line_counter++;
         }
     }
+    // set start of program instruction
+    clear_instruction(&program->instruction[0]);
+    program->instruction[0].opcode = PROGRAM_START;
+    program->instruction[0].instruction_valid = 1;
+    // set end of program instruction
+    clear_instruction(&program->instruction[program->instruction_wp]);
+    program->instruction[program->instruction_wp].opcode = PROGRAM_END;
+    program->instruction[program->instruction_wp].instruction_valid = 1;
+    program->instruction_wp++;
+    program->program_length++;
     printf("Finished Parsing Instructions\n");
     free(file_data);
-    free(program->instruction);
     printf("File was %llu long\n", file_counter);
     return error;
 }
@@ -138,34 +152,15 @@ int parse_gcode_line(char* line, struct gcode_program_struct* program){
                 // initialize new instruction
                 string_count = 0;
                 count_set = 0;
-                program->instruction[program->instruction_count].heater_0.heater_active = 0;
-                program->instruction[program->instruction_count].heater_0.fan_on = 0;
-                program->instruction[program->instruction_count].heater_1.heater_active = 0;
-                program->instruction[program->instruction_count].heater_1.fan_on = 0;
-                program->instruction[program->instruction_count].heater_2.heater_active = 0;
-                program->instruction[program->instruction_count].heater_2.fan_on = 0;
-                program->instruction[program->instruction_count].heater_3.heater_active = 0;
-                program->instruction[program->instruction_count].heater_3.fan_on = 0;
-                program->instruction[program->instruction_count].extruder_0.linear_move = 0;
-                program->instruction[program->instruction_count].extruder_0.arc_move = 0;
-                program->instruction[program->instruction_count].extruder_1.linear_move = 0;
-                program->instruction[program->instruction_count].extruder_1.arc_move = 0;
-                program->instruction[program->instruction_count].xl_axis.linear_move = 0;
-                program->instruction[program->instruction_count].xl_axis.arc_move = 0;
-                program->instruction[program->instruction_count].yf_axis.linear_move = 0;
-                program->instruction[program->instruction_count].yf_axis.arc_move = 0;
-                program->instruction[program->instruction_count].zl_axis.linear_move = 0;
-                program->instruction[program->instruction_count].zl_axis.arc_move = 0;
-                program->instruction[program->instruction_count].zr_axis.linear_move = 0;
-                program->instruction[program->instruction_count].zr_axis.arc_move = 0;
-                program->instruction[program->instruction_count].speed = 0;
-                program->instruction[program->instruction_count].instruction_number = 0;
-                program->instruction[program->instruction_count].comment[0] = '\0';
-                program->instruction[program->instruction_count].message[0] = '\0';
-                program->instruction[program->instruction_count].comment_flag = 0;
-                program->instruction[program->instruction_count].message_flag = 0;
-                program->instruction[program->instruction_count].set_position_flag = 0;
-                program->instruction[program->instruction_count].instruction_set = 0;
+                clear_instruction(&program->instruction[program->instruction_wp]);
+                program->instruction[program->instruction_wp].speed = 0;
+                program->instruction[program->instruction_wp].instruction_number = 0;
+                program->instruction[program->instruction_wp].comment[0] = '\0';
+                program->instruction[program->instruction_wp].message[0] = '\0';
+                program->instruction[program->instruction_wp].comment_flag = 0;
+                program->instruction[program->instruction_wp].message_flag = 0;
+                program->instruction[program->instruction_wp].set_position_flag = 0;
+                program->instruction[program->instruction_wp].instruction_set = 0;
                 line_state = CHECK_BLOCK_DELETE;
                 break;
             }
@@ -200,10 +195,10 @@ int parse_gcode_line(char* line, struct gcode_program_struct* program){
                         // check for instruction number
                         if(line[line_count] == 'N'){
                             line_count++;
-                            error = parse_number(line, &line_count, &program->instruction[program->instruction_count].instruction_number);
+                            error = parse_number(line, &line_count, &program->instruction[program->instruction_wp].instruction_number);
                         } else {
                             // force a number
-                            program->instruction[program->instruction_count].instruction_number = program->instruction_count;
+                            program->instruction[program->instruction_wp].instruction_number = program->instruction_wp;
                             count_set = 1;
                         }
                         line_state = GET_WORD;
@@ -233,11 +228,11 @@ int parse_gcode_line(char* line, struct gcode_program_struct* program){
                     if(!strncmp(&line[line_count+1], "MSG", 3)){
                         message_flag = 1;
                         line_count = line_count + 3; // skip the MSG tag
-                        program->instruction[program->instruction_count].message_flag = 1;
+                        program->instruction[program->instruction_wp].message_flag = 1;
                     } else {
                         comment_line_opened = 1;
                         line_count++;
-                        program->instruction[program->instruction_count].comment_flag = 1;
+                        program->instruction[program->instruction_wp].comment_flag = 1;
                     }
                 }
                 line_state = HANDLE_COMMENT;
@@ -247,9 +242,9 @@ int parse_gcode_line(char* line, struct gcode_program_struct* program){
                 if(line[line_count] == ')'){
                     comment_brace_opened = 0;
                     if(message_flag){
-                        program->instruction[program->instruction_count].message[string_count] = '\0';
+                        program->instruction[program->instruction_wp].message[string_count] = '\0';
                     } else {
-                        program->instruction[program->instruction_count].comment[string_count] = '\0';
+                        program->instruction[program->instruction_wp].comment[string_count] = '\0';
                     }
                     // if count set, go onto finding new word
                     if(count_set){
@@ -261,9 +256,9 @@ int parse_gcode_line(char* line, struct gcode_program_struct* program){
                     }
                 } else {
                     if(message_flag){
-                        program->instruction[program->instruction_count].message[string_count] = line[line_count];
+                        program->instruction[program->instruction_wp].message[string_count] = line[line_count];
                     } else {
-                        program->instruction[program->instruction_count].comment[string_count] = line[line_count];
+                        program->instruction[program->instruction_wp].comment[string_count] = line[line_count];
                     }
                     string_count++;
                 }
@@ -277,13 +272,14 @@ int parse_gcode_line(char* line, struct gcode_program_struct* program){
         }
     }
     
-    program->instruction[program->instruction_count].message[string_count] = '\0';
-    program->instruction[program->instruction_count].comment[string_count] = '\0';
+    program->instruction[program->instruction_wp].message[string_count] = '\0';
+    program->instruction[program->instruction_wp].comment[string_count] = '\0';
     
-    check_instruction(&program->instruction[program->instruction_count]);
+    check_gcode_instruction(&program->instruction[program->instruction_wp]);
     
-    if(program->instruction[program->instruction_count].instruction_set){
-        program->instruction_count++;
+    if(program->instruction[program->instruction_wp].instruction_set){
+        program->instruction_wp++;
+        program->program_length++;
     }
     
     if(comment_brace_opened){
@@ -448,27 +444,59 @@ int parse_letter(char* line, uint16_t* line_count, char* value){
     return error;
 }
 
-int check_instruction(struct cnc_instruction_struct* instruction){
+int check_gcode_instruction(struct cnc_instruction_struct* instruction){
     char error = 0;
-    char valid = 0;
+    char valid_instruction = 0;
     
-    valid = valid | instruction->message_flag;
-    valid = valid | instruction->heater_0.heater_active;
-    valid = valid | instruction->heater_1.heater_active;
-    valid = valid | instruction->heater_2.heater_active;
-    valid = valid | instruction->heater_3.heater_active;
-    valid = valid | instruction->set_position_flag;
+    check_gcode_motor_instruction(&instruction->xl_axis);
+    check_gcode_motor_instruction(&instruction->yf_axis);
+    check_gcode_motor_instruction(&instruction->zl_axis);
+    check_gcode_motor_instruction(&instruction->zr_axis);
+    check_gcode_motor_instruction(&instruction->extruder_0);
+    check_gcode_motor_instruction(&instruction->extruder_1);
+    check_gcode_motor_instruction(&instruction->aux);
+    check_gcode_heater_instruction(&instruction->heater_0);
+    check_gcode_heater_instruction(&instruction->heater_1);
+    check_gcode_heater_instruction(&instruction->heater_2);
+    check_gcode_heater_instruction(&instruction->heater_3);
     
-    instruction->extruder_0.feed_rate = instruction->speed;
-    instruction->extruder_1.feed_rate = instruction->speed;
-    instruction->xl_axis.feed_rate = instruction->speed;
-    instruction->yf_axis.feed_rate = instruction->speed;
-    instruction->zl_axis.feed_rate = instruction->speed;
-    instruction->zr_axis.feed_rate = instruction->speed;
+    valid_instruction = valid_instruction | (instruction->opcode != EMPTY_OPCODE);
+    valid_instruction = valid_instruction | instruction->xl_axis.instruction_valid;
+    valid_instruction = valid_instruction | instruction->yf_axis.instruction_valid;
+    valid_instruction = valid_instruction | instruction->zl_axis.instruction_valid;
+    valid_instruction = valid_instruction | instruction->zr_axis.instruction_valid;
+    valid_instruction = valid_instruction | instruction->extruder_0.instruction_valid;
+    valid_instruction = valid_instruction | instruction->extruder_1.instruction_valid;
+    valid_instruction = valid_instruction | instruction->aux.instruction_valid;
     
-    instruction->instruction_set = valid;
+    instruction->instruction_valid = valid_instruction;
+    instruction->instruction_set = instruction->instruction_valid || instruction->message_flag;
     
     return error;
+}
+
+int check_gcode_motor_instruction(struct cnc_motor_instruction_struct* instruction){
+    if(instruction->opcode != EMPTY_OPCODE){
+        instruction->instruction_valid = 1;
+    } else {
+        if(instruction->move_count && instruction->current_period){
+            instruction->instruction_valid = 1;
+        } else {
+            instruction->instruction_valid = 0;
+        }
+    }
+}
+
+int check_gcode_heater_instruction(struct cnc_heater_instruction_struct* instruction){
+    if(instruction->opcode != EMPTY_OPCODE){
+        instruction->instruction_valid = 1;
+    } else {
+        if(instruction->target_temp){
+            instruction->instruction_valid = 1;
+        } else {
+            instruction->instruction_valid = 0;
+        }
+    }
 }
 
 int parse_gcode_word(char* line, uint16_t* line_count, struct gcode_program_struct* program){
@@ -516,14 +544,14 @@ int parse_gcode_word(char* line, uint16_t* line_count, struct gcode_program_stru
             if((program->linear_move_active == 1) || (program->arc_move_active == 1)){
                 error = parse_number(line, line_count, &code_number);
                 if(!error){
-                    program->instruction[program->instruction_count].extruder_0.linear_move = 1;
-                    program->instruction[program->instruction_count].extruder_0.arc_move = 0;
+                    program->instruction[program->instruction_wp].extruder_0.linear_move = 1;
+                    program->instruction[program->instruction_wp].extruder_0.arc_move = 0;
                     if(program->absolute_positions){
-                        program->instruction[program->instruction_count].extruder_0.move_position = code_number;
+                        program->instruction[program->instruction_wp].extruder_0.move_position = code_number;
                     } else {
                         if(program->delta_positions){
-                            program->instruction[program->instruction_count].extruder_0.move_position = 
-                                   program->instruction[program->instruction_count].extruder_0.current_position + code_number;
+                            program->instruction[program->instruction_wp].extruder_0.move_position = 
+                                   program->instruction[program->instruction_wp].extruder_0.current_position + code_number;
                         } else {
                             error = 1;
                         }
@@ -549,13 +577,31 @@ int parse_gcode_word(char* line, uint16_t* line_count, struct gcode_program_stru
                 // process command
                 switch((int) code_number){
                     case(0) : {
+                        // rapid move
                         program->linear_move_active = 1;
                         program->arc_move_active = 0;
+                        program->instruction[program->instruction_wp].xl_axis.move_count = 1000;
+                        program->instruction[program->instruction_wp].yf_axis.move_count = 1000;
+                        program->instruction[program->instruction_wp].zl_axis.move_count = 1000;
+                        program->instruction[program->instruction_wp].zr_axis.move_count = 1000;
+                        program->instruction[program->instruction_wp].xl_axis.current_period = 20;
+                        program->instruction[program->instruction_wp].yf_axis.current_period = 20;
+                        program->instruction[program->instruction_wp].zl_axis.current_period = 20;
+                        program->instruction[program->instruction_wp].zr_axis.current_period = 20;
                         break;
                     }
                     case(1) : {
+                        // controlled move
                         program->linear_move_active = 1;
                         program->arc_move_active = 0;
+                        program->instruction[program->instruction_wp].xl_axis.move_count = 2000;
+                        program->instruction[program->instruction_wp].yf_axis.move_count = 2000;
+                        program->instruction[program->instruction_wp].zl_axis.move_count = 2000;
+                        program->instruction[program->instruction_wp].zr_axis.move_count = 2000;
+                        program->instruction[program->instruction_wp].xl_axis.current_period = 10;
+                        program->instruction[program->instruction_wp].yf_axis.current_period = 10;
+                        program->instruction[program->instruction_wp].zl_axis.current_period = 10;
+                        program->instruction[program->instruction_wp].zr_axis.current_period = 10;
                         break;
                     }
                     case(2) : {
@@ -603,13 +649,13 @@ int parse_gcode_word(char* line, uint16_t* line_count, struct gcode_program_stru
                     case(20) : {
                         // inch system selection
                         program->units_in_inches = 1;
-                        program->units_in_metric = 0;
+                        program->units_in_mm = 0;
                         break;
                     }
                     case(21) : {
                         // metric system selection
                         program->units_in_inches = 0;
-                        program->units_in_metric = 1;
+                        program->units_in_mm = 1;
                         break;
                     }
                     case(22) : {
@@ -626,6 +672,14 @@ int parse_gcode_word(char* line, uint16_t* line_count, struct gcode_program_stru
                     }
                     case(28) : {
                         // return to home
+                        program->instruction[program->instruction_wp].xl_axis.move_count = -10000;
+                        program->instruction[program->instruction_wp].yf_axis.move_count = -10000;
+                        program->instruction[program->instruction_wp].zl_axis.move_count = -10000;
+                        program->instruction[program->instruction_wp].zr_axis.move_count = -10000;
+                        program->instruction[program->instruction_wp].xl_axis.current_period = 20;
+                        program->instruction[program->instruction_wp].yf_axis.current_period = 20;
+                        program->instruction[program->instruction_wp].zl_axis.current_period = 20;
+                        program->instruction[program->instruction_wp].zr_axis.current_period = 20;
                         break;
                     }
                     case(29) : {
@@ -737,16 +791,20 @@ int parse_gcode_word(char* line, uint16_t* line_count, struct gcode_program_stru
                         break;
                     }
                     case(90) : {
-                        
+                        // absolute positioning mode
+                        program->absolute_positions = 1;
+                        program->delta_positions = 0;
                         break;
                     }
                     case(91) : {
-                        
+                        // relative positioning mode
+                        program->absolute_positions = 0;
+                        program->delta_positions = 1;
                         break;
                     }
                     case(92) : {
                         if(code_number == 92.0){
-                            program->instruction[program->instruction_count].set_position_flag = 1;
+                            program->instruction[program->instruction_wp].set_position_flag = 1;
                         } else {
                             if(code_number == 92.1){
                                 
@@ -1012,9 +1070,9 @@ int parse_gcode_word(char* line, uint16_t* line_count, struct gcode_program_stru
                         if(!error){
                             error = parse_number(line, line_count, &temp_val);
                             if(!error){
-                                program->instruction[program->instruction_count].heater_0.heater_active = 1;
-                                program->instruction[program->instruction_count].heater_0.target_temp = temp_val;
-                                program->instruction[program->instruction_count].heater_0.wait_for_temp = 0;
+                                program->instruction[program->instruction_wp].heater_0.heater_active = 1;
+                                program->instruction[program->instruction_wp].heater_0.target_temp = temp_val;
+                                program->instruction[program->instruction_wp].heater_0.wait_for_temp = 0;
                             }
                         }
                         break;
@@ -1031,8 +1089,8 @@ int parse_gcode_word(char* line, uint16_t* line_count, struct gcode_program_stru
                         if(!error){
                             error = parse_number(line, line_count, &temp_val);
                             if(!error){
-                                program->instruction[program->instruction_count].heater_0.fan_on = 1;
-                                program->instruction[program->instruction_count].heater_0.fan_duty = 100;
+                                program->instruction[program->instruction_wp].heater_0.fan_on = 1;
+                                program->instruction[program->instruction_wp].heater_0.fan_duty = 100;
                             }
                         }
                         break;
@@ -1043,8 +1101,8 @@ int parse_gcode_word(char* line, uint16_t* line_count, struct gcode_program_stru
                         if(!error){
                             error = parse_number(line, line_count, &temp_val);
                             if(!error){
-                                program->instruction[program->instruction_count].heater_0.fan_on = 0;
-                                program->instruction[program->instruction_count].heater_0.fan_duty = 100;
+                                program->instruction[program->instruction_wp].heater_0.fan_on = 0;
+                                program->instruction[program->instruction_wp].heater_0.fan_duty = 100;
                             }
                         }
                         break;
@@ -1060,9 +1118,9 @@ int parse_gcode_word(char* line, uint16_t* line_count, struct gcode_program_stru
                         if(!error){
                             error = parse_number(line, line_count, &temp_val);
                             if(!error){
-                                program->instruction[program->instruction_count].heater_0.heater_active = 1;
-                                program->instruction[program->instruction_count].heater_0.target_temp = temp_val;
-                                program->instruction[program->instruction_count].heater_0.wait_for_temp = 1;
+                                program->instruction[program->instruction_wp].heater_0.heater_active = 1;
+                                program->instruction[program->instruction_wp].heater_0.target_temp = temp_val;
+                                program->instruction[program->instruction_wp].heater_0.wait_for_temp = 1;
                             }
                         }
                         break;
@@ -1333,14 +1391,14 @@ int parse_gcode_word(char* line, uint16_t* line_count, struct gcode_program_stru
             error = parse_number(line, line_count, &code_number);
             if((program->linear_move_active == 1) || (program->arc_move_active == 1)){
                 if(!error){
-                    program->instruction[program->instruction_count].xl_axis.linear_move = 1;
-                    program->instruction[program->instruction_count].xl_axis.arc_move = 0;
+                    program->instruction[program->instruction_wp].xl_axis.linear_move = 1;
+                    program->instruction[program->instruction_wp].xl_axis.arc_move = 0;
                     if(program->absolute_positions){
-                        program->instruction[program->instruction_count].xl_axis.move_position = code_number;
+                        program->instruction[program->instruction_wp].xl_axis.move_position = code_number;
                     } else {
                         if(program->delta_positions){
-                            program->instruction[program->instruction_count].xl_axis.move_position = 
-                                   program->instruction[program->instruction_count].xl_axis.current_position + code_number;
+                            program->instruction[program->instruction_wp].xl_axis.move_position = 
+                                   program->instruction[program->instruction_wp].xl_axis.current_position + code_number;
                         } else {
                             error = 1;
                         }
@@ -1356,14 +1414,14 @@ int parse_gcode_word(char* line, uint16_t* line_count, struct gcode_program_stru
             error = parse_number(line, line_count, &code_number);
             if((program->linear_move_active == 1) || (program->arc_move_active == 1)){
                 if(!error){
-                    program->instruction[program->instruction_count].yf_axis.linear_move = 1;
-                    program->instruction[program->instruction_count].yf_axis.arc_move = 0;
+                    program->instruction[program->instruction_wp].yf_axis.linear_move = 1;
+                    program->instruction[program->instruction_wp].yf_axis.arc_move = 0;
                     if(program->absolute_positions){
-                        program->instruction[program->instruction_count].yf_axis.move_position = code_number;
+                        program->instruction[program->instruction_wp].yf_axis.move_position = code_number;
                     } else {
                         if(program->delta_positions){
-                            program->instruction[program->instruction_count].yf_axis.move_position = 
-                                   program->instruction[program->instruction_count].yf_axis.current_position + code_number;
+                            program->instruction[program->instruction_wp].yf_axis.move_position = 
+                                   program->instruction[program->instruction_wp].yf_axis.current_position + code_number;
                         } else {
                             error = 1;
                         }
@@ -1379,19 +1437,19 @@ int parse_gcode_word(char* line, uint16_t* line_count, struct gcode_program_stru
             error = parse_number(line, line_count, &code_number);
             if((program->linear_move_active == 1) || (program->arc_move_active == 1)){
                 if(!error){
-                    program->instruction[program->instruction_count].zl_axis.linear_move = 1;
-                    program->instruction[program->instruction_count].zl_axis.arc_move = 0;
-                    program->instruction[program->instruction_count].zr_axis.linear_move = 1;
-                    program->instruction[program->instruction_count].zr_axis.arc_move = 0;
+                    program->instruction[program->instruction_wp].zl_axis.linear_move = 1;
+                    program->instruction[program->instruction_wp].zl_axis.arc_move = 0;
+                    program->instruction[program->instruction_wp].zr_axis.linear_move = 1;
+                    program->instruction[program->instruction_wp].zr_axis.arc_move = 0;
                     if(program->absolute_positions){
-                        program->instruction[program->instruction_count].zl_axis.move_position = code_number;
-                        program->instruction[program->instruction_count].zr_axis.move_position = code_number;
+                        program->instruction[program->instruction_wp].zl_axis.move_position = code_number;
+                        program->instruction[program->instruction_wp].zr_axis.move_position = code_number;
                     } else {
                         if(program->delta_positions){
-                            program->instruction[program->instruction_count].zl_axis.move_position = 
-                                   program->instruction[program->instruction_count].zl_axis.current_position + code_number;
-                            program->instruction[program->instruction_count].zr_axis.move_position = 
-                                   program->instruction[program->instruction_count].zr_axis.current_position + code_number;
+                            program->instruction[program->instruction_wp].zl_axis.move_position = 
+                                   program->instruction[program->instruction_wp].zl_axis.current_position + code_number;
+                            program->instruction[program->instruction_wp].zr_axis.move_position = 
+                                   program->instruction[program->instruction_wp].zr_axis.current_position + code_number;
                         } else {
                             error = 1;
                         }

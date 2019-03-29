@@ -45,16 +45,21 @@ void receive_instruction(struct cnc_state_struct* cnc){
 				}
 			}
 		} else {
+			cnc->instruction_request_sent = 0;
 			if(cnc->program_running){
+				cnc_printf(cnc, "Received Program Instruction!");
 				// add to running program
 				copy_instruction(&cnc->new_instruction, &cnc->instruction_array[cnc->instruction_wp]);
 				cnc->instruction_wp = (cnc->instruction_wp<(INSTRUCTION_FIFO_DEPTH-1)) ? cnc->instruction_wp + 1 : 0;
 				cnc->instruction_fullness++;
 				cnc->new_instruction.instruction_valid = 0;
-				// check to see if this is last instruction in program
-				// if so, mark program loaded
+				if(cnc->new_instruction.opcode == PROGRAM_END){
+					cnc->program_received = 1;
+					cnc_printf(cnc, "Received Program End!");
+				}
 			} else {
 				if(cnc->new_instruction.opcode == PROGRAM_START){
+					cnc_printf(cnc, "Received Program Start!");
 					copy_instruction(&cnc->new_instruction, &cnc->instruction_array[cnc->instruction_wp]);
 					cnc->instruction_wp = (cnc->instruction_wp<(INSTRUCTION_FIFO_DEPTH-1)) ? cnc->instruction_wp + 1 : 0;
 					cnc->instruction_fullness++;
@@ -71,6 +76,7 @@ void receive_instruction(struct cnc_state_struct* cnc){
 }
 
 void clear_program(struct cnc_state_struct* cnc){
+	cnc_printf(cnc, "resetting program information");
 	cnc->program_running = 0;
 	cnc->program_received = 0;
 	cnc->program_length = 0;
@@ -79,6 +85,8 @@ void clear_program(struct cnc_state_struct* cnc){
 	cnc->instruction_rp = 0;
 	cnc->instruction_array[cnc->instruction_rp].instruction_valid = 0;
 	cnc->current_instruction.instruction_valid = 0;
+	cnc->instruction_request_sent = 0;
+	cnc->request_instruction = 0;
 }
 
 void parse_instruction(struct cnc_state_struct* cnc){
@@ -115,23 +123,25 @@ void check_instruction_fifo(struct cnc_state_struct* cnc){
 			if(cnc->instruction_fullness >= (INSTRUCTION_FIFO_DEPTH-2)){
 				cnc->request_instruction = 0;
 			} else {
-				if(cnc->write_in_progress){
-					// already writing... wait till it's finished
-					if(spi_check_write() > 0){
-						cnc->write_in_progress = 0;
-					}
-				} else {
-					// not writing, so we can write
-					if(spi_check_write() < 0){
-						// can't write, already writing
-						cnc->state = SEND_CNC_PRINT;
-					} else {
-						cnc->cnc_write_data[0] = (char) NEW_CNC_INSTRUCTION;
-						cnc->cnc_write_length = 1;
-						if(spi_set_write(cnc->cnc_write_data, cnc->cnc_write_length) > 0){
-							cnc->write_in_progress = 1;
-						} else {
+				if(!cnc->instruction_request_sent && (cnc->state == CNC_IDLE)){
+					if(cnc->write_in_progress){
+						// already writing... wait till it's finished
+						if(spi_check_write() > 0){
 							cnc->write_in_progress = 0;
+							cnc->instruction_request_sent = 1;
+						}
+					} else {
+						// not writing, so we can write
+						if(spi_check_write() < 0){
+							// can't write, already writing
+						} else {
+							cnc->cnc_write_data[0] = (char) NEW_CNC_INSTRUCTION;
+							cnc->cnc_write_length = 1;
+							if(spi_set_write(cnc->cnc_write_data, cnc->cnc_write_length) > 0){
+								cnc->write_in_progress = 1;
+							} else {
+								cnc->write_in_progress = 0;
+							}
 						}
 					}
 				}
@@ -139,6 +149,7 @@ void check_instruction_fifo(struct cnc_state_struct* cnc){
 		} else {
 			if(cnc->instruction_fullness < (INSTRUCTION_FIFO_DEPTH/2)){
 				cnc->request_instruction = 1;
+				cnc_printf(cnc, "setting read request high");
 			} else {
 				// we have enough instructions, so do nothing
 			}
@@ -370,6 +381,7 @@ void handle_instruction_opcodes(struct cnc_state_struct* cnc, struct cnc_instruc
 				cnc->program_received = 0;
 				cnc->program_running = 0;
 				instruction->opcode = EMPTY_OPCODE;
+				clear_program(cnc);
 				break;
 			}
 			case ABORT_INSTRUCTION : {

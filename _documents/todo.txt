@@ -1,3 +1,11 @@
+create status to string function and string to status function
+create error flags and bit fields in flags so cnc can set if errors happen
+create start of program sequence that enables motors
+create end of program sequence that disables motors
+create home sequence that runs to max in z and then to offset for zero
+create wait opcode and create wait function on cnc using the timers
+could use wait opcode to test interrupt speed and figure out clock...
+
 To Do:
 Raspberry Pi:
 add single/instantaneous instruction passing to micro through spi
@@ -28,8 +36,4 @@ update zero instruction to add z functionality
 make zero adjustment state that will set the z location
 
 Both:
-Fix defines for print lengths and spi transactions... make that make sense...
-Verify spi behavior and gpio (maybe make way to break out of condition when spi is waiting for something that won't ever happen... like wrong length)
-Hard code some spi lengths that are variable (like prints?) or just verify failsafe/error...
-
 make config file and file saving for the system... you can choose 3d printing or cnc or others... and save off zero positioning and stuff...

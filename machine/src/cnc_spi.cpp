@@ -72,7 +72,7 @@ void init_spi_driver(void){
 
 uint8_t check_spi(struct cnc_state_struct* cnc){
 	// always check write to complete transfer if done
-	spi_check_write();
+	//spi_check_write();
 	// check if read is finished
 	cnc->cnc_read_length = spi_check_read(cnc->cnc_read_data);
 	if(cnc->cnc_read_length == 0){

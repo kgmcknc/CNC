@@ -82,6 +82,9 @@ int main(int argc, char **argv) {
 			}
 			case DISABLE_GPIO : {
 				disable_interface_gpio();
+				if(interface.program.instruction != 0){
+					free(interface.program.instruction);
+				}
 				sleep(1);
 				interface.state = EXIT_INTERFACE;
 				break;
@@ -131,6 +134,9 @@ void system_shutdown(int sig){
 	int wstatus;
 	// disable gpio to shutdown safely
 	disable_interface_gpio();
+	if(interface.program.instruction != 0){
+		free(interface.program.instruction);
+	}
 	kill(system_control_fork, SIGTERM);
 	waitpid(system_control_fork, &wstatus, 0);
 	exit(0);

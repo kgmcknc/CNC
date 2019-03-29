@@ -151,12 +151,13 @@ void handle_cnc_state(struct interface_struct* interface){
 				interface->machine_state = MACHINE_IDLE;
 			} else {
 				interface->machine_state = RUN_PROGRAM;
+				interface->program.instruction_rp = 0;
 			}
 			break;
 		}
 		case RUN_PROGRAM : {
-			printf("would run program here\n");
-			interface->machine_state = MACHINE_IDLE;
+			printf("starting program, length: %llu\n", interface->program.program_length);
+			interface->machine_state = SEND_INSTRUCTION;
 			break;
 		}
 		case SEND_INSTRUCTION : {
@@ -166,16 +167,29 @@ void handle_cnc_state(struct interface_struct* interface){
 					interface->machine_state = MACHINE_IDLE;
 				}
 			} else {
-				// set with instruction or instant instruction
-				interface->cnc_write_data[0] = (char) GET_CNC_VERSION;
-				// instruction to string here...
-				// increment program read counter here...
-				if(spi_set_write(interface->cnc_write_data, 1) > 0){
-					interface->write_in_progress = 1;
+				// set with instruction
+				if(interface->program.instruction_rp <= interface->program.program_length){
+					if(interface->program.instruction[interface->program.instruction_rp].instruction_valid){
+						interface->cnc_write_data[0] = (char) NEW_CNC_INSTRUCTION;
+						interface->cnc_write_length = instruction_to_string(&interface->program.instruction[interface->program.instruction_rp],
+																				&interface->cnc_write_data[1]);
+						interface->cnc_write_length = interface->cnc_write_length + 1; // add one for 0 opcode
+						interface->program.instruction_rp++;
+						if(spi_set_write(interface->cnc_write_data, interface->cnc_write_length) > 0){
+							interface->write_in_progress = 1;
+							printf("Sent instruction!\n");
+						} else {
+							interface->write_in_progress = 0;
+						}
+					} else {
+						// skip instruction that somehow isn't valid...
+						interface->program.instruction_rp++;
+					}
+					interface->machine_state = SEND_INSTRUCTION;
 				} else {
-					interface->write_in_progress = 0;
+					printf("EXCEEDED PROGRAM LENGTH?!\n");
+					interface->machine_state = MACHINE_IDLE;
 				}
-				interface->machine_state = SEND_INSTRUCTION;
 			}
 			break;
 		}
@@ -415,7 +429,8 @@ void process_spi_request(struct interface_struct* interface){
 			break;
 		}
 		case NEW_CNC_INSTRUCTION : {
-
+			interface->machine_state = SEND_INSTRUCTION;
+			printf("Machine Requested Instruction\n");
 			break;
 		}
 		case INSTANT_CNC_INSTRUCTION : {
