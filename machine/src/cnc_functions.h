@@ -35,7 +35,9 @@ struct cnc_state_struct {
 	int32_t cnc_write_length;
 	uint8_t write_in_progress;
 	uint8_t write_complete;
-	// cnc_instruction variabless
+	// cnc_instruction variables
+	struct cnc_config_struct config;
+	struct cnc_status_struct status;
 	struct cnc_motor_list_struct* motors;
 	struct cnc_heater_list_struct* heaters;
 	struct cnc_instruction_struct instruction_array[INSTRUCTION_FIFO_DEPTH];
@@ -61,6 +63,7 @@ void init_cnc(struct cnc_state_struct* cnc);
 void handle_state(struct cnc_state_struct* cnc);
 void cnc_printf(struct cnc_state_struct* cnc, const char* print_string, ...);
 void parse_status(struct cnc_state_struct* cnc);
+void update_status(struct cnc_state_struct* cnc);
 void parse_print(struct cnc_state_struct* cnc);
 void parse_version(struct cnc_state_struct* cnc);
 

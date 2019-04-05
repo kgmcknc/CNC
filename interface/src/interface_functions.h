@@ -6,8 +6,6 @@
 #include "common_spi.h"
 #include "gcode.h"
 
-#define MOVE_PERIOD 20
-
 enum CNC_INTERFACE_STATE {
 	FORK_INPUT = 0, CREATE_SOCKET, CREATE_CHILD_SOCKET,
 	INTERFACE_INIT, ENABLE_GPIO, CONNECT_MICRO,
@@ -15,7 +13,8 @@ enum CNC_INTERFACE_STATE {
 };
 
 enum CNC_MACHINE_STATE {
-	MACHINE_IDLE = 0, PROCESS_INPUT, POWER_MOTORS_ON, POWER_MOTORS_OFF,
+	MACHINE_IDLE = 0, PROCESS_INPUT, POWER_MOTORS_ON, POWER_MOTORS_OFF, CONFIGURE_INTERFACE, WAIT_FOR_SIZE_STATUS,
+	ADJUST_Z_AXIS, ADJUST_Z_LEFT, ADJUST_Z_RIGHT, SAVE_CONFIG,
 	GET_PROGRAM, OPEN_PROGRAM, RUN_PROGRAM, SEND_INSTRUCTION, UPDATE_FIRMARE, GET_STATUS, GET_VERSION, USER_CONTROL
 };
 
@@ -33,5 +32,7 @@ void length_to_string(uint8_t byte_length, char *length_string);
 void opcode_to_string(enum spi_opcodes opcode, char *opcode_string); 
 void update_si_firmware(struct interface_struct* interface);
 int open_gcode(struct interface_struct* interface);
+void load_config_file(struct cnc_config_struct* config);
+void save_config_file(struct cnc_config_struct* config);
 
 #endif /* SRC_INTERFACE_FUNCTIONS_H_ */

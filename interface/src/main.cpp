@@ -72,6 +72,7 @@ int main(int argc, char **argv) {
 			}
 			case ENABLE_GPIO : {
 				printf("\nSetting Up WiringPi\n");
+				load_config_file(&interface.machine_config);
 				init_interface_gpio();
 				interface.state = INTERFACE_RUNNING;
 				break;

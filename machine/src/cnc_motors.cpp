@@ -131,6 +131,8 @@ void init_motor(cnc_motor_struct* motor, const char* name){
 	disable_motor(motor);
 	motor->direction = 0;
 	motor->position = 10000;
+	motor->home_position = 0;
+	motor->safe_position = 0;
 	motor->move_count = 0;
 	motor->set = 0;
 	motor->homed = 0;

@@ -6,6 +6,15 @@ create home sequence that runs to max in z and then to offset for zero
 create wait opcode and create wait function on cnc using the timers
 could use wait opcode to test interrupt speed and figure out clock...
 
+need to make config file that loads on pi when you start
+need to add 'h' to user input and start homing state machine to find new home
+need to make "Save home" position that it starts on and then final home position
+can adjust left motor first and then right motor second... actually nvmd - should lock and adjust endstops instead of adjusting motors... actually we should adjust left and right and then adjust top to account for it
+need to fix homing state opcode on micro
+create function to open and write config file
+create function to send config data to the micro
+save parameters in the main struct... common_cnc
+
 To Do:
 Raspberry Pi:
 add single/instantaneous instruction passing to micro through spi

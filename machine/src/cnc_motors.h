@@ -58,6 +58,9 @@ struct cnc_motor_struct {
 	uint8_t max_range_flag;
 	int8_t direction; // -1 , 0, 1
 	int64_t position;
+	int64_t axis_length;
+	int64_t safe_position;
+	int64_t home_position;
 	int32_t move_count;
 	uint32_t period;
 	uint32_t step_timer;

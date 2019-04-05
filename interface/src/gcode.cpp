@@ -80,6 +80,7 @@ int parse_gcode_file(FILE* gcode_fp, struct gcode_program_struct* program){
     line_counter = 0;
     line_count = 0;
     // first instruction is start program that we will set below
+    clear_instruction(&program->instruction[0]);
     program->instruction_wp = program->instruction_wp + 1;
     for(file_counter=0;file_counter < file_size; file_counter++){
         // read data into line
@@ -110,7 +111,6 @@ int parse_gcode_file(FILE* gcode_fp, struct gcode_program_struct* program){
         }
     }
     // set start of program instruction
-    clear_instruction(&program->instruction[0]);
     program->instruction[0].opcode = PROGRAM_START;
     program->instruction[0].instruction_valid = 1;
     // set end of program instruction
@@ -161,6 +161,10 @@ int parse_gcode_line(char* line, struct gcode_program_struct* program){
                 program->instruction[program->instruction_wp].message_flag = 0;
                 program->instruction[program->instruction_wp].set_position_flag = 0;
                 program->instruction[program->instruction_wp].instruction_set = 0;
+                program->instruction[program->instruction_wp].xl_axis.current_position = program->instruction[program->instruction_wp-1].xl_axis.current_position;
+                program->instruction[program->instruction_wp].yf_axis.current_position = program->instruction[program->instruction_wp-1].yf_axis.current_position;
+                program->instruction[program->instruction_wp].zl_axis.current_position = program->instruction[program->instruction_wp-1].zl_axis.current_position;
+                program->instruction[program->instruction_wp].zr_axis.current_position = program->instruction[program->instruction_wp-1].zr_axis.current_position;
                 line_state = CHECK_BLOCK_DELETE;
                 break;
             }
@@ -447,14 +451,29 @@ int parse_letter(char* line, uint16_t* line_count, char* value){
 int check_gcode_instruction(struct cnc_instruction_struct* instruction){
     char error = 0;
     char valid_instruction = 0;
+
+    if(instruction->opcode == HOME_AXIS){
+        uint8_t axis_set = 0;
+        // check for x y or z home being set, if not... set all
+        axis_set = axis_set | (instruction->xl_axis.opcode == HOME_AXIS);
+        axis_set = axis_set | (instruction->yf_axis.opcode == HOME_AXIS);
+        axis_set = axis_set | (instruction->zl_axis.opcode == HOME_AXIS);
+        axis_set = axis_set | (instruction->zr_axis.opcode == HOME_AXIS);
+        if(!axis_set){
+            instruction->xl_axis.opcode = HOME_AXIS;
+            instruction->yf_axis.opcode = HOME_AXIS;
+            instruction->zl_axis.opcode = HOME_AXIS;
+            instruction->zr_axis.opcode = HOME_AXIS;
+        }
+    }
     
-    check_gcode_motor_instruction(&instruction->xl_axis);
-    check_gcode_motor_instruction(&instruction->yf_axis);
-    check_gcode_motor_instruction(&instruction->zl_axis);
-    check_gcode_motor_instruction(&instruction->zr_axis);
-    check_gcode_motor_instruction(&instruction->extruder_0);
-    check_gcode_motor_instruction(&instruction->extruder_1);
-    check_gcode_motor_instruction(&instruction->aux);
+    check_gcode_motor_instruction(&instruction->xl_axis, instruction->speed);
+    check_gcode_motor_instruction(&instruction->yf_axis, instruction->speed);
+    check_gcode_motor_instruction(&instruction->zl_axis, instruction->speed);
+    check_gcode_motor_instruction(&instruction->zr_axis, instruction->speed);
+    check_gcode_motor_instruction(&instruction->extruder_0, instruction->speed);
+    check_gcode_motor_instruction(&instruction->extruder_1, instruction->speed);
+    check_gcode_motor_instruction(&instruction->aux, instruction->speed);
     check_gcode_heater_instruction(&instruction->heater_0);
     check_gcode_heater_instruction(&instruction->heater_1);
     check_gcode_heater_instruction(&instruction->heater_2);
@@ -475,12 +494,18 @@ int check_gcode_instruction(struct cnc_instruction_struct* instruction){
     return error;
 }
 
-int check_gcode_motor_instruction(struct cnc_motor_instruction_struct* instruction){
+int check_gcode_motor_instruction(struct cnc_motor_instruction_struct* instruction, double speed){
     if(instruction->opcode != EMPTY_OPCODE){
         instruction->instruction_valid = 1;
+        if(speed > 0.0){
+            instruction->current_period = speed;
+        }
     } else {
-        if(instruction->move_count && instruction->current_period){
+        if(instruction->move_count && (speed > 0.0)){
             instruction->instruction_valid = 1;
+            if(speed > 0.0){
+                instruction->current_period = speed;
+            }
         } else {
             instruction->instruction_valid = 0;
         }
@@ -567,6 +592,24 @@ int parse_gcode_word(char* line, uint16_t* line_count, struct gcode_program_stru
             error = parse_number(line, line_count, &code_number);
             if(!error){
                 // process command
+                if(program->units_in_mm){
+                    // mm per minute
+                    program->instruction[program->instruction_wp].speed = (code_number/(STEPS_PER_MM))/(STEPS_PER_MINUTE);
+                    if(program->instruction[program->instruction_wp].speed == 0){
+                            program->instruction[program->instruction_wp].speed = 1;
+                        }
+                } else {
+                    if(program->units_in_inches){
+                        // inches per minute
+                        program->instruction[program->instruction_wp].speed = (code_number/(STEPS_PER_IN))/(STEPS_PER_MINUTE);
+                        if(program->instruction[program->instruction_wp].speed == 0){
+                            program->instruction[program->instruction_wp].speed = 1;
+                        }
+                    } else {
+                        error = 1;
+                        printf("units have to be set...\n");
+                    }
+                }
             }
             break;
         }
@@ -580,28 +623,29 @@ int parse_gcode_word(char* line, uint16_t* line_count, struct gcode_program_stru
                         // rapid move
                         program->linear_move_active = 1;
                         program->arc_move_active = 0;
-                        program->instruction[program->instruction_wp].xl_axis.move_count = 1000;
-                        program->instruction[program->instruction_wp].yf_axis.move_count = 1000;
-                        program->instruction[program->instruction_wp].zl_axis.move_count = 1000;
-                        program->instruction[program->instruction_wp].zr_axis.move_count = 1000;
-                        program->instruction[program->instruction_wp].xl_axis.current_period = 20;
-                        program->instruction[program->instruction_wp].yf_axis.current_period = 20;
-                        program->instruction[program->instruction_wp].zl_axis.current_period = 20;
-                        program->instruction[program->instruction_wp].zr_axis.current_period = 20;
+                        program->instruction[program->instruction_wp].speed = MOVE_PERIOD;
+                        //program->instruction[program->instruction_wp].xl_axis.move_count = 1000;
+                        //program->instruction[program->instruction_wp].yf_axis.move_count = 1000;
+                        //program->instruction[program->instruction_wp].zl_axis.move_count = 1000;
+                        //program->instruction[program->instruction_wp].zr_axis.move_count = 1000;
+                        //program->instruction[program->instruction_wp].xl_axis.current_period = MOVE_PERIOD;
+                        //program->instruction[program->instruction_wp].yf_axis.current_period = MOVE_PERIOD;
+                        //program->instruction[program->instruction_wp].zl_axis.current_period = MOVE_PERIOD;
+                        //program->instruction[program->instruction_wp].zr_axis.current_period = MOVE_PERIOD;
                         break;
                     }
                     case(1) : {
                         // controlled move
                         program->linear_move_active = 1;
                         program->arc_move_active = 0;
-                        program->instruction[program->instruction_wp].xl_axis.move_count = 2000;
-                        program->instruction[program->instruction_wp].yf_axis.move_count = 2000;
-                        program->instruction[program->instruction_wp].zl_axis.move_count = 2000;
-                        program->instruction[program->instruction_wp].zr_axis.move_count = 2000;
-                        program->instruction[program->instruction_wp].xl_axis.current_period = 10;
-                        program->instruction[program->instruction_wp].yf_axis.current_period = 10;
-                        program->instruction[program->instruction_wp].zl_axis.current_period = 10;
-                        program->instruction[program->instruction_wp].zr_axis.current_period = 10;
+                        //program->instruction[program->instruction_wp].xl_axis.move_count = 2000;
+                        //program->instruction[program->instruction_wp].yf_axis.move_count = 2000;
+                        //program->instruction[program->instruction_wp].zl_axis.move_count = 2000;
+                        //program->instruction[program->instruction_wp].zr_axis.move_count = 2000;
+                        //program->instruction[program->instruction_wp].xl_axis.current_period = 10;
+                        //program->instruction[program->instruction_wp].yf_axis.current_period = 10;
+                        //program->instruction[program->instruction_wp].zl_axis.current_period = 10;
+                        //program->instruction[program->instruction_wp].zr_axis.current_period = 10;
                         break;
                     }
                     case(2) : {
@@ -672,14 +716,8 @@ int parse_gcode_word(char* line, uint16_t* line_count, struct gcode_program_stru
                     }
                     case(28) : {
                         // return to home
-                        program->instruction[program->instruction_wp].xl_axis.move_count = -10000;
-                        program->instruction[program->instruction_wp].yf_axis.move_count = -10000;
-                        program->instruction[program->instruction_wp].zl_axis.move_count = -10000;
-                        program->instruction[program->instruction_wp].zr_axis.move_count = -10000;
-                        program->instruction[program->instruction_wp].xl_axis.current_period = 20;
-                        program->instruction[program->instruction_wp].yf_axis.current_period = 20;
-                        program->instruction[program->instruction_wp].zl_axis.current_period = 20;
-                        program->instruction[program->instruction_wp].zr_axis.current_period = 20;
+                        program->instruction[program->instruction_wp].opcode = HOME_AXIS;
+                        program->instruction[program->instruction_wp].speed = MOVE_PERIOD;
                         break;
                     }
                     case(29) : {
@@ -1390,22 +1428,39 @@ int parse_gcode_word(char* line, uint16_t* line_count, struct gcode_program_stru
             *line_count = *line_count + 1;
             error = parse_number(line, line_count, &code_number);
             if((program->linear_move_active == 1) || (program->arc_move_active == 1)){
+                if(program->units_in_inches){
+                    code_number = code_number * STEPS_PER_IN;
+                } else {
+                    if(program->units_in_mm){
+                        code_number = code_number * STEPS_PER_MM;
+                    } else {
+                        error = 1;
+                    }
+                }
                 if(!error){
                     program->instruction[program->instruction_wp].xl_axis.linear_move = 1;
                     program->instruction[program->instruction_wp].xl_axis.arc_move = 0;
                     if(program->absolute_positions){
-                        program->instruction[program->instruction_wp].xl_axis.move_position = code_number;
+                        program->instruction[program->instruction_wp].xl_axis.current_position = code_number;
+                        program->instruction[program->instruction_wp].xl_axis.move_count = 
+                            code_number - program->instruction[program->instruction_wp-1].xl_axis.current_position;
                     } else {
                         if(program->delta_positions){
-                            program->instruction[program->instruction_wp].xl_axis.move_position = 
-                                   program->instruction[program->instruction_wp].xl_axis.current_position + code_number;
+                            program->instruction[program->instruction_wp].xl_axis.current_position = 
+                                   program->instruction[program->instruction_wp-1].xl_axis.current_position + code_number;
+                                    program->instruction[program->instruction_wp].xl_axis.move_count = code_number;
                         } else {
                             error = 1;
                         }
                     }
                 }
             } else {
-                error = 1;
+                if(program->instruction[program->instruction_wp].opcode == HOME_AXIS){
+                    program->instruction[program->instruction_wp].xl_axis.opcode = HOME_AXIS;
+                    program->instruction[program->instruction_wp].xl_axis.current_position = 0.0;
+                } else {
+                    error = 1;
+                }
             }
             break;
         }
@@ -1413,22 +1468,39 @@ int parse_gcode_word(char* line, uint16_t* line_count, struct gcode_program_stru
             *line_count = *line_count + 1;
             error = parse_number(line, line_count, &code_number);
             if((program->linear_move_active == 1) || (program->arc_move_active == 1)){
+                if(program->units_in_inches){
+                    code_number = code_number * STEPS_PER_IN;
+                } else {
+                    if(program->units_in_mm){
+                        code_number = code_number * STEPS_PER_MM;
+                    } else {
+                        error = 1;
+                    }
+                }
                 if(!error){
                     program->instruction[program->instruction_wp].yf_axis.linear_move = 1;
                     program->instruction[program->instruction_wp].yf_axis.arc_move = 0;
                     if(program->absolute_positions){
-                        program->instruction[program->instruction_wp].yf_axis.move_position = code_number;
+                        program->instruction[program->instruction_wp].yf_axis.current_position = code_number;
+                        program->instruction[program->instruction_wp].yf_axis.move_count = 
+                            code_number - program->instruction[program->instruction_wp-1].yf_axis.current_position;
                     } else {
                         if(program->delta_positions){
-                            program->instruction[program->instruction_wp].yf_axis.move_position = 
-                                   program->instruction[program->instruction_wp].yf_axis.current_position + code_number;
+                            program->instruction[program->instruction_wp].yf_axis.current_position = 
+                                   program->instruction[program->instruction_wp-1].yf_axis.current_position + code_number;
+                                    program->instruction[program->instruction_wp].yf_axis.move_count = code_number;
                         } else {
                             error = 1;
                         }
                     }
                 }
             } else {
-                error = 1;
+                if(program->instruction[program->instruction_wp].opcode == HOME_AXIS){
+                    program->instruction[program->instruction_wp].yf_axis.opcode = HOME_AXIS;
+                    program->instruction[program->instruction_wp].yf_axis.current_position = 0.0;
+                } else {
+                    error = 1;
+                }
             }
             break;
         }
@@ -1436,27 +1508,49 @@ int parse_gcode_word(char* line, uint16_t* line_count, struct gcode_program_stru
             *line_count = *line_count + 1;
             error = parse_number(line, line_count, &code_number);
             if((program->linear_move_active == 1) || (program->arc_move_active == 1)){
+                if(program->units_in_inches){
+                    code_number = code_number * STEPS_PER_IN;
+                } else {
+                    if(program->units_in_mm){
+                        code_number = code_number * STEPS_PER_MM;
+                    } else {
+                        error = 1;
+                    }
+                }
                 if(!error){
                     program->instruction[program->instruction_wp].zl_axis.linear_move = 1;
                     program->instruction[program->instruction_wp].zl_axis.arc_move = 0;
                     program->instruction[program->instruction_wp].zr_axis.linear_move = 1;
                     program->instruction[program->instruction_wp].zr_axis.arc_move = 0;
                     if(program->absolute_positions){
-                        program->instruction[program->instruction_wp].zl_axis.move_position = code_number;
-                        program->instruction[program->instruction_wp].zr_axis.move_position = code_number;
+                        program->instruction[program->instruction_wp].zl_axis.current_position = code_number;
+                        program->instruction[program->instruction_wp].zl_axis.move_count = 
+                            code_number - program->instruction[program->instruction_wp-1].zl_axis.current_position;
+                        program->instruction[program->instruction_wp].zr_axis.current_position = code_number;
+                        program->instruction[program->instruction_wp].zr_axis.move_count = 
+                            code_number - program->instruction[program->instruction_wp-1].zr_axis.current_position;
                     } else {
                         if(program->delta_positions){
-                            program->instruction[program->instruction_wp].zl_axis.move_position = 
-                                   program->instruction[program->instruction_wp].zl_axis.current_position + code_number;
-                            program->instruction[program->instruction_wp].zr_axis.move_position = 
-                                   program->instruction[program->instruction_wp].zr_axis.current_position + code_number;
+                            program->instruction[program->instruction_wp].zl_axis.current_position = 
+                            program->instruction[program->instruction_wp-1].zl_axis.current_position + code_number;
+                                    program->instruction[program->instruction_wp].zl_axis.move_count = code_number;
+                            program->instruction[program->instruction_wp].zr_axis.current_position = 
+                            program->instruction[program->instruction_wp-1].zr_axis.current_position + code_number;
+                                    program->instruction[program->instruction_wp].zr_axis.move_count = code_number;
                         } else {
                             error = 1;
                         }
                     }
                 }
             } else {
-                error = 1;
+                if(program->instruction[program->instruction_wp].opcode == HOME_AXIS){
+                    program->instruction[program->instruction_wp].zl_axis.opcode = HOME_AXIS;
+                    program->instruction[program->instruction_wp].zr_axis.opcode = HOME_AXIS;
+                    program->instruction[program->instruction_wp].zl_axis.current_position = 0.0;
+                    program->instruction[program->instruction_wp].zr_axis.current_position = 0.0;
+                } else {
+                    error = 1;
+                }
             }
             break;
         }

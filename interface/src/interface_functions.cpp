@@ -136,6 +136,36 @@ void handle_cnc_state(struct interface_struct* interface){
 			}
 			break;
 		}
+		case CONFIGURE_INTERFACE : {
+			printf("Getting Size and Waiting for Status\n");
+			interface->machine_state = WAIT_FOR_SIZE_STATUS;
+			break;
+		}
+		case WAIT_FOR_SIZE_STATUS : {
+			printf("Got Status, Adjusting For Both Z\n");
+			interface->machine_state = ADJUST_Z_AXIS;
+			break;
+		}
+		case ADJUST_Z_AXIS : {
+			printf("Z Axis Set For Save Distance\n");
+			interface->machine_state = ADJUST_Z_LEFT;
+			break;
+		}
+		case ADJUST_Z_LEFT : {
+			printf("Adjusting Left Z Motor\n");
+			interface->machine_state = ADJUST_Z_RIGHT;
+			break;
+		}
+		case ADJUST_Z_RIGHT : {
+			printf("Adjusting Right Z Motor\n");
+			interface->machine_state = SAVE_CONFIG;
+			break;
+		}
+		case SAVE_CONFIG : {
+			printf("Saving Config File\n");
+			interface->machine_state = MACHINE_IDLE;
+			break;
+		}
 		case GET_PROGRAM : {
 			socket_handler(&interface->user_command_set, interface->user_input);
 			receive_user_input(interface);
@@ -364,34 +394,52 @@ void receive_user_control(struct interface_struct* interface){
 					}
 					break;
 				}
-				case 'z' : {
+				case 'c' : {
+					// config which will measure all axis lengths
 					interface->user_instruction.instruction_valid = 1;
-					interface->user_instruction.xl_axis.move_count = -100000;
+					interface->user_instruction.opcode = MEASURE_AXIS;
+					interface->user_instruction.xl_axis.opcode = MEASURE_AXIS;
 					interface->user_instruction.xl_axis.current_period = MOVE_PERIOD;
 					interface->user_instruction.xl_axis.instruction_valid = 1;
-					interface->user_instruction.yf_axis.move_count = -100000;
+					interface->user_instruction.yf_axis.opcode = MEASURE_AXIS;
 					interface->user_instruction.yf_axis.current_period = MOVE_PERIOD;
 					interface->user_instruction.yf_axis.instruction_valid = 1;
-					interface->user_instruction.zl_axis.move_count = -100000;
+					interface->user_instruction.zl_axis.opcode = MEASURE_AXIS;
 					interface->user_instruction.zl_axis.current_period = MOVE_PERIOD;
 					interface->user_instruction.zl_axis.instruction_valid = 1;
-					interface->user_instruction.zr_axis.move_count = -100000;
+					interface->user_instruction.zr_axis.opcode = MEASURE_AXIS;
+					interface->user_instruction.zr_axis.current_period = MOVE_PERIOD;
+					interface->user_instruction.zr_axis.instruction_valid = 1;
+					break;
+				}
+				case 'z' : {
+					interface->user_instruction.instruction_valid = 1;
+					interface->user_instruction.xl_axis.opcode = ZERO_MOTOR;
+					interface->user_instruction.xl_axis.current_period = MOVE_PERIOD;
+					interface->user_instruction.xl_axis.instruction_valid = 1;
+					interface->user_instruction.yf_axis.opcode = ZERO_MOTOR;
+					interface->user_instruction.yf_axis.current_period = MOVE_PERIOD;
+					interface->user_instruction.yf_axis.instruction_valid = 1;
+					interface->user_instruction.zl_axis.opcode = ZERO_MOTOR;
+					interface->user_instruction.zl_axis.current_period = MOVE_PERIOD;
+					interface->user_instruction.zl_axis.instruction_valid = 1;
+					interface->user_instruction.zr_axis.opcode = ZERO_MOTOR;
 					interface->user_instruction.zr_axis.current_period = MOVE_PERIOD;
 					interface->user_instruction.zr_axis.instruction_valid = 1;
 					break;
 				}
 				case 'm' : {
 					interface->user_instruction.instruction_valid = 1;
-					interface->user_instruction.xl_axis.move_count = 100000;
+					interface->user_instruction.xl_axis.opcode = MAX_MOTOR;
 					interface->user_instruction.xl_axis.current_period = MOVE_PERIOD;
 					interface->user_instruction.xl_axis.instruction_valid = 1;
-					interface->user_instruction.yf_axis.move_count = 100000;
+					interface->user_instruction.yf_axis.opcode = MAX_MOTOR;
 					interface->user_instruction.yf_axis.current_period = MOVE_PERIOD;
 					interface->user_instruction.yf_axis.instruction_valid = 1;
-					interface->user_instruction.zl_axis.move_count = 100000;
+					interface->user_instruction.zl_axis.opcode = MAX_MOTOR;
 					interface->user_instruction.zl_axis.current_period = MOVE_PERIOD;
 					interface->user_instruction.zl_axis.instruction_valid = 1;
-					interface->user_instruction.zr_axis.move_count = 100000;
+					interface->user_instruction.zr_axis.opcode = MAX_MOTOR;
 					interface->user_instruction.zr_axis.current_period = MOVE_PERIOD;
 					interface->user_instruction.zr_axis.instruction_valid = 1;
 					break;
@@ -417,7 +465,23 @@ void process_spi_request(struct interface_struct* interface){
 			break;
 		}
 		case GET_CNC_STATUS : {
-			printf("CNC Status: %s\n", &interface->cnc_read_data[1]);
+			string_to_status(&interface->machine_status, &interface->cnc_read_data[1]);
+			printf("CNC XL Min: %d\n", interface->machine_status.xl_min_flag);
+			printf("CNC XL Max: %d\n", interface->machine_status.xl_max_flag);
+			printf("CNC YF Min: %d\n", interface->machine_status.yf_min_flag);
+			printf("CNC YF Max: %d\n", interface->machine_status.yf_max_flag);
+			printf("CNC ZL Min: %d\n", interface->machine_status.zl_min_flag);
+			printf("CNC ZL Max: %d\n", interface->machine_status.zl_max_flag);
+			printf("CNC ZR Min: %d\n", interface->machine_status.zr_min_flag);
+			printf("CNC ZR Max: %d\n", interface->machine_status.zr_max_flag);
+			printf("CNC XL Pos: %llu\n", interface->machine_status.xl_position);
+			printf("CNC YF Pos: %llu\n", interface->machine_status.yf_position);
+			printf("CNC ZL Pos: %llu\n", interface->machine_status.zl_position);
+			printf("CNC ZR Pos: %llu\n", interface->machine_status.zr_position);
+			printf("CNC H0 Temp: %lf\n", interface->machine_status.heater_0_temp);
+			printf("CNC H1 Temp: %lf\n", interface->machine_status.heater_1_temp);
+			printf("CNC H2 Temp: %lf\n", interface->machine_status.heater_2_temp);
+			printf("CNC H3 Temp: %lf\n", interface->machine_status.heater_3_temp);
 			break;
 		}
 		case NEW_CNC_PRINT : {
@@ -430,7 +494,7 @@ void process_spi_request(struct interface_struct* interface){
 		}
 		case NEW_CNC_INSTRUCTION : {
 			interface->machine_state = SEND_INSTRUCTION;
-			printf("Machine Requested Instruction\n");
+			//printf("Machine Requested Instruction\n");
 			break;
 		}
 		case INSTANT_CNC_INSTRUCTION : {
@@ -517,40 +581,10 @@ void handle_input(struct interface_struct* interface){
 				interface->machine_state = POWER_MOTORS_OFF;
 				break;
 			}
-			/*case 'r' : {
-				char read_string[MAX_SPI_TRANSFER];
-				uint16_t len;
-				value = spi_check_read(read_string);
-				if(value > 0){
-					printf("read data: %s, %d\n", read_string, value);
-				} else {
-					if(value < 0){
-						printf("read hasn't finished\n");
-					} else {
-						spi_set_read();
-					}
-				}
-				break;
-			}
 			case 'c' : {
-				//cnc->spi->pending_opcode = reconnect_spi;
-				cnc->state = PROCESS_INPUT;
+				interface->machine_state = CONFIGURE_INTERFACE;
 				break;
 			}
-			/*case 's' : {
-				send_spi_string(system_command, MAX_SPI_LENGTH);
-				break;
-			}
-			case 'i' : {
-				cnc->spi->pending_opcode = start_cnc_program;
-				printf("got start interface function: %d\n", cnc->spi->pending_opcode);
-				break;
-			}
-			case 't' : {
-				printf("got end interface function\n");
-				cnc->spi->pending_opcode = end_cnc_program;
-				break;
-			}*/
 			default : {
 				//spi_struct->pending_opcode = idle;
 				interface->state = INTERFACE_RUNNING;
@@ -558,6 +592,81 @@ void handle_input(struct interface_struct* interface){
 			}
 		}
 		clear_user_command(interface);
+	}
+}
+
+void load_config_file(struct cnc_config_struct* config){
+	FILE* config_file;
+	char config_string[sizeof(cnc_config_struct)];
+	config_file = fopen("./user_config.cnfg", "+r");
+	uint16_t count = 0;
+	uint8_t file_valid = 0;
+
+	if(config_file < 0){
+		printf("Error Loading Config File... Setting Default\n");
+		file_valid = 0;
+	} else {
+		if(config_file == NULL){
+			printf("Couldn't Open Config File... Setting Default\n");
+			file_valid = 0;
+		} else {
+			printf("Reading Config Data From File\n");
+			file_valid = 1;
+		}
+	}
+
+	if(file_valid){
+		// load_from_file
+		while(count < (sizeof(cnc_config_struct) - 1)){
+			config_string[count] = fgetc(config_file);
+			count = count + 1;
+		}
+		string_to_config(config, config_string);
+	} else {
+		// load from default
+		*config = CONFIG_DEFAULT;
+	}
+
+	if(config_file){
+		fclose(config_file);
+	}
+	config->config_loaded = 1;
+}
+
+void save_config_file(struct cnc_config_struct* config){
+	FILE* config_file;
+	char config_string[sizeof(cnc_config_struct)];
+	config_file = fopen("./user_config.cnfg", "+w");
+	uint16_t count = 0;
+	uint8_t file_valid = 0;
+
+	if(!config->config_loaded || config_file < 0){
+		printf("Config Not Set Or Error Loading Config File... Not Writing\n");
+		file_valid = 0;
+	} else {
+		if(config_file == NULL){
+			printf("Couldn't Open Config File... Not Writing\n");
+			file_valid = 0;
+		} else {
+			printf("Writing Config Data To File\n");
+			file_valid = 1;
+		}
+	}
+
+	if(file_valid){
+		config_to_string(config, config_string);
+		// load to file
+		while(count < (sizeof(cnc_config_struct) - 1)){
+			fputc(config_string[count], config_file);
+			count = count + 1;
+		}
+	} else {
+		// load from default
+		*config = CONFIG_DEFAULT;
+	}
+
+	if(config_file){
+		fclose(config_file);
 	}
 }
 

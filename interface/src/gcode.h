@@ -71,7 +71,7 @@ int parse_number(char* line, uint16_t* line_count, double* value);
 int parse_letter(char* line, uint16_t* line_count, char* value);
 int parse_gcode_word(char* line, uint16_t* line_count, struct gcode_program_struct* program);
 int check_gcode_instruction(struct cnc_instruction_struct* instruction);
-int check_gcode_motor_instruction(struct cnc_motor_instruction_struct* instruction);
+int check_gcode_motor_instruction(struct cnc_motor_instruction_struct* instruction, double speed);
 int check_gcode_heater_instruction(struct cnc_heater_instruction_struct* instruction);
 
 #endif /* SRC_GCODE_H */

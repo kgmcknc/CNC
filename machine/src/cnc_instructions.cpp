@@ -329,6 +329,7 @@ void copy_instruction(struct cnc_instruction_struct* new_instruction, struct cnc
 }
 
 void copy_motor_instruction(struct cnc_motor_instruction_struct* new_instruction, struct cnc_motor_instruction_struct* current_instruction){
+	current_instruction->opcode = new_instruction->opcode;
 	current_instruction->current_period = new_instruction->current_period;
 	current_instruction->move_count = new_instruction->move_count;
 	current_instruction->ramp_down_speed = new_instruction->ramp_down_speed;
@@ -341,6 +342,7 @@ void copy_motor_instruction(struct cnc_motor_instruction_struct* new_instruction
 }
 
 void copy_heater_instruction(struct cnc_heater_instruction_struct* new_instruction, struct cnc_heater_instruction_struct* current_instruction){
+	current_instruction->opcode = new_instruction->opcode;
 	current_instruction->instruction_valid = new_instruction->instruction_valid;
 	current_instruction->current_temp = new_instruction->current_temp;
 	current_instruction->enabled = new_instruction->enabled;
@@ -382,6 +384,46 @@ void handle_instruction_opcodes(struct cnc_state_struct* cnc, struct cnc_instruc
 				cnc->program_running = 0;
 				instruction->opcode = EMPTY_OPCODE;
 				clear_program(cnc);
+				break;
+			}
+			case MEASURE_AXIS : {
+				// check all motor opcodes and if all are empty, then send status back
+				uint8_t instruction_done = 1;
+				if(instruction->xl_axis.opcode != EMPTY_OPCODE) instruction_done = 0;
+				if(instruction->yf_axis.opcode != EMPTY_OPCODE) instruction_done = 0;
+				if(instruction->zl_axis.opcode != EMPTY_OPCODE) instruction_done = 0;
+				if(instruction->zr_axis.opcode != EMPTY_OPCODE) instruction_done = 0;
+				if(instruction_done){
+					// send status back to interfaces
+					if(cnc->write_in_progress){
+						// can't send status - already writing
+					} else {
+						instruction->opcode = RETURN_STATUS;
+					}
+				}
+				break;
+			}
+			case RETURN_STATUS : {
+				if(cnc->write_in_progress){
+					if(spi_check_write() > 0){
+						cnc->write_in_progress = 0;
+						instruction->opcode = EMPTY_OPCODE;
+					}
+				} else {
+					if(spi_check_write() < 0){
+						// can't write, already writing
+					} else {
+						cnc->cnc_write_data[0] = (char) GET_CNC_STATUS;
+						update_status(cnc);
+						cnc->cnc_write_length = status_to_string(&cnc->status, &cnc->cnc_write_data[1]);
+						cnc->cnc_write_length = cnc->cnc_write_length + 1;
+						if(spi_set_write(cnc->cnc_write_data, cnc->cnc_write_length) > 0){
+							cnc->write_in_progress = 1;
+						} else {
+							cnc->write_in_progress = 0;
+						}
+					}
+				}
 				break;
 			}
 			case ABORT_INSTRUCTION : {
@@ -467,6 +509,67 @@ void handle_motor_opcode(struct cnc_state_struct* cnc, struct cnc_motor_instruct
 				// nothing to do
 				break;
 			}
+			case HOME_AXIS : {
+				if(motor->find_max){
+					if(motor->max_range_flag == ENDSTOP_HIT_OR_NO_POWER){
+						motor->find_max = 0;
+						motor->move_count = motor->home_position - motor->position;
+						set_motor_direction(motor, MOTOR_MOVE_DECREASE);
+						instruction->opcode = EMPTY_OPCODE;
+					} else {
+						motor->move_count = 1;
+						set_motor_direction(motor, MOTOR_MOVE_INCREASE);
+					}
+				} else {
+					if(motor->max_range_flag == ENDSTOP_HIT_OR_NO_POWER){
+						motor->move_count = -1;
+						set_motor_direction(motor, MOTOR_MOVE_DECREASE);
+					} else {
+						motor->find_max = 1;
+						motor->move_count = 1;
+						set_motor_direction(motor, MOTOR_MOVE_INCREASE);
+					}
+				}
+				break;
+			}
+			case MEASURE_AXIS : {
+				if(motor->find_zero){
+					if(motor->min_range_flag == ENDSTOP_HIT_OR_NO_POWER){
+						motor->homed = 1;
+						motor->position = 0;
+						motor->find_zero = 0;
+						motor->find_max = 1;
+					} else {
+						motor->move_count = -1;
+						set_motor_direction(motor, MOTOR_MOVE_DECREASE);
+					}
+				} else {
+					if(!motor->find_max){
+						if(motor->min_range_flag == ENDSTOP_HIT_OR_NO_POWER){
+							motor->move_count = 1;
+							set_motor_direction(motor, MOTOR_MOVE_INCREASE);
+						} else {
+							motor->find_zero = 1;
+							motor->move_count = -1;
+							set_motor_direction(motor, MOTOR_MOVE_DECREASE);
+						}
+					}
+				}
+				if(motor->find_max){
+					if(motor->max_range_flag == ENDSTOP_HIT_OR_NO_POWER){
+						motor->find_max = 0;
+						instruction->opcode = EMPTY_OPCODE;
+					} else {
+						motor->move_count = 1;
+						set_motor_direction(motor, MOTOR_MOVE_INCREASE);
+					}
+				}
+				// offset from zero if needed
+				// find zero
+				// find max
+				// send status with final axis length
+				break;
+			}
 			case ZERO_MOTOR : {
 				if(motor->find_zero){
 					if(motor->min_range_flag == ENDSTOP_HIT_OR_NO_POWER){
@@ -474,6 +577,18 @@ void handle_motor_opcode(struct cnc_state_struct* cnc, struct cnc_motor_instruct
 						motor->position = 0;
 						motor->find_zero = 0;
 						instruction->opcode = EMPTY_OPCODE;
+					} else {
+						motor->move_count = -1;
+						set_motor_direction(motor, MOTOR_MOVE_DECREASE);
+					}
+				} else {
+					if(motor->min_range_flag == ENDSTOP_HIT_OR_NO_POWER){
+						motor->move_count = 1;
+						set_motor_direction(motor, MOTOR_MOVE_INCREASE);
+					} else {
+						motor->find_zero = 1;
+						motor->move_count = -1;
+						set_motor_direction(motor, MOTOR_MOVE_DECREASE);
 					}
 				}
 				break;
@@ -483,6 +598,18 @@ void handle_motor_opcode(struct cnc_state_struct* cnc, struct cnc_motor_instruct
 					if(motor->max_range_flag == ENDSTOP_HIT_OR_NO_POWER){
 						motor->find_max = 0;
 						instruction->opcode = EMPTY_OPCODE;
+					} else {
+						motor->move_count = 1;
+						set_motor_direction(motor, MOTOR_MOVE_INCREASE);
+					}
+				} else {
+					if(motor->max_range_flag == ENDSTOP_HIT_OR_NO_POWER){
+						motor->move_count = -1;
+						set_motor_direction(motor, MOTOR_MOVE_DECREASE);
+					} else {
+						motor->find_max = 1;
+						motor->move_count = 1;
+						set_motor_direction(motor, MOTOR_MOVE_INCREASE);
 					}
 				}
 				break;

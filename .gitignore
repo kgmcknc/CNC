@@ -9,6 +9,8 @@
 *.o
 *.geany
 *.gch
+*.cngf
+!./interface/default.cnfg
 *.kmf
 *.code-workspace
 *.vscode/

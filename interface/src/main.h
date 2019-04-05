@@ -17,6 +17,8 @@
 struct interface_struct {
     enum CNC_INTERFACE_STATE state;
     enum CNC_MACHINE_STATE machine_state;
+    struct cnc_config_struct machine_config;
+    struct cnc_status_struct machine_status;
     struct gcode_program_struct program;
 	uint8_t motors_enabled;
 	FILE* gcode_fp;

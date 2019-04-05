@@ -57,7 +57,10 @@ void handle_state(struct cnc_state_struct* cnc){
 					cnc->state = GET_STATUS;
 				} else {
 					cnc->cnc_write_data[0] = (char) GET_CNC_STATUS;
-					parse_status(cnc);
+					update_status(cnc);
+					cnc->cnc_write_length = status_to_string(&cnc->status, &cnc->cnc_write_data[1]);
+					cnc->cnc_write_length = cnc->cnc_write_length + 1;
+					//parse_status(cnc);
 					if(spi_set_write(cnc->cnc_write_data, cnc->cnc_write_length) > 0){
 						cnc->write_in_progress = 1;
 					} else {
@@ -184,6 +187,25 @@ void parse_status(struct cnc_state_struct* cnc){
 			cnc->heaters->heater_0.current_temp,
 			cnc->heaters->heater_1.current_temp);
 	cnc->cnc_write_length = strlen(cnc->cnc_write_data);
+}
+
+void update_status(struct cnc_state_struct* cnc){
+	cnc->status.xl_min_flag = cnc->motors->xl_axis.min_range_flag;
+	cnc->status.xl_max_flag = cnc->motors->xl_axis.max_range_flag;
+	cnc->status.yf_min_flag = cnc->motors->yf_axis.min_range_flag;
+	cnc->status.yf_max_flag = cnc->motors->yf_axis.max_range_flag;
+	cnc->status.zl_min_flag = cnc->motors->zl_axis.min_range_flag;
+	cnc->status.zl_max_flag = cnc->motors->zl_axis.max_range_flag;
+	cnc->status.zr_min_flag = cnc->motors->zr_axis.min_range_flag;
+	cnc->status.zr_max_flag = cnc->motors->zr_axis.max_range_flag;
+	cnc->status.xl_position = cnc->motors->xl_axis.position;
+	cnc->status.yf_position = cnc->motors->yf_axis.position;
+	cnc->status.zl_position = cnc->motors->zl_axis.position;
+	cnc->status.zr_position = cnc->motors->zr_axis.position;
+	cnc->status.heater_0_temp = cnc->heaters->heater_0.current_temp;
+	cnc->status.heater_1_temp = cnc->heaters->heater_1.current_temp;
+	cnc->status.heater_2_temp = cnc->heaters->heater_2.current_temp;
+	cnc->status.heater_3_temp = cnc->heaters->heater_3.current_temp;
 }
 
 void parse_print(struct cnc_state_struct* cnc){
