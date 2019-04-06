@@ -570,6 +570,11 @@ void handle_motor_opcode(struct cnc_state_struct* cnc, struct cnc_motor_instruct
 				// send status with final axis length
 				break;
 			}
+			case POSITION_AXIS : {
+				motor->position = instruction->move_count;
+				instruction->opcode = EMPTY_OPCODE;
+				break;
+			}
 			case ZERO_MOTOR : {
 				if(motor->find_zero){
 					if(motor->min_range_flag == ENDSTOP_HIT_OR_NO_POWER){

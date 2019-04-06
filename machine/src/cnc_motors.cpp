@@ -225,6 +225,12 @@ void check_endstops(struct cnc_motor_list_struct* motors){
 	check_endstop(&motors->yf_axis);
 	check_endstop(&motors->zl_axis);
 	check_endstop(&motors->zr_axis);
+	motors->extruder_0.min_range_flag = ENDSTOP_NOT_HIT;
+	motors->extruder_0.max_range_flag = ENDSTOP_NOT_HIT;
+	motors->extruder_1.min_range_flag = ENDSTOP_NOT_HIT;
+	motors->extruder_1.max_range_flag = ENDSTOP_NOT_HIT;
+	motors->aux.min_range_flag = ENDSTOP_NOT_HIT;
+	motors->aux.max_range_flag = ENDSTOP_NOT_HIT;
 	/*if(motors->zl_axis.min_range_flag == ENDSTOP_HIT_OR_NO_POWER)
 		motors->zr_axis.min_range_flag = ENDSTOP_HIT_OR_NO_POWER;
 	if(motors->zl_axis.max_range_flag == ENDSTOP_HIT_OR_NO_POWER)

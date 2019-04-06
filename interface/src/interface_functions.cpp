@@ -322,6 +322,12 @@ void receive_user_control(struct interface_struct* interface){
 					interface->user_instruction.zl_axis.opcode = ENABLE_MOTORS;
 					interface->user_instruction.zr_axis.pending_enable = 1;
 					interface->user_instruction.zr_axis.opcode = ENABLE_MOTORS;
+					interface->user_instruction.extruder_0.pending_enable = 1;
+					interface->user_instruction.extruder_0.opcode = ENABLE_MOTORS;
+					interface->user_instruction.extruder_1.pending_enable = 1;
+					interface->user_instruction.extruder_1.opcode = ENABLE_MOTORS;
+					interface->user_instruction.aux.pending_enable = 1;
+					interface->user_instruction.aux.opcode = ENABLE_MOTORS;
 					break;
 				}
 				case 'd' : {
@@ -335,6 +341,12 @@ void receive_user_control(struct interface_struct* interface){
 					interface->user_instruction.zl_axis.opcode = DISABLE_MOTORS;
 					interface->user_instruction.zr_axis.pending_disable = 1;
 					interface->user_instruction.zr_axis.opcode = DISABLE_MOTORS;
+					interface->user_instruction.extruder_0.pending_disable = 1;
+					interface->user_instruction.extruder_0.opcode = DISABLE_MOTORS;
+					interface->user_instruction.extruder_1.pending_disable = 1;
+					interface->user_instruction.extruder_1.opcode = DISABLE_MOTORS;
+					interface->user_instruction.aux.pending_disable = 1;
+					interface->user_instruction.aux.opcode = DISABLE_MOTORS;
 					break;
 				}
 				case 27 : { // escape character 
@@ -474,6 +486,9 @@ void process_spi_request(struct interface_struct* interface){
 			printf("CNC ZL Max: %d\n", interface->machine_status.zl_max_flag);
 			printf("CNC ZR Min: %d\n", interface->machine_status.zr_min_flag);
 			printf("CNC ZR Max: %d\n", interface->machine_status.zr_max_flag);
+			printf("CNC EX0 Pos: %llu\n", interface->machine_status.ex0_position);
+			printf("CNC EX1 Pos: %llu\n", interface->machine_status.ex1_position);
+			printf("CNC AUX Pos: %llu\n", interface->machine_status.aux_position);
 			printf("CNC XL Pos: %llu\n", interface->machine_status.xl_position);
 			printf("CNC YF Pos: %llu\n", interface->machine_status.yf_position);
 			printf("CNC ZL Pos: %llu\n", interface->machine_status.zl_position);

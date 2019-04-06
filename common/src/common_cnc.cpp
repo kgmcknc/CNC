@@ -294,6 +294,12 @@ uint16_t status_to_string(struct cnc_status_struct* status, char* string){
     offset = offset + 1;
 	string[offset] = status->zr_max_flag;
     offset = offset + 1;
+    memcpy(&string[offset], &status->ex0_position, 4);
+    offset = offset + 4;
+	memcpy(&string[offset], &status->ex1_position, 4);
+    offset = offset + 4;
+	memcpy(&string[offset], &status->aux_position, 4);
+    offset = offset + 4;
 	memcpy(&string[offset], &status->xl_position, 4);
     offset = offset + 4;
 	memcpy(&string[offset], &status->yf_position, 4);
@@ -331,6 +337,12 @@ void string_to_status(struct cnc_status_struct* status, char* string){
     offset = offset + 1;
 	status->zr_max_flag = string[offset];
     offset = offset + 1;
+    memcpy(&status->ex0_position, &string[offset], 4);
+    offset = offset + 4;
+	memcpy(&status->ex1_position, &string[offset], 4);
+    offset = offset + 4;
+	memcpy(&status->aux_position, &string[offset], 4);
+    offset = offset + 4;
 	memcpy(&status->xl_position, &string[offset], 4);
     offset = offset + 4;
 	memcpy(&status->yf_position, &string[offset], 4);

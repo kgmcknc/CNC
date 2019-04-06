@@ -32,6 +32,9 @@ int parse_gcode_file(FILE* gcode_fp, struct gcode_program_struct* program){
     program->arc_move_active = 0;
     program->absolute_positions = 0;
     program->delta_positions = 0;
+    program->extrude_absolute = 0;
+    program->extrude_delta = 0;
+    program->extruder_select = 0;
     program->instruction_wp = 0;
     program->instruction_rp = 0;
     program->units_in_inches = 0;
@@ -153,7 +156,6 @@ int parse_gcode_line(char* line, struct gcode_program_struct* program){
                 string_count = 0;
                 count_set = 0;
                 clear_instruction(&program->instruction[program->instruction_wp]);
-                program->instruction[program->instruction_wp].speed = 0;
                 program->instruction[program->instruction_wp].instruction_number = 0;
                 program->instruction[program->instruction_wp].comment[0] = '\0';
                 program->instruction[program->instruction_wp].message[0] = '\0';
@@ -161,6 +163,10 @@ int parse_gcode_line(char* line, struct gcode_program_struct* program){
                 program->instruction[program->instruction_wp].message_flag = 0;
                 program->instruction[program->instruction_wp].set_position_flag = 0;
                 program->instruction[program->instruction_wp].instruction_set = 0;
+                program->instruction[program->instruction_wp].speed = program->instruction[program->instruction_wp-1].speed;
+                program->instruction[program->instruction_wp].extruder_0.current_position = program->instruction[program->instruction_wp-1].extruder_0.current_position;
+                program->instruction[program->instruction_wp].extruder_1.current_position = program->instruction[program->instruction_wp-1].extruder_1.current_position;
+                program->instruction[program->instruction_wp].aux.current_position = program->instruction[program->instruction_wp-1].aux.current_position;
                 program->instruction[program->instruction_wp].xl_axis.current_position = program->instruction[program->instruction_wp-1].xl_axis.current_position;
                 program->instruction[program->instruction_wp].yf_axis.current_position = program->instruction[program->instruction_wp-1].yf_axis.current_position;
                 program->instruction[program->instruction_wp].zl_axis.current_position = program->instruction[program->instruction_wp-1].zl_axis.current_position;
@@ -467,13 +473,13 @@ int check_gcode_instruction(struct cnc_instruction_struct* instruction){
         }
     }
     
+    check_gcode_motor_instruction(&instruction->aux, instruction->speed);
     check_gcode_motor_instruction(&instruction->xl_axis, instruction->speed);
     check_gcode_motor_instruction(&instruction->yf_axis, instruction->speed);
     check_gcode_motor_instruction(&instruction->zl_axis, instruction->speed);
     check_gcode_motor_instruction(&instruction->zr_axis, instruction->speed);
     check_gcode_motor_instruction(&instruction->extruder_0, instruction->speed);
     check_gcode_motor_instruction(&instruction->extruder_1, instruction->speed);
-    check_gcode_motor_instruction(&instruction->aux, instruction->speed);
     check_gcode_heater_instruction(&instruction->heater_0);
     check_gcode_heater_instruction(&instruction->heater_1);
     check_gcode_heater_instruction(&instruction->heater_2);
@@ -495,6 +501,25 @@ int check_gcode_instruction(struct cnc_instruction_struct* instruction){
 }
 
 int check_gcode_motor_instruction(struct cnc_motor_instruction_struct* instruction, double speed){
+    if(instruction->opcode != EMPTY_OPCODE){
+        instruction->instruction_valid = 1;
+        if(speed > 0.0){
+            instruction->current_period = speed;
+        }
+    } else {
+        if(instruction->move_count && (speed > 0.0)){
+            instruction->instruction_valid = 1;
+            if(speed > 0.0){
+                instruction->current_period = speed;
+            }
+        } else {
+            instruction->instruction_valid = 0;
+        }
+    }
+}
+
+// don't remember why I wanted separate extrude check function...
+int check_gcode_extruder_instruction(struct cnc_motor_instruction_struct* instruction, double speed){
     if(instruction->opcode != EMPTY_OPCODE){
         instruction->instruction_valid = 1;
         if(speed > 0.0){
@@ -566,24 +591,96 @@ int parse_gcode_word(char* line, uint16_t* line_count, struct gcode_program_stru
         }
         case('E') : {
             *line_count = *line_count + 1;
-            if((program->linear_move_active == 1) || (program->arc_move_active == 1)){
-                error = parse_number(line, line_count, &code_number);
+            error = parse_number(line, line_count, &code_number);
+            if(program->units_in_inches){
+                code_number = code_number * STEPS_PER_IN;
+            } else {
+                if(program->units_in_mm){
+                    code_number = code_number * STEPS_PER_MM;
+                } else {
+                    error = 1;
+                }
+            }
+            if((program->instruction[program->instruction_wp].opcode == EMPTY_OPCODE) && 
+                ((program->linear_move_active == 1) || (program->arc_move_active == 1))){
                 if(!error){
-                    program->instruction[program->instruction_wp].extruder_0.linear_move = 1;
-                    program->instruction[program->instruction_wp].extruder_0.arc_move = 0;
-                    if(program->absolute_positions){
-                        program->instruction[program->instruction_wp].extruder_0.move_position = code_number;
-                    } else {
-                        if(program->delta_positions){
-                            program->instruction[program->instruction_wp].extruder_0.move_position = 
-                                   program->instruction[program->instruction_wp].extruder_0.current_position + code_number;
+                    if(program->extruder_select == 0){
+                        program->instruction[program->instruction_wp].extruder_0.linear_move = 1;
+                        program->instruction[program->instruction_wp].extruder_0.arc_move = 0;
+                        if(program->extrude_absolute){
+                            program->instruction[program->instruction_wp].extruder_0.current_position = code_number;
+                            program->instruction[program->instruction_wp].extruder_0.move_count = 
+                                code_number - program->instruction[program->instruction_wp-1].extruder_0.current_position;
                         } else {
-                            error = 1;
+                            if(program->extrude_delta){
+                                program->instruction[program->instruction_wp].extruder_0.current_position = 
+                                program->instruction[program->instruction_wp-1].extruder_0.current_position + code_number;
+                                        program->instruction[program->instruction_wp].extruder_0.move_count = code_number;
+                            } else {
+                                if(program->instruction[program->instruction_wp].opcode == POSITION_AXIS){
+                                    program->instruction[program->instruction_wp].extruder_0.opcode = POSITION_AXIS;
+                                } else {
+                                    if(program->instruction[program->instruction_wp].opcode == POSITION_AXIS){
+                                        program->instruction[program->instruction_wp].extruder_0.opcode = POSITION_AXIS;
+                                        program->instruction[program->instruction_wp].extruder_0.current_position = code_number;
+                                        program->instruction[program->instruction_wp].extruder_0.move_count = code_number;
+                                    } else {
+                                        error = 1;
+                                    }
+                                }
+                                printf("didn't have extrude type set\n");
+                            }
+                        }
+                    } else {
+                        if(program->extruder_select == 1){
+                            program->instruction[program->instruction_wp].extruder_1.linear_move = 1;
+                            program->instruction[program->instruction_wp].extruder_1.arc_move = 0;
+                            if(program->extrude_absolute){
+                                program->instruction[program->instruction_wp].extruder_1.current_position = code_number;
+                                program->instruction[program->instruction_wp].extruder_1.move_count = 
+                                    code_number - program->instruction[program->instruction_wp-1].extruder_1.current_position;
+                            } else {
+                                if(program->extrude_delta){
+                                    program->instruction[program->instruction_wp].extruder_1.current_position = 
+                                    program->instruction[program->instruction_wp-1].extruder_1.current_position + code_number;
+                                            program->instruction[program->instruction_wp].extruder_1.move_count = code_number;
+                                } else {
+                                    if(program->instruction[program->instruction_wp].opcode == POSITION_AXIS){
+                                        program->instruction[program->instruction_wp].extruder_1.opcode = POSITION_AXIS;
+                                    } else {
+                                        if(program->instruction[program->instruction_wp].opcode == POSITION_AXIS){
+                                            program->instruction[program->instruction_wp].extruder_1.opcode = POSITION_AXIS;
+                                            program->instruction[program->instruction_wp].extruder_1.current_position = code_number;
+                                            program->instruction[program->instruction_wp].extruder_1.move_count = code_number;
+                                        } else {
+                                            error = 1;
+                                        }
+                                    }
+                                    printf("didn't have extrude type set1\n");
+                                }
+                            }
+                        } else {
+                            // invalid extruder selection
+                            printf("invalid extruder selected set\n");
                         }
                     }
                 }
             } else {
-                error = 1;
+                if(program->instruction[program->instruction_wp].opcode == HOME_AXIS){
+                    if(program->extruder_select == 0){
+                        program->instruction[program->instruction_wp].extruder_0.opcode = HOME_AXIS;
+                        program->instruction[program->instruction_wp].extruder_0.current_position = 0.0;
+                    } else {
+                        if(program->extruder_select == 1){
+                            program->instruction[program->instruction_wp].extruder_1.opcode = HOME_AXIS;
+                            program->instruction[program->instruction_wp].extruder_1.current_position = 0.0;
+                        } else {
+                            // invalid extruder selection
+                        }
+                    }
+                } else {
+                    error = 1;
+                }
             }
             break;
         }
@@ -594,14 +691,14 @@ int parse_gcode_word(char* line, uint16_t* line_count, struct gcode_program_stru
                 // process command
                 if(program->units_in_mm){
                     // mm per minute
-                    program->instruction[program->instruction_wp].speed = (code_number/(STEPS_PER_MM))/(STEPS_PER_MINUTE);
+                    program->instruction[program->instruction_wp].speed = (STEPS_PER_MINUTE)/(code_number*STEPS_PER_MM);
                     if(program->instruction[program->instruction_wp].speed == 0){
                             program->instruction[program->instruction_wp].speed = 1;
                         }
                 } else {
                     if(program->units_in_inches){
                         // inches per minute
-                        program->instruction[program->instruction_wp].speed = (code_number/(STEPS_PER_IN))/(STEPS_PER_MINUTE);
+                        program->instruction[program->instruction_wp].speed = (STEPS_PER_MINUTE)/(code_number*STEPS_PER_IN);
                         if(program->instruction[program->instruction_wp].speed == 0){
                             program->instruction[program->instruction_wp].speed = 1;
                         }
@@ -842,7 +939,7 @@ int parse_gcode_word(char* line, uint16_t* line_count, struct gcode_program_stru
                     }
                     case(92) : {
                         if(code_number == 92.0){
-                            program->instruction[program->instruction_wp].set_position_flag = 1;
+                            program->instruction[program->instruction_wp].opcode = POSITION_AXIS;
                         } else {
                             if(code_number == 92.1){
                                 
@@ -1055,14 +1152,14 @@ int parse_gcode_word(char* line, uint16_t* line_count, struct gcode_program_stru
                     }
                     case(82) : {
                         // absolute positioning mode
-                        program->absolute_positions = 1;
-                        program->delta_positions = 0;
+                        program->extrude_absolute = 1;
+                        program->extrude_delta = 0;
                         break;
                     }
                     case(83) : {
                         // relative positioning mode
-                        program->absolute_positions = 0;
-                        program->delta_positions = 1;
+                        program->extrude_absolute = 0;
+                        program->extrude_delta = 1;
                         break;
                     }
                     case(84) : {
@@ -1427,16 +1524,17 @@ int parse_gcode_word(char* line, uint16_t* line_count, struct gcode_program_stru
         case('X') : {
             *line_count = *line_count + 1;
             error = parse_number(line, line_count, &code_number);
-            if((program->linear_move_active == 1) || (program->arc_move_active == 1)){
-                if(program->units_in_inches){
-                    code_number = code_number * STEPS_PER_IN;
+            if(program->units_in_inches){
+                code_number = code_number * STEPS_PER_IN;
+            } else {
+                if(program->units_in_mm){
+                    code_number = code_number * STEPS_PER_MM;
                 } else {
-                    if(program->units_in_mm){
-                        code_number = code_number * STEPS_PER_MM;
-                    } else {
-                        error = 1;
-                    }
+                    error = 1;
                 }
+            }
+            if((program->instruction[program->instruction_wp].opcode == EMPTY_OPCODE) && 
+                ((program->linear_move_active == 1) || (program->arc_move_active == 1))){
                 if(!error){
                     program->instruction[program->instruction_wp].xl_axis.linear_move = 1;
                     program->instruction[program->instruction_wp].xl_axis.arc_move = 0;
@@ -1459,7 +1557,13 @@ int parse_gcode_word(char* line, uint16_t* line_count, struct gcode_program_stru
                     program->instruction[program->instruction_wp].xl_axis.opcode = HOME_AXIS;
                     program->instruction[program->instruction_wp].xl_axis.current_position = 0.0;
                 } else {
-                    error = 1;
+                    if(program->instruction[program->instruction_wp].opcode == POSITION_AXIS){
+                        program->instruction[program->instruction_wp].xl_axis.opcode = POSITION_AXIS;
+                        program->instruction[program->instruction_wp].xl_axis.current_position = code_number;
+                        program->instruction[program->instruction_wp].xl_axis.move_count = code_number;
+                    } else {
+                        error = 1;
+                    }
                 }
             }
             break;
@@ -1467,16 +1571,17 @@ int parse_gcode_word(char* line, uint16_t* line_count, struct gcode_program_stru
         case('Y') : {
             *line_count = *line_count + 1;
             error = parse_number(line, line_count, &code_number);
-            if((program->linear_move_active == 1) || (program->arc_move_active == 1)){
-                if(program->units_in_inches){
-                    code_number = code_number * STEPS_PER_IN;
+            if(program->units_in_inches){
+                code_number = code_number * STEPS_PER_IN;
+            } else {
+                if(program->units_in_mm){
+                    code_number = code_number * STEPS_PER_MM;
                 } else {
-                    if(program->units_in_mm){
-                        code_number = code_number * STEPS_PER_MM;
-                    } else {
-                        error = 1;
-                    }
+                    error = 1;
                 }
+            }
+            if((program->instruction[program->instruction_wp].opcode == EMPTY_OPCODE) && 
+                ((program->linear_move_active == 1) || (program->arc_move_active == 1))){
                 if(!error){
                     program->instruction[program->instruction_wp].yf_axis.linear_move = 1;
                     program->instruction[program->instruction_wp].yf_axis.arc_move = 0;
@@ -1499,7 +1604,13 @@ int parse_gcode_word(char* line, uint16_t* line_count, struct gcode_program_stru
                     program->instruction[program->instruction_wp].yf_axis.opcode = HOME_AXIS;
                     program->instruction[program->instruction_wp].yf_axis.current_position = 0.0;
                 } else {
-                    error = 1;
+                    if(program->instruction[program->instruction_wp].opcode == POSITION_AXIS){
+                        program->instruction[program->instruction_wp].yf_axis.opcode = POSITION_AXIS;
+                        program->instruction[program->instruction_wp].yf_axis.current_position = code_number;
+                        program->instruction[program->instruction_wp].yf_axis.move_count = code_number;
+                    } else {
+                        error = 1;
+                    }
                 }
             }
             break;
@@ -1507,16 +1618,17 @@ int parse_gcode_word(char* line, uint16_t* line_count, struct gcode_program_stru
         case('Z') : {
             *line_count = *line_count + 1;
             error = parse_number(line, line_count, &code_number);
-            if((program->linear_move_active == 1) || (program->arc_move_active == 1)){
-                if(program->units_in_inches){
-                    code_number = code_number * STEPS_PER_IN;
+            if(program->units_in_inches){
+                code_number = code_number * STEPS_PER_IN;
+            } else {
+                if(program->units_in_mm){
+                    code_number = code_number * STEPS_PER_MM;
                 } else {
-                    if(program->units_in_mm){
-                        code_number = code_number * STEPS_PER_MM;
-                    } else {
-                        error = 1;
-                    }
+                    error = 1;
                 }
+            }
+            if((program->instruction[program->instruction_wp].opcode == EMPTY_OPCODE) && 
+                ((program->linear_move_active == 1) || (program->arc_move_active == 1))){
                 if(!error){
                     program->instruction[program->instruction_wp].zl_axis.linear_move = 1;
                     program->instruction[program->instruction_wp].zl_axis.arc_move = 0;
@@ -1549,7 +1661,16 @@ int parse_gcode_word(char* line, uint16_t* line_count, struct gcode_program_stru
                     program->instruction[program->instruction_wp].zl_axis.current_position = 0.0;
                     program->instruction[program->instruction_wp].zr_axis.current_position = 0.0;
                 } else {
-                    error = 1;
+                    if(program->instruction[program->instruction_wp].opcode == POSITION_AXIS){
+                        program->instruction[program->instruction_wp].zl_axis.opcode = POSITION_AXIS;
+                        program->instruction[program->instruction_wp].zr_axis.opcode = POSITION_AXIS;
+                        program->instruction[program->instruction_wp].zl_axis.current_position = code_number;
+                        program->instruction[program->instruction_wp].zr_axis.current_position = code_number;
+                        program->instruction[program->instruction_wp].zl_axis.move_count = code_number;
+                        program->instruction[program->instruction_wp].zr_axis.move_count = code_number;
+                    } else {
+                        error = 1;
+                    }
                 }
             }
             break;

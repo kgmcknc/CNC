@@ -12,8 +12,8 @@
 
 #define MOTOR_TIMER_CLOCK (double) 48000000
 #define MOTOR_TOP_COUNT (double) 1000
-#define STEPS_PER_SECOND (((double) MOTOR_TOP_COUNT)/MOTOR_TIMER_CLOCK)
-#define STEPS_PER_MINUTE (((double) STEPS_PER_SECOND)/60)
+#define STEPS_PER_SECOND (((double) MOTOR_TIMER_CLOCK)/MOTOR_TOP_COUNT)
+#define STEPS_PER_MINUTE (((double) STEPS_PER_SECOND)*60)
 #define MOTOR_STEPS_PER_REV (double) 200
 #define MOTOR_STEP_FACTOR (((double) 1)/8)
 #define STEPS_PER_REV (((double) MOTOR_STEPS_PER_REV)/MOTOR_STEP_FACTOR)
@@ -53,6 +53,7 @@ enum INSTRUCTION_OPCODE {
 	CHECK_ENDSTOPS,
 	HOME_AXIS,
 	MEASURE_AXIS,
+	POSITION_AXIS,
 	RETURN_STATUS,
 	ZERO_MOTOR,
 	MAX_MOTOR,
@@ -130,6 +131,9 @@ struct cnc_status_struct {
 	uint8_t zl_max_flag;
 	uint8_t zr_min_flag;
 	uint8_t zr_max_flag;
+	uint64_t ex0_position;
+	uint64_t ex1_position;
+	uint64_t aux_position;
 	uint64_t xl_position;
 	uint64_t yf_position;
 	uint64_t zl_position;

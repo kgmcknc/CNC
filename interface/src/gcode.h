@@ -58,6 +58,9 @@ struct gcode_program_struct {
     char units_in_mm;
     char absolute_positions;
     char delta_positions;
+    char extrude_absolute;
+    char extrude_delta;
+    char extruder_select;
     char arc_move_active;
     char linear_move_active;
     char block_delete;
@@ -72,6 +75,7 @@ int parse_letter(char* line, uint16_t* line_count, char* value);
 int parse_gcode_word(char* line, uint16_t* line_count, struct gcode_program_struct* program);
 int check_gcode_instruction(struct cnc_instruction_struct* instruction);
 int check_gcode_motor_instruction(struct cnc_motor_instruction_struct* instruction, double speed);
+int check_gcode_extruder_instruction(struct cnc_motor_instruction_struct* instruction, double speed);
 int check_gcode_heater_instruction(struct cnc_heater_instruction_struct* instruction);
 
 #endif /* SRC_GCODE_H */
