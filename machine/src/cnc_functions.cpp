@@ -24,6 +24,7 @@ void init_cnc(struct cnc_state_struct* cnc){
 	cnc->write_in_progress = 0;
 	cnc->read_complete = 0;
 	cnc->read_in_progress = 0;
+	cnc->marker_set = 0;
 
 	for(print_count=0;print_count<PRINT_DEPTH;print_count++){
 		cnc->print_buffer[print_count][0] = 0; // use % to mark end of print string
@@ -37,11 +38,14 @@ void handle_state(struct cnc_state_struct* cnc){
 	}
 	switch(cnc->state){
 		case CNC_IDLE : {
+			cnc->state = CNC_IDLE;
 			if((cnc->print_fullness > 0) && (!cnc->write_in_progress) && (!cnc->instruction_request_sent)){
 				// send print if print is ready
 				cnc->state = SEND_CNC_PRINT;
 			} else {
-				cnc->state = CNC_IDLE;
+				if(cnc->marker_set){
+					cnc->state = SEND_CNC_MARKER;
+				}
 			}
 			break;
 		}
@@ -94,6 +98,28 @@ void handle_state(struct cnc_state_struct* cnc){
 			}
 			break;
 		}
+		case GET_CONFIG : {
+			if(cnc->write_in_progress){
+				if(spi_check_write() > 0){
+					cnc->write_in_progress = 0;
+					cnc->state = CNC_IDLE;
+				}
+			} else {
+				if(spi_check_write() < 0){
+					// can't write, already writing
+					cnc->state = GET_CONFIG;
+				} else {
+					cnc->cnc_write_data[0] = (char) SET_CNC_CONFIG;
+					if(spi_set_write(cnc->cnc_write_data, 1) > 0){
+						cnc->write_in_progress = 1;
+					} else {
+						cnc->write_in_progress = 0;
+					}
+					cnc->state = GET_CONFIG;
+				}
+			}
+			break;
+		}
 		case SEND_CNC_PRINT : {
 			if(cnc->write_in_progress){
 				if(spi_check_write() > 0){
@@ -107,12 +133,37 @@ void handle_state(struct cnc_state_struct* cnc){
 				} else {
 					cnc->cnc_write_data[0] = (char) NEW_CNC_PRINT;
 					parse_print(cnc);
+					cnc->cnc_write_length = cnc->cnc_write_length + 1;
 					if(spi_set_write(cnc->cnc_write_data, cnc->cnc_write_length) > 0){
 						cnc->write_in_progress = 1;
 					} else {
 						cnc->write_in_progress = 0;
 					}
 					cnc->state = SEND_CNC_PRINT;
+				}
+			}
+			break;
+		}
+		case SEND_CNC_MARKER : {
+			if(cnc->write_in_progress){
+				if(spi_check_write() > 0){
+					cnc->write_in_progress = 0;
+					cnc->marker_set = 0;
+					cnc->state = CNC_IDLE;
+				}
+			} else {
+				if(spi_check_write() < 0){
+					// can't write, already writing
+					cnc->state = SEND_CNC_MARKER;
+				} else {
+					cnc->cnc_write_data[0] = (char) MARKER;
+					cnc->cnc_write_length = 1;
+					if(spi_set_write(cnc->cnc_write_data, cnc->cnc_write_length) > 0){
+						cnc->write_in_progress = 1;
+					} else {
+						cnc->write_in_progress = 0;
+					}
+					cnc->state = SEND_CNC_MARKER;
 				}
 			}
 			break;
@@ -135,6 +186,14 @@ void process_spi_request(struct cnc_state_struct* cnc){
 		}
 		case GET_CNC_STATUS : {
 			cnc->state = GET_STATUS;
+			break;
+		}
+		case SET_CNC_CONFIG : {
+			string_to_config(&cnc->config, &cnc->cnc_read_data[1]);
+			if(cnc->config.valid_config){
+				cnc->config.config_loaded = 1;
+			}
+			cnc_printf(cnc, "Received Configuration!");
 			break;
 		}
 		case NEW_CNC_PRINT : {

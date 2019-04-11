@@ -298,6 +298,9 @@ void check_instruction(struct cnc_state_struct* cnc){
 		if(valid_instruction){
 			// instruction isn't done
 		} else {
+			if(cnc->current_instruction.instant_instruction){
+				cnc->marker_set = 1;
+			}
 			clear_instruction(&cnc->current_instruction);
 		}
 	}
@@ -313,6 +316,7 @@ void check_instruction(struct cnc_state_struct* cnc){
 void copy_instruction(struct cnc_instruction_struct* new_instruction, struct cnc_instruction_struct* current_instruction){
 	//current_instruction->instruction_number = new_instruction->instruction_number;
 	current_instruction->instruction_valid = new_instruction->instruction_valid;
+	current_instruction->instant_instruction = new_instruction->instant_instruction;
 	current_instruction->instruction_set = 0;
 	current_instruction->opcode = new_instruction->opcode;
 	copy_motor_instruction(&new_instruction->aux, &current_instruction->aux);
@@ -398,7 +402,7 @@ void handle_instruction_opcodes(struct cnc_state_struct* cnc, struct cnc_instruc
 					if(cnc->write_in_progress){
 						// can't send status - already writing
 					} else {
-						instruction->opcode = RETURN_STATUS;
+						instruction->opcode = EMPTY_OPCODE;
 					}
 				}
 				break;
@@ -558,6 +562,7 @@ void handle_motor_opcode(struct cnc_state_struct* cnc, struct cnc_motor_instruct
 				if(motor->find_max){
 					if(motor->max_range_flag == ENDSTOP_HIT_OR_NO_POWER){
 						motor->find_max = 0;
+						motor->axis_length = motor->position;
 						instruction->opcode = EMPTY_OPCODE;
 					} else {
 						motor->move_count = 1;

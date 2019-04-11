@@ -1,8 +1,10 @@
-create status to string function and string to status function
+do arc move
+do config stuff
+do temperature stuff
+
 create error flags and bit fields in flags so cnc can set if errors happen
 create start of program sequence that enables motors
 create end of program sequence that disables motors
-create home sequence that runs to max in z and then to offset for zero
 create wait opcode and create wait function on cnc using the timers
 could use wait opcode to test interrupt speed and figure out clock...
 

@@ -9,7 +9,7 @@
 *.o
 *.geany
 *.gch
-*.cngf
+*.cnfg
 !./interface/default.cnfg
 *.kmf
 *.code-workspace

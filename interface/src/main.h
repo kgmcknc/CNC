@@ -21,6 +21,8 @@ struct interface_struct {
     struct cnc_status_struct machine_status;
     struct gcode_program_struct program;
 	uint8_t motors_enabled;
+    uint8_t machine_marker;
+    uint8_t machine_processing;
 	FILE* gcode_fp;
     char file_name[MAX_USER_COMMAND];
     char user_command[MAX_USER_COMMAND];

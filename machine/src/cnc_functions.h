@@ -16,7 +16,9 @@ enum cnc_state {
 	CNC_IDLE,
 	GET_STATUS,
 	GET_VERSION,
-	SEND_CNC_PRINT
+	GET_CONFIG,
+	SEND_CNC_PRINT,
+	SEND_CNC_MARKER
 };
 
 struct cnc_state_struct {
@@ -49,6 +51,7 @@ struct cnc_state_struct {
 	uint16_t instruction_rp;
 	uint16_t instruction_wp;
 	uint16_t instruction_fullness;
+	uint8_t marker_set;
 	// cnc_printf variables
 	char print_buffer[PRINT_DEPTH][MAX_PRINT_LENGTH];
 	uint8_t print_rp;

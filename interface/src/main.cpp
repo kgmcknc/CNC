@@ -122,6 +122,7 @@ void init_interface_struct(struct interface_struct* interface){
 	interface->read_complete = 0;
 	interface->write_in_progress = 0;
 	interface->write_complete = 0;
+	interface->machine_marker = 0;
 }
 
 uint8_t interface_main(struct interface_struct* interface){

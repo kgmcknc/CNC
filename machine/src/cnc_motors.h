@@ -185,9 +185,9 @@ void init_motors(struct cnc_motor_list_struct* motors);
 void init_motor(struct cnc_motor_struct* motor, const char* name);
 void handle_motors(struct cnc_state_struct* cnc);
 void handle_step(struct cnc_motor_struct* motor);
-void check_period(struct cnc_motor_list_struct* motors);
+void check_period(struct cnc_state_struct* cnc, struct cnc_motor_list_struct* motors);
 void step_motor_high(struct cnc_motor_struct* motor);
 void step_motor_low(struct cnc_motor_struct* motor);
-void check_direction(struct cnc_motor_struct* motor);
+void check_direction(struct cnc_state_struct* cnc, struct cnc_motor_struct* motor);
 
 #endif /* SRC_CNC_MOTORS_H_ */

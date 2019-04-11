@@ -197,7 +197,7 @@ void handle_motors(struct cnc_state_struct* cnc){
 		update_motors = 0;
 		process_motors(cnc->motors);
 		check_endstops(cnc->motors);
-		check_period(cnc->motors);
+		check_period(cnc, cnc->motors);
 		// check period and update if needed
 	}
 }
@@ -289,30 +289,30 @@ void step_motor_low(struct cnc_motor_struct* motor){
 	GPIO_PinOutClear(motor->ports.step_port, motor->pins.step_pin);
 }
 
-void check_period(struct cnc_motor_list_struct* motors){
-	check_direction(&motors->aux);
-	check_direction(&motors->extruder_0);
-	check_direction(&motors->extruder_1);
-	check_direction(&motors->xl_axis);
-	check_direction(&motors->yf_axis);
-	check_direction(&motors->zl_axis);
-	check_direction(&motors->zr_axis);
+void check_period(struct cnc_state_struct* cnc, struct cnc_motor_list_struct* motors){
+	check_direction(cnc, &motors->aux);
+	check_direction(cnc, &motors->extruder_0);
+	check_direction(cnc, &motors->extruder_1);
+	check_direction(cnc, &motors->xl_axis);
+	check_direction(cnc, &motors->yf_axis);
+	check_direction(cnc, &motors->zl_axis);
+	check_direction(cnc, &motors->zr_axis);
 }
 
-void check_direction(struct cnc_motor_struct* motor){
+void check_direction(struct cnc_state_struct* cnc, struct cnc_motor_struct* motor){
 	if(!motor->set && motor->move_count){
 		if(motor->max_range_flag){
 			if(motor->direction == MOTOR_MOVE_INCREASE){
 				set_motor_direction(motor, MOTOR_MOVE_DECREASE);
 				motor->move_count = 0;
-				cnc_printf(&cnc,"%s: Max Range Hit", motor->name);
+				cnc_printf(cnc,"%s: Max Range Hit", motor->name);
 			}
 		}
 		if(motor->min_range_flag){
 			if(motor->direction == MOTOR_MOVE_DECREASE){
 				set_motor_direction(motor, MOTOR_MOVE_INCREASE);
 				motor->move_count = 0;
-				cnc_printf(&cnc,"%s: Min Range Hit", motor->name);
+				cnc_printf(cnc,"%s: Min Range Hit", motor->name);
 			}
 		}
 		motor->step_timer = motor->period;
