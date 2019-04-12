@@ -203,7 +203,7 @@ uint16_t config_to_string(struct cnc_config_struct* config, char* string){
     offset = offset + 4;
 	memcpy(&string[offset], &config->zr_min_safe_pos, 4);
     offset = offset + 4;
-	memcpy(&string[offset], &config->rr_max_safe_pos, 4);
+	memcpy(&string[offset], &config->zr_max_safe_pos, 4);
     offset = offset + 4;
 	memcpy(&string[offset], &config->xl_min_home_pos, 4);
     offset = offset + 4;
@@ -225,7 +225,9 @@ uint16_t config_to_string(struct cnc_config_struct* config, char* string){
     offset = offset + 4;
 	memcpy(&string[offset], &config->y_axis_size, 4);
     offset = offset + 4;
-	memcpy(&string[offset], &config->z_axis_size, 4);
+	memcpy(&string[offset], &config->zr_axis_size, 4);
+    offset = offset + 4;
+    memcpy(&string[offset], &config->zl_axis_size, 4);
     return offset;
 }
 void string_to_config(struct cnc_config_struct* config, char* string){
@@ -250,7 +252,7 @@ void string_to_config(struct cnc_config_struct* config, char* string){
     offset = offset + 4;
 	memcpy(&config->zr_min_safe_pos, &string[offset], 4);
     offset = offset + 4;
-	memcpy(&config->rr_max_safe_pos, &string[offset], 4);
+	memcpy(&config->zr_max_safe_pos, &string[offset], 4);
     offset = offset + 4;
 	memcpy(&config->xl_min_home_pos, &string[offset], 4);
     offset = offset + 4;
@@ -272,7 +274,9 @@ void string_to_config(struct cnc_config_struct* config, char* string){
     offset = offset + 4;
 	memcpy(&config->y_axis_size, &string[offset], 4);
     offset = offset + 4;
-	memcpy(&config->z_axis_size, &string[offset], 4);
+	memcpy(&config->zl_axis_size, &string[offset], 4);
+    offset = offset + 4;
+	memcpy(&config->zr_axis_size, &string[offset], 4);
 }
 
 uint16_t status_to_string(struct cnc_status_struct* status, char* string){

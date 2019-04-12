@@ -249,8 +249,6 @@ void handle_cnc_state(struct interface_struct* interface){
 							interface->user_instruction.yf_axis.instruction_valid = 1;
 						}
 						if(interface->machine_marker){
-							printf("Manually adjust Zl and Zr for new safe position...\n");
-							printf("Press Enter When Finished\n");
 							configure_stage = 3;
 							configure_processing = 0;
 							interface->machine_marker = 0;
@@ -258,6 +256,29 @@ void handle_cnc_state(struct interface_struct* interface){
 						break;
 					}
 					case 3 : {
+						// Set position of Zl and Zr to 0 to count to new home position
+						if(!configure_processing){
+							printf("Setting Zl and Zr to 0...\n");
+							interface->user_instruction.instruction_valid = 1;
+							interface->user_instruction.instant_instruction = 1;
+							interface->user_instruction.opcode = POSITION_AXIS;
+							interface->user_instruction.zl_axis.opcode = POSITION_AXIS;
+							interface->user_instruction.zl_axis.move_count = 0;
+							interface->user_instruction.zl_axis.instruction_valid = 1;
+							interface->user_instruction.zr_axis.opcode = POSITION_AXIS;
+							interface->user_instruction.zr_axis.move_count = 0;
+							interface->user_instruction.zr_axis.instruction_valid = 1;
+						}
+						if(interface->machine_marker){
+							printf("Manually adjust Zl and Zr for new safe position...\n");
+							printf("Press Enter When Finished\n");
+							configure_stage = 4;
+							configure_processing = 0;
+							interface->machine_marker = 0;
+						}
+						break;
+					}
+					case 4 : {
 						// manually adjust zl and zr to create new safe position
 						if(interface->user_command_set){
 							interface->user_command_set = 0;
@@ -288,7 +309,7 @@ void handle_cnc_state(struct interface_struct* interface){
 								if(interface->user_input[0] == 13 || interface->user_input[0] == 10){
 									printf("Manually adjust Zl for new zero position...\n");
 									printf("Press Enter When Finished\n");
-									configure_stage = 4;
+									configure_stage = 5;
 									configure_processing = 0;
 									interface->machine_marker = 0;
 								}
@@ -296,7 +317,7 @@ void handle_cnc_state(struct interface_struct* interface){
 						}
 						break;
 					}
-					case 4 : {
+					case 5 : {
 						// get status and update safe position for xl
 						if(configure_processing){
 							if(interface->machine_marker){
@@ -304,7 +325,7 @@ void handle_cnc_state(struct interface_struct* interface){
 								interface->machine_config.zr_min_safe_pos = interface->machine_status.zr_position;
 								interface->machine_marker = 0;
 								configure_processing = 0;
-								configure_stage = 5;
+								configure_stage = 6;
 							}
 						} else {
 							if(!interface->write_in_progress){
@@ -319,7 +340,7 @@ void handle_cnc_state(struct interface_struct* interface){
 						}
 						break;
 					}
-					case 5 : {
+					case 6 : {
 						// manually adjust zl to zero position
 						if(interface->user_command_set){
 							interface->user_command_set = 0;
@@ -342,7 +363,7 @@ void handle_cnc_state(struct interface_struct* interface){
 								}
 							} else {
 								if(interface->user_input[0] == 13 || interface->user_input[0] == 10){
-									configure_stage = 6;
+									configure_stage = 7;
 									configure_processing = 0;
 									interface->machine_marker = 0;
 								}
@@ -350,7 +371,7 @@ void handle_cnc_state(struct interface_struct* interface){
 						}
 						break;
 					}
-					case 6 : {
+					case 7 : {
 						// measure x and y axis as we go from min to max
 						if(!configure_processing){
 							printf("Moving X and Y to max to measure bed and level...\n");
@@ -365,7 +386,7 @@ void handle_cnc_state(struct interface_struct* interface){
 							interface->user_instruction.yf_axis.current_period = MOVE_PERIOD;
 						}
 						if(interface->machine_marker){
-							configure_stage = 7;
+							configure_stage = 8;
 							configure_processing = 0;
 							interface->machine_marker = 0;
 							printf("Manually adjust ZR for new zero position...\n");
@@ -373,7 +394,7 @@ void handle_cnc_state(struct interface_struct* interface){
 						}
 						break;
 					}
-					case 7 : {
+					case 8 : {
 						// manually adjust zr to zero position
 						if(interface->user_command_set){
 							interface->user_command_set = 0;
@@ -396,7 +417,7 @@ void handle_cnc_state(struct interface_struct* interface){
 								}
 							} else {
 								if(interface->user_input[0] == 13 || interface->user_input[0] == 10){
-									configure_stage = 8;
+									configure_stage = 9;
 									configure_processing = 0;
 									interface->machine_marker = 0;
 								}
@@ -404,18 +425,22 @@ void handle_cnc_state(struct interface_struct* interface){
 						}
 						break;
 					}
-					case 8 : {
+					case 9 : {
 						// read cnc status to get zero positions and axis lengths
 						if(configure_processing){
 							if(interface->machine_marker){
-								interface->machine_config.zl_min_home_pos = interface->machine_status.zl_position;
-								interface->machine_config.zr_min_home_pos = interface->machine_status.zr_position;
+								interface->machine_config.zl_min_home_pos = 0;
+								interface->machine_config.zr_min_home_pos = 0;
+								interface->machine_config.zl_axis_size = -1*interface->machine_status.zl_position;
+								interface->machine_config.zr_axis_size = -1*interface->machine_status.zr_position;
+								interface->machine_config.zl_min_safe_pos = interface->machine_config.zl_min_safe_pos + interface->machine_config.zl_axis_size;
+								interface->machine_config.zr_min_safe_pos = interface->machine_config.zr_min_safe_pos + interface->machine_config.zr_axis_size;
 								interface->machine_config.x_axis_size = interface->machine_status.xl_position;
 								interface->machine_config.y_axis_size = interface->machine_status.yf_position;
 								interface->machine_marker = 0;
 								interface->machine_config.config_loaded = 1;
 								configure_processing = 0;
-								configure_stage = 9;
+								configure_stage = 10;
 							}
 						} else {
 							if(!interface->write_in_progress){
@@ -430,7 +455,28 @@ void handle_cnc_state(struct interface_struct* interface){
 						}
 						break;
 					}
-					case 9 : {
+					case 10 : {
+						// Set position of Zl and Zr to 0 to count to new home position
+						if(!configure_processing){
+							printf("Setting Zl and Zr to New 0...\n");
+							interface->user_instruction.instruction_valid = 1;
+							interface->user_instruction.instant_instruction = 1;
+							interface->user_instruction.opcode = POSITION_AXIS;
+							interface->user_instruction.zl_axis.opcode = POSITION_AXIS;
+							interface->user_instruction.zl_axis.move_count = 0;
+							interface->user_instruction.zl_axis.instruction_valid = 1;
+							interface->user_instruction.zr_axis.opcode = POSITION_AXIS;
+							interface->user_instruction.zr_axis.move_count = 0;
+							interface->user_instruction.zr_axis.instruction_valid = 1;
+						}
+						if(interface->machine_marker){
+							configure_stage = 11;
+							configure_processing = 0;
+							interface->machine_marker = 0;
+						}
+						break;
+					}
+					case 11 : {
 						// Move Y to front to level plate
 						if(!configure_processing){
 							printf("Moving Y to front to level bed...\n");
@@ -438,39 +484,6 @@ void handle_cnc_state(struct interface_struct* interface){
 							interface->user_instruction.instant_instruction = 1;
 							interface->user_instruction.yf_axis.instruction_valid = 1;
 							interface->user_instruction.yf_axis.opcode = ZERO_MOTOR;
-							interface->user_instruction.yf_axis.current_period = MOVE_PERIOD;
-						}
-						if(interface->machine_marker){
-							printf("Press Enter When Finished Leveling\n");
-							configure_stage = 10;
-							configure_processing = 0;
-							interface->machine_marker = 0;
-						}
-						break;
-					}
-					case 10 : {
-						// wait for enter to move to other axis
-						if(interface->user_command_set){
-							interface->user_command_set = 0;
-							if(interface->user_input[0] == 13 || interface->user_input[0] == 10){
-								configure_stage = 11;
-								configure_processing = 0;
-								interface->machine_marker = 0;
-							}
-						}
-						break;
-					}
-					case 11 : {
-						// measure x and y axis as we go from min to max
-						if(!configure_processing){
-							printf("Moving X to Left and Y to Front to Level Bed...\n");
-							interface->user_instruction.instruction_valid = 1;
-							interface->user_instruction.instant_instruction = 1;
-							interface->user_instruction.xl_axis.instruction_valid = 1;
-							interface->user_instruction.xl_axis.opcode = ZERO_MOTOR;
-							interface->user_instruction.xl_axis.current_period = MOVE_PERIOD;
-							interface->user_instruction.yf_axis.instruction_valid = 1;
-							interface->user_instruction.yf_axis.opcode = MAX_MOTOR;
 							interface->user_instruction.yf_axis.current_period = MOVE_PERIOD;
 						}
 						if(interface->machine_marker){
@@ -494,6 +507,39 @@ void handle_cnc_state(struct interface_struct* interface){
 						break;
 					}
 					case 13 : {
+						// measure x and y axis as we go from min to max
+						if(!configure_processing){
+							printf("Moving X to Left and Y to Front to Level Bed...\n");
+							interface->user_instruction.instruction_valid = 1;
+							interface->user_instruction.instant_instruction = 1;
+							interface->user_instruction.xl_axis.instruction_valid = 1;
+							interface->user_instruction.xl_axis.opcode = ZERO_MOTOR;
+							interface->user_instruction.xl_axis.current_period = MOVE_PERIOD;
+							interface->user_instruction.yf_axis.instruction_valid = 1;
+							interface->user_instruction.yf_axis.opcode = MAX_MOTOR;
+							interface->user_instruction.yf_axis.current_period = MOVE_PERIOD;
+						}
+						if(interface->machine_marker){
+							printf("Press Enter When Finished Leveling\n");
+							configure_stage = 14;
+							configure_processing = 0;
+							interface->machine_marker = 0;
+						}
+						break;
+					}
+					case 14 : {
+						// wait for enter to move to other axis
+						if(interface->user_command_set){
+							interface->user_command_set = 0;
+							if(interface->user_input[0] == 13 || interface->user_input[0] == 10){
+								configure_stage = 15;
+								configure_processing = 0;
+								interface->machine_marker = 0;
+							}
+						}
+						break;
+					}
+					case 15 : {
 						// enable all axis motors
 						if(!configure_processing){
 							printf("Disabled Motors for Config...\n");
@@ -516,14 +562,11 @@ void handle_cnc_state(struct interface_struct* interface){
 							interface->user_instruction.aux.opcode = DISABLE_MOTORS;
 						}
 						if(interface->machine_marker){
-							configure_stage = 14;
+							configure_stage = 0;
 							configure_processing = 0;
 							interface->machine_marker = 0;
+							interface->machine_state = SEND_CONFIG;
 						}
-						break;
-					}
-					case 14 : {
-						interface->machine_state = SEND_CONFIG;
 						break;
 					}
 					default : {

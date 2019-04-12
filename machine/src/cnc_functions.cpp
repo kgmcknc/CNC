@@ -192,6 +192,7 @@ void process_spi_request(struct cnc_state_struct* cnc){
 			string_to_config(&cnc->config, &cnc->cnc_read_data[1]);
 			if(cnc->config.valid_config){
 				cnc->config.config_loaded = 1;
+				load_config(cnc);
 			}
 			cnc_printf(cnc, "Received Configuration!");
 			break;
@@ -293,4 +294,21 @@ void cnc_printf(struct cnc_state_struct* cnc, const char* print_string, ...){
 	strcpy(cnc->print_buffer[cnc->print_wp], full_string);
 	cnc->print_wp = (cnc->print_wp < (PRINT_DEPTH-1)) ? (cnc->print_wp + 1) : 0;
 	cnc->print_fullness++;
+}
+
+void load_config(struct cnc_state_struct* cnc){
+	cnc->motors->xl_axis.axis_length = cnc->config.x_axis_size;
+	cnc->motors->yf_axis.axis_length = cnc->config.y_axis_size;
+	cnc->motors->zl_axis.axis_length = cnc->config.zl_axis_size;
+	cnc->motors->zr_axis.axis_length = cnc->config.zr_axis_size;
+
+	cnc->motors->xl_axis.safe_position = cnc->config.xl_min_safe_pos;
+	cnc->motors->yf_axis.safe_position = cnc->config.yf_min_safe_pos;
+	cnc->motors->zl_axis.safe_position = cnc->config.zl_min_safe_pos;
+	cnc->motors->zr_axis.safe_position = cnc->config.zr_min_safe_pos;
+
+	cnc->motors->xl_axis.home_position = cnc->config.xl_min_home_pos;
+	cnc->motors->yf_axis.home_position = cnc->config.yf_min_home_pos;
+	cnc->motors->zl_axis.home_position = cnc->config.zl_min_home_pos;
+	cnc->motors->zr_axis.home_position = cnc->config.zr_min_home_pos;
 }

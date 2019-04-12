@@ -110,7 +110,7 @@ struct cnc_config_struct {
 	uint64_t zl_min_safe_pos;
 	uint64_t zl_max_safe_pos;
 	uint64_t zr_min_safe_pos;
-	uint64_t rr_max_safe_pos;
+	uint64_t zr_max_safe_pos;
 	uint64_t xl_min_home_pos;
 	uint64_t xr_max_home_pos;
 	uint64_t yf_min_home_pos;
@@ -121,7 +121,8 @@ struct cnc_config_struct {
 	uint64_t zr_max_home_pos;
 	uint64_t x_axis_size;
 	uint64_t y_axis_size;
-	uint64_t z_axis_size;
+	uint64_t zl_axis_size;
+	uint64_t zr_axis_size;
 };
 
 struct cnc_status_struct {
@@ -133,13 +134,13 @@ struct cnc_status_struct {
 	uint8_t zl_max_flag;
 	uint8_t zr_min_flag;
 	uint8_t zr_max_flag;
-	uint64_t ex0_position;
-	uint64_t ex1_position;
-	uint64_t aux_position;
-	uint64_t xl_position;
-	uint64_t yf_position;
-	uint64_t zl_position;
-	uint64_t zr_position;
+	int64_t ex0_position;
+	int64_t ex1_position;
+	int64_t aux_position;
+	int64_t xl_position;
+	int64_t yf_position;
+	int64_t zl_position;
+	int64_t zr_position;
 	double heater_0_temp;
 	double heater_1_temp;
 	double heater_2_temp;

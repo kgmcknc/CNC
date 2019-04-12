@@ -69,5 +69,6 @@ void parse_status(struct cnc_state_struct* cnc);
 void update_status(struct cnc_state_struct* cnc);
 void parse_print(struct cnc_state_struct* cnc);
 void parse_version(struct cnc_state_struct* cnc);
+void load_config(struct cnc_state_struct* cnc);
 
 #endif /* SRC_CNC_FUNCTIONS_H_ */
