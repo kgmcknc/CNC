@@ -29,6 +29,10 @@ void handle_cnc_state(struct interface_struct* interface){
 				receive_user_input(interface);
 				if(interface->user_command_finished){
 					interface->machine_state = PROCESS_INPUT;
+				} else {
+					/*if(interface->spi_connected && !interface->machine_configured){
+						interface->machine_state = SEND_CONFIG;
+					}*/
 				}
 			//}
 			break;
@@ -117,6 +121,7 @@ void handle_cnc_state(struct interface_struct* interface){
 					interface->write_in_progress = 0;
 					printf("Sent Config Data\n");
 					save_config_file(&interface->machine_config);
+					interface->machine_configured = 1;
 					interface->machine_state = MACHINE_IDLE;
 				}
 			} else {
@@ -429,10 +434,15 @@ void handle_cnc_state(struct interface_struct* interface){
 						// read cnc status to get zero positions and axis lengths
 						if(configure_processing){
 							if(interface->machine_marker){
+								interface->machine_config.ramp_period = RAMP_PERIOD;
+								interface->machine_config.xl_min_home_pos = 0;
+								interface->machine_config.yf_min_home_pos = 0;
 								interface->machine_config.zl_min_home_pos = 0;
 								interface->machine_config.zr_min_home_pos = 0;
 								interface->machine_config.zl_axis_size = -1*interface->machine_status.zl_position;
 								interface->machine_config.zr_axis_size = -1*interface->machine_status.zr_position;
+								interface->machine_config.xl_min_safe_pos = 0;
+								interface->machine_config.yf_min_safe_pos = 0;
 								interface->machine_config.zl_min_safe_pos = interface->machine_config.zl_min_safe_pos + interface->machine_config.zl_axis_size;
 								interface->machine_config.zr_min_safe_pos = interface->machine_config.zr_min_safe_pos + interface->machine_config.zr_axis_size;
 								interface->machine_config.x_axis_size = interface->machine_status.xl_position;
@@ -902,13 +912,13 @@ void process_spi_request(struct interface_struct* interface){
 			printf("CNC ZL Max: %d\n", interface->machine_status.zl_max_flag);
 			printf("CNC ZR Min: %d\n", interface->machine_status.zr_min_flag);
 			printf("CNC ZR Max: %d\n", interface->machine_status.zr_max_flag);
-			printf("CNC EX0 Pos: %llu\n", interface->machine_status.ex0_position);
-			printf("CNC EX1 Pos: %llu\n", interface->machine_status.ex1_position);
-			printf("CNC AUX Pos: %llu\n", interface->machine_status.aux_position);
-			printf("CNC XL Pos: %llu\n", interface->machine_status.xl_position);
-			printf("CNC YF Pos: %llu\n", interface->machine_status.yf_position);
-			printf("CNC ZL Pos: %llu\n", interface->machine_status.zl_position);
-			printf("CNC ZR Pos: %llu\n", interface->machine_status.zr_position);
+			printf("CNC EX0 Pos: %lld\n", interface->machine_status.ex0_position);
+			printf("CNC EX1 Pos: %lld\n", interface->machine_status.ex1_position);
+			printf("CNC AUX Pos: %lld\n", interface->machine_status.aux_position);
+			printf("CNC XL Pos: %lld\n", interface->machine_status.xl_position);
+			printf("CNC YF Pos: %lld\n", interface->machine_status.yf_position);
+			printf("CNC ZL Pos: %lld\n", interface->machine_status.zl_position);
+			printf("CNC ZR Pos: %lld\n", interface->machine_status.zr_position);
 			printf("CNC H0 Temp: %lf\n", interface->machine_status.heater_0_temp);
 			printf("CNC H1 Temp: %lf\n", interface->machine_status.heater_1_temp);
 			printf("CNC H2 Temp: %lf\n", interface->machine_status.heater_2_temp);
@@ -1030,6 +1040,22 @@ void handle_input(struct interface_struct* interface){
 			}
 			case 'l' : {
 				interface->machine_state = SEND_CONFIG;
+				break;
+			}
+			case 's' : {
+				printf("Config: X Min Home: %lld\n", interface->machine_config.xl_min_home_pos);
+				printf("Config: X Min Safe: %lld\n", interface->machine_config.xl_min_safe_pos);
+				printf("Config: Y Min Home: %lld\n", interface->machine_config.yf_min_home_pos);
+				printf("Config: Y Min Safe: %lld\n", interface->machine_config.yf_min_safe_pos);
+				printf("Config: Zl Min Home: %lld\n", interface->machine_config.zl_min_home_pos);
+				printf("Config: Zl Min Safe: %lld\n", interface->machine_config.zl_min_safe_pos);
+				printf("Config: Zr Min Home: %lld\n", interface->machine_config.zr_min_home_pos);
+				printf("Config: Zr Min Safe: %lld\n", interface->machine_config.zr_min_safe_pos);
+				printf("Config: X  Axis Length: %lld\n", interface->machine_config.x_axis_size);
+				printf("Config: Y  Axis Length: %lld\n", interface->machine_config.y_axis_size);
+				printf("Config: ZL  Axis Length: %lld\n", interface->machine_config.zl_axis_size);
+				printf("Config: ZR  Axis Length: %lld\n", interface->machine_config.zr_axis_size);
+				printf("Config: Ramp: %d\n", interface->machine_config.ramp_period);
 				break;
 			}
 			default : {

@@ -61,8 +61,10 @@ struct cnc_motor_struct {
 	int64_t axis_length;
 	int64_t safe_position;
 	int64_t home_position;
+	int32_t ramp_count;
 	int32_t move_count;
 	uint32_t period;
+	uint32_t current_period;
 	uint32_t step_timer;
 	char name[MAX_MOTOR_NAME_LENGTH] = {};
 	struct cnc_motor_port_struct ports;
@@ -185,9 +187,11 @@ void init_motors(struct cnc_motor_list_struct* motors);
 void init_motor(struct cnc_motor_struct* motor, const char* name);
 void handle_motors(struct cnc_state_struct* cnc);
 void handle_step(struct cnc_motor_struct* motor);
-void check_period(struct cnc_state_struct* cnc, struct cnc_motor_list_struct* motors);
+void check_periods(struct cnc_state_struct* cnc, struct cnc_motor_list_struct* motors);
+void check_period(struct cnc_state_struct* cnc, struct cnc_motor_struct* motors);
 void step_motor_high(struct cnc_motor_struct* motor);
 void step_motor_low(struct cnc_motor_struct* motor);
+void check_directions(struct cnc_state_struct* cnc, struct cnc_motor_list_struct* motor);
 void check_direction(struct cnc_state_struct* cnc, struct cnc_motor_struct* motor);
 
 #endif /* SRC_CNC_MOTORS_H_ */

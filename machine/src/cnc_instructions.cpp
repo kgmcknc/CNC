@@ -183,13 +183,13 @@ void set_instruction(struct cnc_state_struct* cnc){
 		if(cnc->current_instruction.instruction_set){
 			// instruction already been set to functions
 		} else {
-			set_motor_instruction(&cnc->current_instruction.aux, &cnc->motors->aux);
-			set_motor_instruction(&cnc->current_instruction.extruder_0, &cnc->motors->extruder_0);
-			set_motor_instruction(&cnc->current_instruction.extruder_1, &cnc->motors->extruder_1);
-			set_motor_instruction(&cnc->current_instruction.xl_axis, &cnc->motors->xl_axis);
-			set_motor_instruction(&cnc->current_instruction.yf_axis, &cnc->motors->yf_axis);
-			set_motor_instruction(&cnc->current_instruction.zl_axis, &cnc->motors->zl_axis);
-			set_motor_instruction(&cnc->current_instruction.zr_axis, &cnc->motors->zr_axis);
+			set_motor_instruction(cnc, &cnc->current_instruction.aux, &cnc->motors->aux);
+			set_motor_instruction(cnc, &cnc->current_instruction.extruder_0, &cnc->motors->extruder_0);
+			set_motor_instruction(cnc, &cnc->current_instruction.extruder_1, &cnc->motors->extruder_1);
+			set_motor_instruction(cnc, &cnc->current_instruction.xl_axis, &cnc->motors->xl_axis);
+			set_motor_instruction(cnc, &cnc->current_instruction.yf_axis, &cnc->motors->yf_axis);
+			set_motor_instruction(cnc, &cnc->current_instruction.zl_axis, &cnc->motors->zl_axis);
+			set_motor_instruction(cnc, &cnc->current_instruction.zr_axis, &cnc->motors->zr_axis);
 			set_heater_instruction(&cnc->current_instruction.heater_0, &cnc->heaters->heater_0);
 			set_heater_instruction(&cnc->current_instruction.heater_1, &cnc->heaters->heater_1);
 			set_heater_instruction(&cnc->current_instruction.heater_2, &cnc->heaters->heater_2);
@@ -201,10 +201,12 @@ void set_instruction(struct cnc_state_struct* cnc){
 	}
 }
 
-void set_motor_instruction(struct cnc_motor_instruction_struct* current_instruction, struct cnc_motor_struct* motor){
+void set_motor_instruction(struct cnc_state_struct* cnc, struct cnc_motor_instruction_struct* current_instruction, struct cnc_motor_struct* motor){
 	if(current_instruction->instruction_valid){
 		motor->move_count = current_instruction->move_count;
 		motor->period = current_instruction->current_period;
+		motor->current_period = current_instruction->current_period + cnc->config.ramp_period;
+		motor->ramp_count = cnc->config.ramp_period;
 		if(motor->move_count > 0){
 			set_motor_direction(motor, MOTOR_MOVE_INCREASE);
 		} else {
@@ -362,10 +364,12 @@ void handle_instruction_opcodes(struct cnc_state_struct* cnc, struct cnc_instruc
 	handle_motor_opcode(cnc, &instruction->aux, &cnc->motors->aux);
 	handle_motor_opcode(cnc, &instruction->extruder_0, &cnc->motors->extruder_0);
 	handle_motor_opcode(cnc, &instruction->extruder_1, &cnc->motors->extruder_1);
-	handle_motor_opcode(cnc, &instruction->xl_axis, &cnc->motors->xl_axis);
-	handle_motor_opcode(cnc, &instruction->yf_axis, &cnc->motors->yf_axis);
 	handle_motor_opcode(cnc, &instruction->zl_axis, &cnc->motors->zl_axis);
 	handle_motor_opcode(cnc, &instruction->zr_axis, &cnc->motors->zr_axis);
+	if((instruction->zl_axis.opcode != HOME_AXIS) && (instruction->zr_axis.opcode != HOME_AXIS)){
+		handle_motor_opcode(cnc, &instruction->xl_axis, &cnc->motors->xl_axis);
+		handle_motor_opcode(cnc, &instruction->yf_axis, &cnc->motors->yf_axis);
+	}
 	handle_heater_opcode(cnc, &instruction->heater_0, &cnc->heaters->heater_0);
 	handle_heater_opcode(cnc, &instruction->heater_1, &cnc->heaters->heater_1);
 	handle_heater_opcode(cnc, &instruction->heater_2, &cnc->heaters->heater_2);
@@ -517,20 +521,21 @@ void handle_motor_opcode(struct cnc_state_struct* cnc, struct cnc_motor_instruct
 				if(motor->find_max){
 					if(motor->max_range_flag == ENDSTOP_HIT_OR_NO_POWER){
 						motor->find_max = 0;
+						motor->position = motor->axis_length;
 						motor->move_count = motor->home_position - motor->position;
 						set_motor_direction(motor, MOTOR_MOVE_DECREASE);
 						instruction->opcode = EMPTY_OPCODE;
 					} else {
-						motor->move_count = 1;
+						motor->move_count = 2147483647;
 						set_motor_direction(motor, MOTOR_MOVE_INCREASE);
 					}
 				} else {
 					if(motor->max_range_flag == ENDSTOP_HIT_OR_NO_POWER){
-						motor->move_count = -1;
+						motor->move_count = -2147483647;
 						set_motor_direction(motor, MOTOR_MOVE_DECREASE);
 					} else {
 						motor->find_max = 1;
-						motor->move_count = 1;
+						motor->move_count = 2147483647;
 						set_motor_direction(motor, MOTOR_MOVE_INCREASE);
 					}
 				}
@@ -544,17 +549,17 @@ void handle_motor_opcode(struct cnc_state_struct* cnc, struct cnc_motor_instruct
 						motor->find_zero = 0;
 						motor->find_max = 1;
 					} else {
-						motor->move_count = -1;
+						motor->move_count = -2147483647;
 						set_motor_direction(motor, MOTOR_MOVE_DECREASE);
 					}
 				} else {
 					if(!motor->find_max){
 						if(motor->min_range_flag == ENDSTOP_HIT_OR_NO_POWER){
-							motor->move_count = 1;
+							motor->move_count = 2147483647;
 							set_motor_direction(motor, MOTOR_MOVE_INCREASE);
 						} else {
 							motor->find_zero = 1;
-							motor->move_count = -1;
+							motor->move_count = -2147483647;
 							set_motor_direction(motor, MOTOR_MOVE_DECREASE);
 						}
 					}
@@ -565,7 +570,7 @@ void handle_motor_opcode(struct cnc_state_struct* cnc, struct cnc_motor_instruct
 						motor->axis_length = motor->position;
 						instruction->opcode = EMPTY_OPCODE;
 					} else {
-						motor->move_count = 1;
+						motor->move_count = 2147483647;
 						set_motor_direction(motor, MOTOR_MOVE_INCREASE);
 					}
 				}
@@ -588,16 +593,16 @@ void handle_motor_opcode(struct cnc_state_struct* cnc, struct cnc_motor_instruct
 						motor->find_zero = 0;
 						instruction->opcode = EMPTY_OPCODE;
 					} else {
-						motor->move_count = -1;
+						motor->move_count = -2147483647;
 						set_motor_direction(motor, MOTOR_MOVE_DECREASE);
 					}
 				} else {
 					if(motor->min_range_flag == ENDSTOP_HIT_OR_NO_POWER){
-						motor->move_count = 1;
+						motor->move_count = 2147483647;
 						set_motor_direction(motor, MOTOR_MOVE_INCREASE);
 					} else {
-						motor->find_zero = 1;
-						motor->move_count = -1;
+						motor->find_zero = 8*sizeof(motor->move_count)-1;
+						motor->move_count = -2147483647;
 						set_motor_direction(motor, MOTOR_MOVE_DECREASE);
 					}
 				}
@@ -609,16 +614,16 @@ void handle_motor_opcode(struct cnc_state_struct* cnc, struct cnc_motor_instruct
 						motor->find_max = 0;
 						instruction->opcode = EMPTY_OPCODE;
 					} else {
-						motor->move_count = 1;
+						motor->move_count = 2147483647;
 						set_motor_direction(motor, MOTOR_MOVE_INCREASE);
 					}
 				} else {
 					if(motor->max_range_flag == ENDSTOP_HIT_OR_NO_POWER){
-						motor->move_count = -1;
+						motor->move_count = -2147483647;
 						set_motor_direction(motor, MOTOR_MOVE_DECREASE);
 					} else {
 						motor->find_max = 1;
-						motor->move_count = 1;
+						motor->move_count = 2147483647;
 						set_motor_direction(motor, MOTOR_MOVE_INCREASE);
 					}
 				}

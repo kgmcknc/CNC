@@ -25,6 +25,8 @@ void init_cnc(struct cnc_state_struct* cnc){
 	cnc->read_complete = 0;
 	cnc->read_in_progress = 0;
 	cnc->marker_set = 0;
+	cnc->spi_connected = 0;
+	cnc->config_loaded = 0;
 
 	for(print_count=0;print_count<PRINT_DEPTH;print_count++){
 		cnc->print_buffer[print_count][0] = 0; // use % to mark end of print string
@@ -45,6 +47,10 @@ void handle_state(struct cnc_state_struct* cnc){
 			} else {
 				if(cnc->marker_set){
 					cnc->state = SEND_CNC_MARKER;
+				} else {
+					if(cnc->spi_connected && !cnc->config_loaded){
+						cnc->state = GET_CONFIG;
+					}
 				}
 			}
 			break;
@@ -102,6 +108,7 @@ void handle_state(struct cnc_state_struct* cnc){
 			if(cnc->write_in_progress){
 				if(spi_check_write() > 0){
 					cnc->write_in_progress = 0;
+					cnc->config_loaded = 1;
 					cnc->state = CNC_IDLE;
 				}
 			} else {
@@ -195,6 +202,7 @@ void process_spi_request(struct cnc_state_struct* cnc){
 				load_config(cnc);
 			}
 			cnc_printf(cnc, "Received Configuration!");
+			cnc->state = CNC_IDLE;
 			break;
 		}
 		case NEW_CNC_PRINT : {

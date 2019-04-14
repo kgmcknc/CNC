@@ -123,10 +123,12 @@ void init_interface_struct(struct interface_struct* interface){
 	interface->write_in_progress = 0;
 	interface->write_complete = 0;
 	interface->machine_marker = 0;
+	interface->spi_connected = 0;
+	interface->machine_configured = 0;
 }
 
 uint8_t interface_main(struct interface_struct* interface){
-	handle_spi();
+	interface->spi_connected = handle_spi();
 	handle_cnc_state(interface);
 	
 	return 0;

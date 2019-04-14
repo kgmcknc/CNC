@@ -8,6 +8,7 @@
 #include "cnc_motors.h"
 #include "cnc_timers.h"
 #include "cnc_functions.h"
+#include "math.h"
 
 uint8_t update_motors = 0;
 uint8_t update_pid = 0;
@@ -129,15 +130,21 @@ void init_motors(struct cnc_motor_list_struct* motors){
 
 void init_motor(cnc_motor_struct* motor, const char* name){
 	disable_motor(motor);
-	motor->direction = 0;
+	motor->direction = MOTOR_STILL;
+	motor->axis_length = 0;
+	motor->max_range_flag = 0;
+	motor->min_range_flag = 0;
+	motor->step_high = 0;
 	motor->position = 10000;
 	motor->home_position = 0;
 	motor->safe_position = 0;
 	motor->move_count = 0;
+	motor->ramp_count = 0;
 	motor->set = 0;
 	motor->homed = 0;
 	check_endstop(motor);
 	motor->period = 10000; // HIGH VALUE AT FIRST AS DEFAULT
+	motor->current_period = 10000;
 	motor->step_timer = 0;
 	motor->find_zero = 0;
 	motor->find_max = 0;
@@ -197,8 +204,8 @@ void handle_motors(struct cnc_state_struct* cnc){
 		update_motors = 0;
 		process_motors(cnc->motors);
 		check_endstops(cnc->motors);
-		check_period(cnc, cnc->motors);
-		// check period and update if needed
+		check_directions(cnc, cnc->motors);
+		check_periods(cnc, cnc->motors);
 	}
 }
 
@@ -231,14 +238,6 @@ void check_endstops(struct cnc_motor_list_struct* motors){
 	motors->extruder_1.max_range_flag = ENDSTOP_NOT_HIT;
 	motors->aux.min_range_flag = ENDSTOP_NOT_HIT;
 	motors->aux.max_range_flag = ENDSTOP_NOT_HIT;
-	/*if(motors->zl_axis.min_range_flag == ENDSTOP_HIT_OR_NO_POWER)
-		motors->zr_axis.min_range_flag = ENDSTOP_HIT_OR_NO_POWER;
-	if(motors->zl_axis.max_range_flag == ENDSTOP_HIT_OR_NO_POWER)
-			motors->zr_axis.max_range_flag = ENDSTOP_HIT_OR_NO_POWER;
-	if(motors->zr_axis.min_range_flag == ENDSTOP_HIT_OR_NO_POWER)
-			motors->zl_axis.min_range_flag = ENDSTOP_HIT_OR_NO_POWER;
-	if(motors->zr_axis.max_range_flag == ENDSTOP_HIT_OR_NO_POWER)
-			motors->zl_axis.max_range_flag = ENDSTOP_HIT_OR_NO_POWER;*/
 }
 
 void handle_step(struct cnc_motor_struct* motor){
@@ -289,7 +288,7 @@ void step_motor_low(struct cnc_motor_struct* motor){
 	GPIO_PinOutClear(motor->ports.step_port, motor->pins.step_pin);
 }
 
-void check_period(struct cnc_state_struct* cnc, struct cnc_motor_list_struct* motors){
+void check_directions(struct cnc_state_struct* cnc, struct cnc_motor_list_struct* motors){
 	check_direction(cnc, &motors->aux);
 	check_direction(cnc, &motors->extruder_0);
 	check_direction(cnc, &motors->extruder_1);
@@ -299,23 +298,61 @@ void check_period(struct cnc_state_struct* cnc, struct cnc_motor_list_struct* mo
 	check_direction(cnc, &motors->zr_axis);
 }
 
+void check_periods(struct cnc_state_struct* cnc, struct cnc_motor_list_struct* motors){
+	check_period(cnc, &motors->aux);
+	check_period(cnc, &motors->extruder_0);
+	check_period(cnc, &motors->extruder_1);
+	check_period(cnc, &motors->xl_axis);
+	check_period(cnc, &motors->yf_axis);
+	check_period(cnc, &motors->zl_axis);
+	check_period(cnc, &motors->zr_axis);
+}
+
 void check_direction(struct cnc_state_struct* cnc, struct cnc_motor_struct* motor){
 	if(!motor->set && motor->move_count){
 		if(motor->max_range_flag){
 			if(motor->direction == MOTOR_MOVE_INCREASE){
-				set_motor_direction(motor, MOTOR_MOVE_DECREASE);
+				set_motor_direction(motor, MOTOR_STILL);
 				motor->move_count = 0;
+				step_motor_low(motor);
+				motor->step_high = 0;
 				cnc_printf(cnc,"%s: Max Range Hit", motor->name);
 			}
 		}
 		if(motor->min_range_flag){
 			if(motor->direction == MOTOR_MOVE_DECREASE){
-				set_motor_direction(motor, MOTOR_MOVE_INCREASE);
+				set_motor_direction(motor, MOTOR_STILL);
 				motor->move_count = 0;
+				step_motor_low(motor);
+				motor->step_high = 0;
 				cnc_printf(cnc,"%s: Min Range Hit", motor->name);
 			}
 		}
-		motor->step_timer = motor->period;
+	}
+}
+
+void check_period(struct cnc_state_struct* cnc, struct cnc_motor_struct* motor){
+	// here is where I would check ramping up and down, arc moves and anything else...
+	if(!motor->set && motor->move_count){
+		// adjust speed for ramping
+		motor->current_period = motor->period + motor->ramp_count;
+		if(abs(motor->move_count) > (cnc->config.ramp_period - motor->ramp_count)){
+			// ramping up to faster speed
+			if(motor->ramp_count > 0){
+				motor->ramp_count = motor->ramp_count - 1;
+			}
+		} else {
+			// ramping down to slower speed
+			if(motor->ramp_count < cnc->config.ramp_period){
+				motor->ramp_count = motor->ramp_count + 1;
+			}
+		}
+
+		// adjust speed for arc moves
+		// bias for arc here somehow...
+
+		motor->step_timer = motor->current_period;
+		//motor->step_timer = motor->period;
 		motor->set = 1;
 	}
 }

@@ -461,13 +461,13 @@ int check_gcode_instruction(struct cnc_instruction_struct* instruction){
     if(instruction->opcode == HOME_AXIS){
         uint8_t axis_set = 0;
         // check for x y or z home being set, if not... set all
-        axis_set = axis_set | (instruction->xl_axis.opcode == HOME_AXIS);
-        axis_set = axis_set | (instruction->yf_axis.opcode == HOME_AXIS);
+        axis_set = axis_set | (instruction->xl_axis.opcode == ZERO_MOTOR);
+        axis_set = axis_set | (instruction->yf_axis.opcode == ZERO_MOTOR);
         axis_set = axis_set | (instruction->zl_axis.opcode == HOME_AXIS);
         axis_set = axis_set | (instruction->zr_axis.opcode == HOME_AXIS);
         if(!axis_set){
-            instruction->xl_axis.opcode = HOME_AXIS;
-            instruction->yf_axis.opcode = HOME_AXIS;
+            instruction->xl_axis.opcode = ZERO_MOTOR;
+            instruction->yf_axis.opcode = ZERO_MOTOR;
             instruction->zl_axis.opcode = HOME_AXIS;
             instruction->zr_axis.opcode = HOME_AXIS;
         }
@@ -1554,7 +1554,7 @@ int parse_gcode_word(char* line, uint16_t* line_count, struct gcode_program_stru
                 }
             } else {
                 if(program->instruction[program->instruction_wp].opcode == HOME_AXIS){
-                    program->instruction[program->instruction_wp].xl_axis.opcode = HOME_AXIS;
+                    program->instruction[program->instruction_wp].xl_axis.opcode = ZERO_MOTOR;
                     program->instruction[program->instruction_wp].xl_axis.current_position = 0.0;
                 } else {
                     if(program->instruction[program->instruction_wp].opcode == POSITION_AXIS){
@@ -1601,7 +1601,7 @@ int parse_gcode_word(char* line, uint16_t* line_count, struct gcode_program_stru
                 }
             } else {
                 if(program->instruction[program->instruction_wp].opcode == HOME_AXIS){
-                    program->instruction[program->instruction_wp].yf_axis.opcode = HOME_AXIS;
+                    program->instruction[program->instruction_wp].yf_axis.opcode = ZERO_MOTOR;
                     program->instruction[program->instruction_wp].yf_axis.current_position = 0.0;
                 } else {
                     if(program->instruction[program->instruction_wp].opcode == POSITION_AXIS){

@@ -10,9 +10,10 @@
 
 #include <stdint.h>
 
-#define MOTOR_TIMER_CLOCK (double) 48000000
+#define RAMP_PERIOD 0 // start/end period of ramp... should be slow
+#define MOTOR_TIMER_FREQ (double) 48000000
 #define MOTOR_TOP_COUNT (double) 1000
-#define STEPS_PER_SECOND (((double) MOTOR_TIMER_CLOCK)/MOTOR_TOP_COUNT)
+#define STEPS_PER_SECOND (((double) MOTOR_TIMER_FREQ)/MOTOR_TOP_COUNT)
 #define STEPS_PER_MINUTE (((double) STEPS_PER_SECOND)*60)
 #define MOTOR_STEPS_PER_REV (double) 200
 #define MOTOR_STEP_FACTOR (((double) 1)/8)
@@ -22,7 +23,7 @@
 #define STEPS_PER_MM (((double) STEPS_PER_REV)*REVS_PER_MM)
 #define STEPS_PER_IN (((double) STEPS_PER_REV)*REVS_PER_IN)
 
-#define MOVE_PERIOD 4
+#define MOVE_PERIOD 4 // period of fast movement
 
 enum CNC_OPCODES {
 	GET_CNC_VERSION,
@@ -77,25 +78,27 @@ enum INSTRUCTION_OPCODE {
 	0, /* uint8_t valid_config; */ \
 	0, /* double max_speed; */ \
 	0, /* double min_speed; */ \
-	0, /* uint64_t xl_min_safe_pos; */ \
-	0, /* uint64_t xr_max_safe_pos; */ \
-	0, /* uint64_t yf_min_safe_pos; */ \
-	0, /* uint64_t yb_max_safe_pos; */ \
-	0, /* uint64_t zl_min_safe_pos; */ \
-	0, /* uint64_t zl_max_safe_pos; */ \
-	0, /* uint64_t zr_min_safe_pos; */ \
-	0, /* uint64_t rr_max_safe_pos; */ \
-	0, /* uint64_t xl_min_home_pos; */ \
-	0, /* uint64_t xr_max_home_pos; */ \
-	0, /* uint64_t yf_min_home_pos; */ \
-	0, /* uint64_t yb_max_home_pos; */ \
-	0, /* uint64_t zl_min_home_pos; */ \
-	0, /* uint64_t zl_max_home_pos; */ \
-	0, /* uint64_t zr_min_home_pos; */ \
-	0, /* uint64_t zr_max_home_pos; */ \
+	0, /* uint32_t ramp_period; */ \
+	0, /* int64_t xl_min_safe_pos; */ \
+	0, /* int64_t xr_max_safe_pos; */ \
+	0, /* int64_t yf_min_safe_pos; */ \
+	0, /* int64_t yb_max_safe_pos; */ \
+	0, /* int64_t zl_min_safe_pos; */ \
+	0, /* int64_t zl_max_safe_pos; */ \
+	0, /* int64_t zr_min_safe_pos; */ \
+	0, /* int64_t rr_max_safe_pos; */ \
+	0, /* int64_t xl_min_home_pos; */ \
+	0, /* int64_t xr_max_home_pos; */ \
+	0, /* int64_t yf_min_home_pos; */ \
+	0, /* int64_t yb_max_home_pos; */ \
+	0, /* int64_t zl_min_home_pos; */ \
+	0, /* int64_t zl_max_home_pos; */ \
+	0, /* int64_t zr_min_home_pos; */ \
+	0, /* int64_t zr_max_home_pos; */ \
 	0, /* uint64_t x_axis_size; */ \
 	0, /* uint64_t y_axis_size; */ \
-	0  /* uint64_t z_axis_size; */ \
+	0, /* uint64_t zl_axis_size; */ \
+	0  /* uint64_t zr_axis_size; */ \
 };
 
 struct cnc_config_struct {
@@ -103,22 +106,23 @@ struct cnc_config_struct {
 	uint8_t valid_config;
 	double max_speed;
 	double min_speed;
-	uint64_t xl_min_safe_pos;
-	uint64_t xr_max_safe_pos;
-	uint64_t yf_min_safe_pos;
-	uint64_t yb_max_safe_pos;
-	uint64_t zl_min_safe_pos;
-	uint64_t zl_max_safe_pos;
-	uint64_t zr_min_safe_pos;
-	uint64_t zr_max_safe_pos;
-	uint64_t xl_min_home_pos;
-	uint64_t xr_max_home_pos;
-	uint64_t yf_min_home_pos;
-	uint64_t yb_max_home_pos;
-	uint64_t zl_min_home_pos;
-	uint64_t zl_max_home_pos;
-	uint64_t zr_min_home_pos;
-	uint64_t zr_max_home_pos;
+	int32_t ramp_period;
+	int64_t xl_min_safe_pos;
+	int64_t xr_max_safe_pos;
+	int64_t yf_min_safe_pos;
+	int64_t yb_max_safe_pos;
+	int64_t zl_min_safe_pos;
+	int64_t zl_max_safe_pos;
+	int64_t zr_min_safe_pos;
+	int64_t zr_max_safe_pos;
+	int64_t xl_min_home_pos;
+	int64_t xr_max_home_pos;
+	int64_t yf_min_home_pos;
+	int64_t yb_max_home_pos;
+	int64_t zl_min_home_pos;
+	int64_t zl_max_home_pos;
+	int64_t zr_min_home_pos;
+	int64_t zr_max_home_pos;
 	uint64_t x_axis_size;
 	uint64_t y_axis_size;
 	uint64_t zl_axis_size;

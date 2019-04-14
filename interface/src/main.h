@@ -38,6 +38,8 @@ struct interface_struct {
     uint16_t command_counter = 0;
     uint8_t user_command_set = 0;
     uint8_t user_command_finished = 0;
+    uint8_t spi_connected = 0;
+    uint8_t machine_configured = 0;
     struct cnc_instruction_struct user_instruction;
 };
 

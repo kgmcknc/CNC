@@ -40,7 +40,7 @@ int main(void)
                     //1        10        20        30        40        50        60        70        80        90        100       110       120       130       140       150       160       170       180       190       200       210       220       230       240       250
 	/* Infinite loop */
 	while (1) {
-		handle_spi();
+		cnc.spi_connected = handle_spi();
 		handle_state(&cnc);
 		handle_instructions(&cnc);
 		check_errors(&cnc);
@@ -71,5 +71,34 @@ void variable_init(cnc_state_struct* cnc, cnc_motor_list_struct* cnc_motors){
 	init_motors(cnc_motors);
 	init_instructions(cnc);
 	init_cnc(cnc);
+	init_config(&cnc->config);
 	//init_pid();
+}
+
+void init_config(cnc_config_struct* config){
+	config->config_loaded = 0;
+	config->valid_config = 0;
+	config->max_speed = 0;
+	config->min_speed = 0;
+	config->ramp_period = 0;
+	config->xl_min_safe_pos = 0;
+	config->xr_max_safe_pos = 0;
+	config->yf_min_safe_pos = 0;
+	config->yb_max_safe_pos = 0;
+	config->zl_min_safe_pos = 0;
+	config->zl_max_safe_pos = 0;
+	config->zr_min_safe_pos = 0;
+	config->zr_max_safe_pos = 0;
+	config->xl_min_home_pos = 0;
+	config->xr_max_home_pos = 0;
+	config->yf_min_home_pos = 0;
+	config->yb_max_home_pos = 0;
+	config->zl_min_home_pos = 0;
+	config->zl_max_home_pos = 0;
+	config->zr_min_home_pos = 0;
+	config->zr_max_home_pos = 0;
+	config->x_axis_size = 0;
+	config->y_axis_size = 0;
+	config->zl_axis_size = 0;
+	config->zr_axis_size = 0;
 }
