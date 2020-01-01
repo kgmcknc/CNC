@@ -23,7 +23,7 @@ int main(int argc, char **argv) {
     
     printf("Checking to see if spi is enabled on the pi...\n");
     printf("If this crashes, than enable spi on raspberry pi\n");
-    test_wpi_spi();
+    //test_wpi_spi();
     
 	init_interface_struct(&interface);
 
@@ -66,7 +66,7 @@ int main(int argc, char **argv) {
 			}
 			case INTERFACE_INIT : {
 				printf("Initializing SPI\n");
-				init_spi_driver();
+				//init_spi_driver();
 				interface.state = ENABLE_GPIO;
 				break;
 			}
@@ -128,7 +128,7 @@ void init_interface_struct(struct interface_struct* interface){
 }
 
 uint8_t interface_main(struct interface_struct* interface){
-	interface->spi_connected = handle_spi();
+	//interface->spi_connected = handle_spi();
 	handle_cnc_state(interface);
 	
 	return 0;

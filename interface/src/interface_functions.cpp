@@ -10,12 +10,12 @@ uint8_t configure_stage = 0;
 uint8_t configure_processing = 0;
 
 void handle_cnc_state(struct interface_struct* interface){
-	if(check_spi(interface)){
+	//if(check_spi(interface)){
 		// received spi transaction
 		// process that instead of user input
 		//interface->machine_state = PROCESS_SPI;
-		process_spi_request(interface);
-	}
+		//process_spi_request(interface);
+	//}
 	switch(interface->machine_state){
 		case MACHINE_IDLE : {
 			/*if(check_spi(interface)){

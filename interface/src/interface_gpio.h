@@ -14,8 +14,9 @@
 #define CS_0_ACTIVE 0
 #define CS_0_INACTIVE 1
 
-#define SILABS_POWER 29
-#define MOTOR_POWER 28
+#define CNC_POWER 29
+#define MICRO_POWER 28
+#define MOTOR_POWER 27
 #define CNC_SPI_REQUEST 5
 #define CNC_SPI_RESET 6
 

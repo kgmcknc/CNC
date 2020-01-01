@@ -37,3 +37,5 @@ includes:
 
 clean:
 	rm -f $(OUTDIR)/*.o *~ core $(COMDIR)/*~
+
+$(info $(shell mkdir -p $(OUTDIR)))
