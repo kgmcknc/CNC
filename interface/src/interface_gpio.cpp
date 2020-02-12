@@ -4,45 +4,37 @@ void init_interface_gpio(void){
     printf("Initializing System and Setting GPIO\n");
     wiringPiSetup();
     
-    pinMode(CNC_POWER, OUTPUT);
-    pinMode(MICRO_POWER, OUTPUT);
-    pinMode(MOTOR_POWER, OUTPUT);
-    pinMode(CNC_SPI_REQUEST, INPUT);
-    pinMode(CNC_SPI_RESET, OUTPUT);
-    
-    digitalWrite(CNC_POWER, POWER_OFF);
-    digitalWrite(MICRO_POWER, POWER_OFF);
-    digitalWrite(MOTOR_POWER, POWER_OFF);
+    pinMode(MAIN_POWER_PIN, OUTPUT);
+    pinMode(MOTOR_POWER_PIN, OUTPUT);
+
+    digitalWrite(MAIN_POWER_PIN, MAIN_POWER_OFF);
+    digitalWrite(MOTOR_POWER_PIN, MOTOR_POWER_OFF);
+    digitalWrite(MICRO_RESET_PIN, MICRO_RESET_ON);
     usleep(50000);
-    digitalWrite(CNC_SPI_RESET, LOW);
-    digitalWrite(CNC_POWER, POWER_ON);
-    digitalWrite(MICRO_POWER, POWER_ON);
+    digitalWrite(MAIN_POWER_PIN, MAIN_POWER_ON);
+    digitalWrite(MICRO_RESET_PIN, MICRO_RESET_OFF);
     usleep(50000);
 }
 
 void disable_interface_gpio(void){
     printf("Setting GPIO To Safe Default For Shutdown\n");
-    close(spi_fd);
+    close(serial_fd);
 
-    digitalWrite(MOTOR_POWER, POWER_OFF);
-    sleep(1);
-    digitalWrite(MICRO_POWER, POWER_OFF);
-    digitalWrite(CNC_POWER, POWER_OFF);
-    digitalWrite(CNC_SPI_RESET, LOW);
+    digitalWrite(MOTOR_POWER_PIN, MOTOR_POWER_OFF);
+    sleep(2);
+    digitalWrite(MAIN_POWER_PIN, MAIN_POWER_OFF);
+    digitalWrite(MICRO_RESET_PIN, MICRO_RESET_ON);
     
-    pinMode(CNC_POWER, INPUT);
-    pinMode(MOTOR_POWER, INPUT);
-    pinMode(MICRO_POWER, INPUT);
-    pinMode(CNC_SPI_REQUEST, INPUT);
-    pinMode(CNC_SPI_RESET, INPUT);
+    pinMode(MAIN_POWER_PIN, INPUT);
+    pinMode(MOTOR_POWER_PIN, INPUT);
 
     printf("GPIO Safe... Quitting System\n");
 }
 
 void enable_motors(void){
-	digitalWrite(MOTOR_POWER, POWER_ON);
+	digitalWrite(MOTOR_POWER_PIN, MOTOR_POWER_ON);
 }
 
 void disable_motors(void){
-	digitalWrite(MOTOR_POWER, POWER_OFF);
+	digitalWrite(MOTOR_POWER_PIN, MOTOR_POWER_OFF);
 }

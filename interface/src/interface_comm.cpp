@@ -1,73 +1,21 @@
 #include "main.h"
-#include "interface_spi.h"
+#include "interface_serial.h"
 
-#ifdef USE_SPI
-
-void test_wpi_spi(void){
-	// wiringPiSPISetupMode exits without return if spi not enabled...
-	// this checks and closes (or exits out before forking in main)
-	// so that the c program doesn't start a child and then crash...
-	int temp_fd = wiringPiSPISetupMode(SPI_CHANNEL, SPI_SPEED, 0);
-	close(temp_fd);
-}
-
-void init_spi_driver(void){
-	spi_fd = wiringPiSPISetupMode(SPI_CHANNEL, SPI_SPEED, 0);
-	
-	if(spi_fd < 0){
-		printf("Spi error...\n");
-	} else {
-		printf("Spi Driver Initialized...\n");
-	}
-}
-
-uint8_t spi_get_slave_request_pin(void){
-	return digitalRead(CNC_SPI_REQUEST);
-}
-void spi_set_master_request_pin(void){
-	digitalWrite(CNC_SPI_RESET, HIGH);
-}
-void spi_clear_master_request_pin(void){
-	digitalWrite(CNC_SPI_RESET, LOW);
-}
-uint8_t spi_transfer_data(char* spi_data, uint16_t data_length){
-	int value = 0;
-	if(data_length == 0){
-		printf("Zero Length!!!");
-	} else {
-		if(data_length > 255){
-			printf("Too High Length!!! %d", data_length);
-		}
-	}
-	value = wiringPiSPIDataRW(SPI_CHANNEL, (unsigned char*) spi_data, data_length);
-	if(value == 0){
-		printf("ZERO BAD transfer\n");
-	} else {
-		if(value > 0){
-			
-		} else {
-			printf("BAD transfer\n");
-		}
-	}
-	spi_finish_transfer(spi_data, data_length);
-	return 0;
-}
-
-void display_cnc_print(struct spi_struct* spi){
-	char read_string[PRINT_LENGTH];
+//void display_cnc_print(struct spi_struct* spi){
+	/*char read_string[PRINT_LENGTH];
 	if(spi->transfer_length > PRINT_LENGTH) spi->transfer_length = PRINT_LENGTH;
-	wiringPiSPIDataRW(SPI_CHANNEL, spi->spi_data, spi->transfer_length+IDLE_LENGTH);
+	//wiringPiSPIDataRW(SPI_CHANNEL, spi->spi_data, spi->transfer_length+IDLE_LENGTH);
 	strncpy(read_string, spi->spi_data + IDLE_LENGTH, spi->transfer_length);
 	read_string[spi->transfer_length] = '\0';
 	printf("CNC Print: %s\n", read_string);
 	spi->state = spi_idle;
 	spi->pending_opcode = idle;*/
-}
+//}
 
 char instruction_count = 0;
 
 void send_cnc_instruction(struct spi_struct* spi){
-	char clear_count = 0;
+	/*char clear_count = 0;
 	if(get_s_ready_state(spi)){
 		// writing... so don't send?
 		// should never happen
@@ -147,11 +95,11 @@ void send_cnc_instruction(struct spi_struct* spi){
 		spi->transfer_length = 0;
 		spi->state = spi_idle;
 		spi->pending_opcode = idle;
-	}
+	}*/
 }
 
 void send_cnc_opcode(struct spi_struct* spi){
-	instruction_count = 0;
+	/*instruction_count = 0;
 	if(get_s_ready_state(spi)){
 		// writing... so don't send?
 		printf("Can't send because writing\n");
@@ -167,46 +115,46 @@ void send_cnc_opcode(struct spi_struct* spi){
 		delay(100);
 		spi->state = spi_idle;
 		spi->pending_opcode = idle;
-	}
+	}*/
 }
-
+/*
 void request_reconnect(struct spi_struct* spi){
-	set_m_ready(spi);
-	set_write_opcode(spi, reconnect_spi, IDLE_LENGTH);
+	//set_m_ready(spi);
+	//set_write_opcode(spi, reconnect_spi, IDLE_LENGTH);
 	delay(100);
 	spi->transfer_length = IDLE_LENGTH;
-	wiringPiSPIDataRW(SPI_CHANNEL, spi->spi_data, IDLE_LENGTH);
+	//wiringPiSPIDataRW(SPI_CHANNEL, spi->spi_data, IDLE_LENGTH);
 	delay(100);
-	clear_m_ready(spi);
+	//clear_m_ready(spi);
 	spi->state = spi_initialized;
 	spi->connected = 1;
 	//spi->pending_opcode = idle;
 }
 
 void request_cnc_status(struct spi_struct* spi){
-	if(get_s_ready_state(spi)){
+	//if(get_s_ready_state(spi)){
 		char read_string[STATUS_LENGTH];
-		wiringPiSPIDataRW(SPI_CHANNEL, spi->spi_data, spi->transfer_length+IDLE_LENGTH);
+		//wiringPiSPIDataRW(SPI_CHANNEL, spi->spi_data, spi->transfer_length+IDLE_LENGTH);
 		strncpy(read_string, spi->spi_data + IDLE_LENGTH, STATUS_LENGTH);
 		read_string[spi->transfer_length] = '\0';
 		printf("Status Print: %s\n", read_string);
 		spi->transfer_pending = 0;
 		spi->state = spi_idle;
 		spi->pending_opcode = idle;
-	} else {
+	//} else {
 		if(!spi->transfer_pending){
 			printf("Requesting CNC Status...\n");
-			set_m_ready(spi);
-			set_write_opcode(spi, get_cnc_status, IDLE_LENGTH);
+			//set_m_ready(spi);
+			//set_write_opcode(spi, get_cnc_status, IDLE_LENGTH);
 			usleep(50000);
 			spi->transfer_length = STATUS_LENGTH;
-			wiringPiSPIDataRW(SPI_CHANNEL, spi->spi_data, IDLE_LENGTH);
+			//wiringPiSPIDataRW(SPI_CHANNEL, spi->spi_data, IDLE_LENGTH);
 			usleep(50000);
-			clear_m_ready(spi);
+			//clear_m_ready(spi);
 			spi->transfer_pending = 1;
 			printf("Sent Request...\n");
 		}
-	}
+	//}
 }
 
 void set_write_opcode(struct spi_struct* spi, enum spi_opcodes instruction, uint8_t byte_length){
@@ -218,19 +166,4 @@ void set_write_opcode(struct spi_struct* spi, enum spi_opcodes instruction, uint
 		spi->spi_data[count+OPCODE_LENGTH] = ((byte_length >> (count*8)) & 0xFF);
 	}
 }
-
-#else
-   
-uint8_t spi_get_slave_request_pin(void){
-	return digitalRead(CNC_SPI_REQUEST);
-}
-void spi_set_master_request_pin(void){
-	digitalWrite(CNC_SPI_RESET, HIGH);
-}
-void spi_clear_master_request_pin(void){
-	digitalWrite(CNC_SPI_RESET, LOW);
-}
-uint8_t spi_transfer_data(char* spi_data, uint16_t data_length){
-	return 0;
-}
-#endif
+*/

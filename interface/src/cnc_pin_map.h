@@ -60,42 +60,24 @@
               NC - 39 | 40 - MOTOR DRIVER ENABLE
 */
 
-// pin defines
-#define DRIVER_POWER_RELAY    27
-#define DRIVER_SLEEP          28
-#define DRIVER_ENABLE         29
-
-#define F_END_STOP            01
-#define B_END_STOP            06
-#define L_END_STOP            04
-#define R_END_STOP            05
-
-#define L_MOTOR_STP           23
-#define L_MOTOR_DIR           22
-#define L_MOTOR_MS2           24
-#define L_MOTOR_MS1           25
-
-#define F_MOTOR_STP           00
-#define F_MOTOR_DIR           07
-#define F_MOTOR_MS2           02
-#define F_MOTOR_MS1           03
+#define MAIN_POWER_PIN        21
+#define NC_PIN_0              22
+#define MOTOR_POWER_PIN       23
+#define NC_PIN_1              24
+#define MICRO_RESET_PIN       25
 
 // value defines for pins
-#define MOTOR_DRIVER_OFF      HIGH
-#define MOTOR_DRIVER_ON       LOW
+#define MAIN_POWER_OFF        HIGH
+#define MAIN_POWER_ON         LOW
 
-#define MOTOR_RESET_ON        LOW
-#define MOTOR_RESET_OFF       HIGH
+#define MOTOR_POWER_OFF       HIGH
+#define MOTOR_POWER_ON        LOW
 
-#define MOTOR_ACTIVE          LOW
-#define MOTOR_STANDBY         HIGH
+#define MICRO_RESET_OFF       HIGH
+#define MICRO_RESET_ON        LOW
 
-#define ENDSTOP_HIT           HIGH
-#define ENDSTOP_OFF           LOW
+#define CNC_SPI_REQUEST       5
+#define CNC_SPI_RESET         6
 
-#define MOTOR_MOVE_R          HIGH
-#define MOTOR_MOVE_L          LOW
-#define MOTOR_MOVE_F          HIGH
-#define MOTOR_MOVE_B          LOW
 
 #endif /* SRC_CNC_PIN_MAP_H_ */
