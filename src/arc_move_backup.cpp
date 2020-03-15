@@ -1,0 +1,257 @@
+
+#include "main.h"
+
+#ifdef SILABS
+   #include "em_device.h"
+   #include "em_chip.h"
+   #include "em_usart.h"
+   #include "em_gpio.h"
+   #include "em_adc.h"
+#else
+   #include "Arduino.h"
+#endif
+
+#include "stdint.h"
+
+#include "revision.h"
+#include "cnc_gpio.h"
+#include "cnc_serial.h"
+#include "cnc_functions.h"
+#include "cnc_instructions.h"
+#include "cnc_motors.h"
+#include "cnc_adc.h"
+#include "cnc_heaters.h"
+#include "cnc_timers.h"
+#include "math.h"
+
+struct cnc_state_struct cnc;
+struct cnc_instruction_struct cnc_instruction, cnc_instruction_next;
+struct cnc_instruction_struct instruction_array[INSTRUCTION_FIFO_DEPTH];
+uint32_t instruction_array_fullness = 0, instruction_array_wp = 0, instruction_array_rp = 0;
+
+struct cnc_heater_list_struct cnc_heaters;
+struct cnc_motor_list_struct cnc_motors;
+
+serial_class cnc_serial(0);
+
+int cnc_main(void)
+{
+	
+   #ifdef SILABS
+      /* Chip errata */
+	   CHIP_Init();
+   #else
+
+   #endif
+
+	cnc.motors = &cnc_motors;
+	cnc.heaters = &cnc_heaters;
+
+	system_init(cnc.motors);
+	variable_init(&cnc, cnc.motors);
+
+	//cnc_printf(&cnc, "System Initialized!");
+	//cnc_printf(&cnc, "This is 256 character string: asdfjkl;asdfjkl;asdfjkl;asdfjkl;asdfjkl;asdfjkl;asdfjkl;asdfjkl;asdfjk;ltestingiamtestingtestingiamtestingtestingiamtestingtestingiamtestingGGGGGSSDFSDFSDFSDTITITITITITITITSDFLKJSFLKJSFDTHISISSOCLOSEANDIAMALMOSTTHERENOWIGOTIT!");
+	                //1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456
+                    //1        10        20        30        40        50        60        70        80        90        100       110       120       130       140       150       160       170       180       190       200       210       220       230       240       250
+   cnc.motors->xl_axis.direction = 1;
+   cnc.motors->yf_axis.direction = 1;
+   cnc_gpio_write(cnc.motors->xl_axis.pins.en_pin, 0, 0);
+   cnc_gpio_write(cnc.motors->xl_axis.pins.dir_pin, 0, MOTOR_MOVE_INCREASE);
+   cnc_gpio_write(cnc.motors->yf_axis.pins.en_pin, 0, 0);
+   cnc_gpio_write(cnc.motors->yf_axis.pins.dir_pin, 0, MOTOR_MOVE_INCREASE);
+   //cnc_gpio_write(cnc.motors->zl_axis.pins.en_pin, 0, 0);
+   //cnc_gpio_write(cnc.motors->zr_axis.pins.en_pin, 0, 0);
+   #define TOLERANCE 0.1
+   double x_pos=0.0;
+   double y_pos_int = 800.0;
+   double y_pos=800.0;
+   double x_pos_int = 0.0;
+   double step = 0.1;
+   double x_period=0;
+   int x_dir=1;
+   int y_dir=1;
+   uint32_t x_count = 0, y_count = 0;
+   double x_per = 0, y_per = 0;
+   double speed = 10.0;
+   double x_center = 800.0;
+   double y_center = 800.0;
+   double x_radius = 800.0;
+   double y_radius = 800.0;
+   double rads;
+   double x_offset;
+   double y_offset;
+   double y_calc;
+   /* Infinite loop */
+	while (1) {
+      if(x_per == 0.0){
+         //printf("INIT X POS: %f\n", x_pos);
+         if(x_dir == 1){
+            cnc_gpio_write(cnc.motors->xl_axis.pins.dir_pin, 0, MOTOR_MOVE_INCREASE);
+            x_pos = x_pos + step;
+         } else {
+            cnc_gpio_write(cnc.motors->xl_axis.pins.dir_pin, 0, 0);
+            x_pos = x_pos - step;
+         }
+         //printf("INIT X DIR: %d, X Pos: %f, Cent: %f, Rad: %f\n", x_dir, x_pos, x_center, x_radius);
+         cnc_gpio_write(cnc.motors->xl_axis.pins.step_pin, 0, 0);
+         if(abs((x_center + x_radius) - x_pos) <= TOLERANCE){
+            //printf("Max Met\n");
+            x_dir = 0;
+         } else {
+            if(abs((x_center - x_radius) - x_pos) <= TOLERANCE){
+               //printf("Min Met\n");
+               x_dir = 1;
+            } else {
+               //printf("No Change\n");
+            }
+         }
+         if(x_dir == 1){
+            x_offset = x_center - (x_pos+step);
+         } else {
+            x_offset = x_center - (x_pos-step);
+         }
+         //printf("X Dir: %d, INIT X Offset: %f\n", x_dir, x_offset);
+         if(x_offset < 0){
+            x_offset = x_offset * (-1.0);
+         }
+         rads = acos(x_offset/x_radius);
+         //printf("INIT X Offset: %f, Rads: %f\n", x_offset, x_radius);
+         y_offset = x_radius*sin(rads);
+         x_per = y_offset-y_pos_int;
+         //printf("Y Offset: %f, X Per: %f\n", y_offset, x_per);
+         if(x_per < 0.0){
+            x_per = x_per * (-1.0);
+         }
+         //printf("Inter X Per: %f\n", x_per);
+         x_per = (step/(step+x_per));
+         if(x_per > 0){
+            x_per = speed/x_per;
+         }
+         y_pos_int = y_offset;
+         //printf("X Per: %f, x_pos: %f, y_pos_int: %f\n", x_per, x_pos, y_pos_int);
+      } else {
+         if(x_per < 1.0){
+            x_per = 0;
+         } else {
+            x_per = x_per - 1.0;
+         }
+         cnc_gpio_write(cnc.motors->xl_axis.pins.step_pin, 0, 1);
+      }
+      if(y_per == 0.0){
+         //printf("INIT X POS: %f\n", x_pos);
+         if(y_dir == 1){
+            cnc_gpio_write(cnc.motors->yf_axis.pins.dir_pin, 0, MOTOR_MOVE_INCREASE);
+            y_pos = y_pos + step;
+         } else {
+            cnc_gpio_write(cnc.motors->yf_axis.pins.dir_pin, 0, 0);
+            y_pos = y_pos - step;
+         }
+         //printf("INIT X DIR: %d, X Pos: %f, Cent: %f, Rad: %f\n", x_dir, x_pos, x_center, x_radius);
+         cnc_gpio_write(cnc.motors->yf_axis.pins.step_pin, 0, 0);
+         if(abs((y_center + y_radius) - y_pos) <= TOLERANCE){
+            //printf("Max Met\n");
+            y_dir = 0;
+         } else {
+            if(abs((y_center - y_radius) - y_pos) <= TOLERANCE){
+               //printf("Min Met\n");
+               y_dir = 1;
+            } else {
+               //printf("No Change\n");
+            }
+         }
+         if(y_dir == 1){
+            y_offset = y_center - (y_pos+step);
+         } else {
+            y_offset = y_center - (y_pos-step);
+         }
+         //printf("X Dir: %d, INIT X Offset: %f\n", x_dir, x_offset);
+         if(y_offset < 0){
+            y_offset = y_offset * (-1.0);
+         }
+         rads = asin(y_offset/y_radius);
+         //printf("INIT X Offset: %f, Rads: %f\n", x_offset, x_radius);
+         x_offset = y_radius*cos(rads);
+         y_per = x_offset-x_pos_int;
+         //printf("Y Offset: %f, X Per: %f\n", y_offset, x_per);
+         if(y_per < 0.0){
+            y_per = y_per * (-1.0);
+         }
+         //printf("Inter X Per: %f\n", x_per);
+         y_per = (step/(step+y_per));
+         if(y_per > 0){
+            y_per = speed/y_per;
+         }
+         x_pos_int = x_offset;
+         //printf("X Per: %f, x_pos: %f, y_pos_int: %f\n", x_per, x_pos, y_pos_int);
+      } else {
+         if(y_per < 1.0){
+            y_per = 0;
+         } else {
+            y_per = y_per - 1.0;
+         }
+         cnc_gpio_write(cnc.motors->yf_axis.pins.step_pin, 0, 1);
+      }
+	}
+
+   return 0;
+}
+
+void system_init(cnc_motor_list_struct* cnc_motors){
+	//init_clocks();
+	init_gpio();
+	//init_adc();
+	//init_timers(cnc_motors);
+
+	// init timer with interrupt for hotend pid loop
+	// init timer with interrupt for motor movements
+}
+
+void init_clocks(void){
+   #ifdef SILABS
+      CMU_ClockEnable(cmuClock_HFPER, true);
+      CMU_ClockEnable(cmuClock_GPIO, true);
+
+      //Switch HFCLK to HFXO and disable HFRCO
+      CMU_ClockSelectSet(cmuClock_HF, cmuSelect_HFXO);
+      CMU_OscillatorEnable(cmuOsc_HFRCO, false, false);
+   #else
+
+   #endif
+}
+
+void variable_init(cnc_state_struct* cnc, cnc_motor_list_struct* cnc_motors){
+	init_motors(cnc_motors);
+	//init_instructions(cnc);
+	//init_cnc(cnc);
+	//init_config(&cnc->config);
+	//init_pid();
+}
+
+void init_config(cnc_config_struct* config){
+	config->config_loaded = 0;
+	config->valid_config = 0;
+	config->max_speed = 0;
+	config->min_speed = 0;
+	config->ramp_period = 0;
+	config->xl_min_safe_pos = 0;
+	config->xr_max_safe_pos = 0;
+	config->yf_min_safe_pos = 0;
+	config->yb_max_safe_pos = 0;
+	config->zl_min_safe_pos = 0;
+	config->zl_max_safe_pos = 0;
+	config->zr_min_safe_pos = 0;
+	config->zr_max_safe_pos = 0;
+	config->xl_min_home_pos = 0;
+	config->xr_max_home_pos = 0;
+	config->yf_min_home_pos = 0;
+	config->yb_max_home_pos = 0;
+	config->zl_min_home_pos = 0;
+	config->zl_max_home_pos = 0;
+	config->zr_min_home_pos = 0;
+	config->zr_max_home_pos = 0;
+	config->x_axis_size = 0;
+	config->y_axis_size = 0;
+	config->zl_axis_size = 0;
+	config->zr_axis_size = 0;
+}

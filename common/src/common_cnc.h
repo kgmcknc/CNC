@@ -74,7 +74,7 @@ enum INSTRUCTION_OPCODE {
 };
 
 #define CONFIG_DEFAULT  {\
-    0, /* uint8_t config_loaded; */ \
+   0, /* uint8_t config_loaded; */ \
 	0, /* uint8_t valid_config; */ \
 	0, /* double max_speed; */ \
 	0, /* double min_speed; */ \

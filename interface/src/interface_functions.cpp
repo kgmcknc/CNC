@@ -1,4 +1,5 @@
 #include "main.h"
+#include "interface_functions.h"
 #include "stdio.h"
 #include "common_cnc.h"
 #include "interface_serial.h"
@@ -7,7 +8,9 @@
 uint8_t print_set = 0;
 uint8_t configure_stage = 0;
 uint8_t configure_processing = 0;
-
+uint8_t rx_string[32];
+uint8_t tx_string[32];
+uint32_t send_count;
 void handle_cnc_state(struct interface_struct* interface){
    cnc_serial.process();
 	switch(interface->machine_state){
@@ -24,9 +27,9 @@ void handle_cnc_state(struct interface_struct* interface){
 				if(interface->user_command_finished){
 					interface->machine_state = PROCESS_INPUT;
 				} else {
-					if(interface->comm_connected && !interface->machine_configured){
-						interface->machine_state = SEND_CONFIG;
-					}
+					//if(interface->comm_connected && !interface->machine_configured){
+					//	interface->machine_state = SEND_CONFIG;
+					//}
 				}
 			}
 			break;
@@ -36,6 +39,7 @@ void handle_cnc_state(struct interface_struct* interface){
 			break;
 		}
 		case POWER_MOTORS_ON : {
+         #ifdef SILABS
          interface->cnc_write_data[0] = (char) DISABLE_ROUTE;
          if(cnc_serial.send(1, interface->cnc_write_data) > 0){
             enable_motors();
@@ -43,16 +47,24 @@ void handle_cnc_state(struct interface_struct* interface){
          } else {
             interface->machine_state = POWER_MOTORS_ON;
          }
+         #else
+         enable_motors();
+         interface->machine_state = MACHINE_IDLE;
+         #endif
 			break;
 		}
 		case POWER_MOTORS_OFF : {
          disable_motors();
+         #ifdef SILABS
          interface->cnc_write_data[0] = (char) ENABLE_ROUTE;
          if(cnc_serial.send(1, interface->cnc_write_data) > 0){
             interface->machine_state = MACHINE_IDLE;
          } else {
             interface->machine_state = POWER_MOTORS_OFF;
          }
+         #else
+         interface->machine_state = MACHINE_IDLE;
+         #endif
 			break;
 		}
 		case GET_STATUS : {

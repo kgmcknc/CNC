@@ -10,9 +10,9 @@ uint8_t serial_send_data(uint32_t send_size, uint8_t* send_data){
 
 uint32_t serial_get_data(uint32_t receive_size, uint8_t* receive_data){
    uint32_t i=0;
-   uint32_t avail;
    uint8_t* data_pointer = receive_data;
-   if((uint32_t) serialDataAvail(serial_fd) >= receive_size){
+   int32_t ser_avail = serialDataAvail(serial_fd);
+   if(ser_avail >= receive_size){
       while(i<receive_size){
          *data_pointer = serialGetchar(serial_fd);
          data_pointer++;

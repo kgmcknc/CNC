@@ -4,10 +4,17 @@
 #include "keyboard.h"
 #include "interface_serial.h"
 #include "stdio.h"
+#include "math.h"
 
 uint8_t quit_system = 0;
 int32_t spi_fd = 0;
 pid_t system_control_fork;
+
+#define SERIAL_INDEX_MIN   0
+#define SERIAL_INDEX_MAX   1
+
+int serial_port_index = SERIAL_INDEX_MIN;
+char serial_port_string[15];
 
 struct interface_struct interface;
 
@@ -22,7 +29,6 @@ int main(int argc, char **argv) {
    printf("\nVersion %d.%d.%d.%d\n", FW_REV_BETA, FW_REV_MAJOR, FW_REV_MINOR, FW_REV_PATCH);
 
    init_interface_struct(&interface);
-
    printf("Everything safe... Starting initialization Process\n");
    while(quit_system == 0){
       switch(interface.state){
@@ -59,15 +65,28 @@ int main(int argc, char **argv) {
             break;
          }
          case INTERFACE_INIT : {
-            printf("Initializing Serial\n");
-            serial_fd = serialOpen("/dev/ttyACM0", 57600);
-            interface.state = ENABLE_GPIO;
+            sprintf(serial_port_string, "/dev/ttyACM%d", serial_port_index);
+            printf("Initializing Serial: %s\n", serial_port_string);
+            serial_fd = serialOpen(serial_port_string, 57600);
+            if(serial_fd != -1){
+               interface.state = ENABLE_GPIO;
+               printf("Connected %s!\n", serial_port_string);
+            } else {
+               printf("Couldn't Connect %s: %d\n", serial_port_string, serial_fd);
+               serial_port_index = serial_port_index + 1;
+               if(serial_port_index > SERIAL_INDEX_MAX){
+                  printf("Couldn't Connect Serial, Quitting\n");
+                  interface.state = EXIT_INTERFACE;
+               }
+            }
+            sleep(1);
             break;
          }
          case ENABLE_GPIO : {
             printf("\nSetting Up WiringPi\n");
             load_config_file(&interface.machine_config);
             init_interface_gpio();
+            sleep(1);
             interface.state = INTERFACE_RUNNING;
             break;
          }
