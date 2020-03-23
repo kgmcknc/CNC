@@ -11,10 +11,9 @@ build-mega2560/userlibs/src/cnc_timers.cpp.o: \
  /usr/share/arduino/hardware/arduino//cores/arduino/new.h \
  /usr/share/arduino/hardware/arduino//variants/mega/pins_arduino.h \
  /home/pi/media_share/Projects/CNC//src/cnc_timers.h \
- /home/pi/media_share/Projects/CNC//src/cnc_heaters.h \
  /home/pi/media_share/Projects/CNC//src/cnc_motors.h \
  /home/pi/media_share/Projects/CNC//src/cnc_gpio.h \
  /home/pi/media_share/Projects/CNC//src/cnc_functions.h \
  /home/pi/media_share/Projects/CNC//src/cnc_instructions.h \
- /home/pi/media_share/Projects/CNC//src/cnc_pid.h \
+ /home/pi/media_share/Projects/CNC//src/cnc_heaters.h \
  /home/pi/media_share/Projects/CNC//common/src/common_cnc.h

@@ -26,7 +26,7 @@ void handle_input(struct interface_struct* interface);
 void clear_user_command(struct interface_struct* interface);
 void receive_spi_string(uint8_t string_length);
 void length_to_string(uint8_t byte_length, char *length_string);
-void update_si_firmware(struct interface_struct* interface);
+void update_firmware(struct interface_struct* interface);
 int open_gcode(struct interface_struct* interface);
 void load_config_file(struct cnc_config_struct* config);
 void save_config_file(struct cnc_config_struct* config);

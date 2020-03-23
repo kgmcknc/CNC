@@ -16,9 +16,6 @@
 
 #endif
 
-#define NUMBER_OF_MOTORS   7
-#define NUMBER_OF_HEATERS  4
-
 #ifdef SILABS
    #define NUMBER_OF_ENDSTOPS 8
    #define ENDSTOP_0_PORT     gpioPortC // C
@@ -174,8 +171,7 @@
    void enable_route_pins(void);
    void disable_route_pins(void);
 #else
-   #define NUMBER_OF_ENDSTOPS 12
-   
+
    #define ENDSTOP_0_PIN      A4
    #define ENDSTOP_1_PIN      A5
    #define ENDSTOP_2_PIN      A6
@@ -188,19 +184,6 @@
    #define ENDSTOP_9_PIN      A13
    #define ENDSTOP_10_PIN     A14
    #define ENDSTOP_11_PIN     A15
-
-   #define ENDSTOP_L_PIN ENDSTOP_0_PIN
-   #define ENDSTOP_R_PIN ENDSTOP_1_PIN
-   #define ENDSTOP_F_PIN ENDSTOP_2_PIN
-   #define ENDSTOP_B_PIN ENDSTOP_3_PIN
-   #define ENDSTOP_BL_PIN ENDSTOP_4_PIN
-   #define ENDSTOP_TL_PIN ENDSTOP_5_PIN
-   #define ENDSTOP_BR_PIN ENDSTOP_6_PIN
-   #define ENDSTOP_TR_PIN ENDSTOP_7_PIN
-   #define ENDSTOP_EXTRA_0_PIN ENDSTOP_8_PIN
-   #define ENDSTOP_EXTRA_1_PIN ENDSTOP_9_PIN
-   #define ENDSTOP_EXTRA_2_PIN ENDSTOP_10_PIN
-   #define ENDSTOP_EXTRA_3_PIN ENDSTOP_11_PIN
 
    #define TEMP_ADC_0_PIN 0
    #define TEMP_ADC_1_PIN 1
@@ -260,7 +243,7 @@
    #define MOTOR_6_DIR_PIN 47
 #endif
 
-void init_gpio(void);
+void init_gpio(struct cnc_state_struct* cnc);
 void cnc_gpio_write(uint32_t pin, uint32_t port, uint8_t value);
 uint8_t cnc_gpio_read(uint32_t pin, uint32_t port);
 

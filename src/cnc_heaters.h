@@ -9,6 +9,7 @@
 #define SRC_CNC_HEATERS_H_
 
 #include "stdint.h"
+#include "common_cnc.h"
 
 struct cnc_heater_struct {
 	uint8_t enabled;
@@ -18,15 +19,13 @@ struct cnc_heater_struct {
 	uint8_t fan_duty;
 	uint8_t temp_locked;
 	uint8_t reset_heater;
-	double target_temp;
-	double current_temp;
+	cnc_double target_temp;
+	cnc_double current_temp;
 };
 
 struct cnc_heater_list_struct {
-	struct cnc_heater_struct heater_0;
-	struct cnc_heater_struct heater_1;
-	struct cnc_heater_struct heater_2;
-	struct cnc_heater_struct heater_3;
+   uint8_t heater_irq;
+	struct cnc_heater_struct heater[NUM_HEATERS];
 };
 
 void handle_heaters(struct cnc_state_struct* cnc);

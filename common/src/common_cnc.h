@@ -10,20 +10,62 @@
 
 #include <stdint.h>
 
-#define RAMP_PERIOD 0 // start/end period of ramp... should be slow
-#define MOTOR_TIMER_FREQ (double) 48000000
-#define MOTOR_TOP_COUNT (double) 1000
-#define STEPS_PER_SECOND (((double) MOTOR_TIMER_FREQ)/MOTOR_TOP_COUNT)
-#define STEPS_PER_MINUTE (((double) STEPS_PER_SECOND)*60)
-#define MOTOR_STEPS_PER_REV (double) 200
-#define MOTOR_STEP_FACTOR (((double) 1)/8)
-#define STEPS_PER_REV (((double) MOTOR_STEPS_PER_REV)/MOTOR_STEP_FACTOR)
-#define REVS_PER_MM (((double) 1)/8)
-#define REVS_PER_IN (((double) 25.4)/8)
-#define STEPS_PER_MM (((double) STEPS_PER_REV)*REVS_PER_MM)
-#define STEPS_PER_IN (((double) STEPS_PER_REV)*REVS_PER_IN)
+#define PRINT_DEPTH 16
+#define MAX_PRINT_LENGTH 64
+#define INSTRUCTION_BYTE_LENGTH sizeof(cnc_instruction_struct)
+#define MAX_COMM_TRANSFER ((INSTRUCTION_BYTE_LENGTH > MAX_PRINT_LENGTH) ? INSTRUCTION_BYTE_LENGTH : MAX_PRINT_LENGTH)
 
-#define MOVE_PERIOD 4 // period of fast movement
+#define RAMP_PERIOD 0 // start/end period of ramp... should be slow
+#define MOTOR_TIMER_FREQ (cnc_double) 48000000
+#define MOTOR_TOP_COUNT (cnc_double) 1000
+#define STEPS_PER_SECOND (((cnc_double) MOTOR_TIMER_FREQ)/MOTOR_TOP_COUNT)
+#define STEPS_PER_MINUTE (((cnc_double) STEPS_PER_SECOND)*60)
+
+#define MOTOR_STEPS_PER_REV (cnc_double) 200
+#define MOTOR_STEP_FACTOR (((cnc_double) 1)/8)
+#define STEPS_PER_REV (((cnc_double) MOTOR_STEPS_PER_REV)/MOTOR_STEP_FACTOR)
+#define LEADSCREW_MM_PER_REV ((cnc_double) 8)
+#define REVS_PER_MM (((cnc_double) 1)/LEADSCREW_MM_PER_REV)
+#define REVS_PER_IN (((cnc_double) 25.4)/LEADSCREW_MM_PER_REV)
+#define STEPS_PER_MM (((cnc_double) STEPS_PER_REV)*REVS_PER_MM)
+#define STEPS_PER_IN (((cnc_double) STEPS_PER_REV)*REVS_PER_IN)
+
+#define cnc_double float
+
+#define NUM_MOTORS 7
+enum MOTOR_NUMBERS {
+   MOTOR_AUX,
+   MOTOR_EXTRUDER_0,
+   MOTOR_EXTRUDER_1,
+   MOTOR_AXIS_XL,
+   MOTOR_AXIS_YF,
+   MOTOR_AXIS_ZL,
+   MOTOR_AXIS_ZR
+};
+
+#define NUM_HEATERS 4
+enum HEATER_NUMBERS {
+   HEATER_EXTRUTER_0,
+   HEATER_EXTRUTER_1,
+   HEATER_BED,
+   HEATER_OTHER
+};
+
+#define NUM_ENDSTOPS 12
+enum ENDSTOP_NUMBERS {
+   X_L_MIN,
+   X_R_MAX,
+   Y_F_MIN,
+   Y_B_MAX,
+   Z_L_MIN,
+   Z_L_MAX,
+   Z_R_MIN,
+   Z_R_MAX,
+   EXTRA_0,
+   EXTRA_1,
+   EXTRA_2,
+   EXTRA_3
+};
 
 enum CNC_OPCODES {
 	GET_CNC_VERSION,
@@ -41,6 +83,12 @@ enum CNC_OPCODES {
 	ERROR
 };
 
+enum INSTRUCTION_TYPES {
+   MOTOR_INSTRUCTION,
+   HEATER_INSTRUCTION,
+   AUX_INSTRUCTION
+};
+
 enum INSTRUCTION_OPCODE {
 	// change these some
 	EMPTY_OPCODE,
@@ -56,10 +104,9 @@ enum INSTRUCTION_OPCODE {
 	CHECK_ENDSTOPS,
 	HOME_AXIS,
 	MEASURE_AXIS,
-	POSITION_AXIS,
+	SET_POSITION,
 	RETURN_STATUS,
-	ZERO_MOTOR,
-	MAX_MOTOR,
+	MOVE_TO_ENDSTOP,
 	ENABLE_MOTORS,
 	DISABLE_MOTORS,
 	ENABLE_EXTRUDERS,
@@ -76,8 +123,8 @@ enum INSTRUCTION_OPCODE {
 #define CONFIG_DEFAULT  {\
    0, /* uint8_t config_loaded; */ \
 	0, /* uint8_t valid_config; */ \
-	0, /* double max_speed; */ \
-	0, /* double min_speed; */ \
+	0, /* cnc_double max_speed; */ \
+	0, /* cnc_double min_speed; */ \
 	0, /* uint32_t ramp_period; */ \
 	0, /* int64_t xl_min_safe_pos; */ \
 	0, /* int64_t xr_max_safe_pos; */ \
@@ -104,130 +151,101 @@ enum INSTRUCTION_OPCODE {
 struct cnc_config_struct {
 	uint8_t config_loaded;
 	uint8_t valid_config;
-	double max_speed;
-	double min_speed;
-	int32_t ramp_period;
-	int64_t xl_min_safe_pos;
-	int64_t xr_max_safe_pos;
-	int64_t yf_min_safe_pos;
-	int64_t yb_max_safe_pos;
-	int64_t zl_min_safe_pos;
-	int64_t zl_max_safe_pos;
-	int64_t zr_min_safe_pos;
-	int64_t zr_max_safe_pos;
-	int64_t xl_min_home_pos;
-	int64_t xr_max_home_pos;
-	int64_t yf_min_home_pos;
-	int64_t yb_max_home_pos;
-	int64_t zl_min_home_pos;
-	int64_t zl_max_home_pos;
-	int64_t zr_min_home_pos;
-	int64_t zr_max_home_pos;
-	uint64_t x_axis_size;
-	uint64_t y_axis_size;
-	uint64_t zl_axis_size;
-	uint64_t zr_axis_size;
+	cnc_double max_speed;
+	cnc_double min_speed;
+	cnc_double ramp_speed;
+   cnc_double safe_position[NUM_MOTORS];
+   cnc_double home_position[NUM_MOTORS];
+   cnc_double axis_size[NUM_MOTORS];
 };
 
 struct cnc_status_struct {
-	uint8_t xl_min_flag;
-	uint8_t xl_max_flag;
-	uint8_t yf_min_flag;
-	uint8_t yf_max_flag;
-	uint8_t zl_min_flag;
-	uint8_t zl_max_flag;
-	uint8_t zr_min_flag;
-	uint8_t zr_max_flag;
-	int64_t ex0_position;
-	int64_t ex1_position;
-	int64_t aux_position;
-	int64_t xl_position;
-	int64_t yf_position;
-	int64_t zl_position;
-	int64_t zr_position;
-	double heater_0_temp;
-	double heater_1_temp;
-	double heater_2_temp;
-	double heater_3_temp;
+   uint8_t endstop_status[NUM_ENDSTOPS];
+   cnc_double position[NUM_MOTORS];
+	cnc_double temp[NUM_MOTORS];
 };
 
 struct cnc_motor_instruction_struct {
 	uint8_t instruction_valid; // flag saying whether instruction is valid or stale
-	enum INSTRUCTION_OPCODE opcode;
-	uint8_t pending_enable;
-	uint8_t pending_disable;
-	int64_t current_position;
+   uint8_t relative_move;
+   uint8_t arc_move;
+   uint8_t ramp_up;
+   uint8_t ramp_down;
+	cnc_double end_position;
 #ifdef INTERFACE
-	double move_position;
-	double feed_rate;
+	cnc_double move_position;
+	cnc_double feed_rate;
 #endif
-	int32_t move_count;
-	uint32_t current_period;
-	uint8_t ramp_up_speed;
-	uint8_t ramp_down_speed;
-	uint8_t find_zero;
-	uint8_t find_max;
-	uint8_t linear_move;
-	uint8_t arc_move;
+};
+
+struct cnc_motor_instructions {
+   uint32_t rotations;
+   cnc_double speed;
+   cnc_double ramp_speed;
+   struct cnc_motor_instruction_struct motor[NUM_MOTORS];
 };
 
 struct cnc_heater_instruction_struct {
 	uint8_t instruction_valid;
-	enum INSTRUCTION_OPCODE opcode;
-	uint8_t pending_enable;
-	uint8_t pending_disable;
-	uint8_t enabled;
-	uint8_t heater_on;
-	uint8_t heater_active;
-	uint8_t wait_for_temp;
-	uint8_t fan_duty;
-	uint8_t fan_on;
-	uint8_t temp_locked;
-	double target_temp;
-	double current_temp;
+   uint8_t wait_for_temp;
+   uint8_t fan_duty;
+   uint8_t enable_heater;
+   uint8_t disable_heater;
+   uint8_t enable_fan;
+   uint8_t disable_fan;
+   cnc_double target_temp;
+};
+
+struct cnc_heater_instructions {
+   struct cnc_heater_instruction_struct heater[NUM_HEATERS];
+};
+
+struct cnc_aux_instruction_struct {
+   enum INSTRUCTION_OPCODE opcode; // maps to instruction opcode enum
+   uint8_t enable_motor[NUM_MOTORS];
+   uint8_t disable_motor[NUM_MOTORS];
+   uint8_t set_position[NUM_MOTORS];
+   uint8_t min_motor[NUM_MOTORS];
+   uint8_t max_motor[NUM_MOTORS];
+   cnc_double motor_position[NUM_MOTORS];
+   cnc_double motor_speed;
+};
+
+union cnc_instruction_union {
+   struct cnc_motor_instructions motors;
+   struct cnc_heater_instructions heaters;
+   struct cnc_aux_instruction_struct aux;
 };
 
 struct cnc_instruction_struct {
+   enum INSTRUCTION_TYPES instruction_type;
 	uint8_t instruction_valid;
 	uint8_t instant_instruction;
-	enum INSTRUCTION_OPCODE opcode; // maps to instruction opcode enum
-	uint8_t set_position_flag;
-	uint8_t instruction_set;
+   union cnc_instruction_union instruction;
 #ifdef INTERFACE
-    double instruction_number;
-    double speed;
+    cnc_double instruction_number;
+    cnc_double speed;
     uint8_t comment_flag;
     char comment[256];
     uint8_t message_flag;
     char message[256];
 #endif
-	struct cnc_motor_instruction_struct aux;
-	struct cnc_motor_instruction_struct extruder_0;
-	struct cnc_motor_instruction_struct extruder_1;
-	struct cnc_motor_instruction_struct xl_axis;
-	struct cnc_motor_instruction_struct yf_axis;
-	struct cnc_motor_instruction_struct zl_axis;
-	struct cnc_motor_instruction_struct zr_axis;
-	struct cnc_heater_instruction_struct heater_0;
-	struct cnc_heater_instruction_struct heater_1;
-	struct cnc_heater_instruction_struct heater_2;
-	struct cnc_heater_instruction_struct heater_3;
 };
 
-uint16_t instruction_to_string(struct cnc_instruction_struct* instruction, char* string);
-void string_to_instruction(struct cnc_instruction_struct* instruction, char* string);
+uint16_t instruction_to_string(struct cnc_instruction_struct* instruction, uint8_t* string);
+void string_to_instruction(struct cnc_instruction_struct* instruction, uint8_t* string);
 
-void motor_instruction_to_string(struct cnc_motor_instruction_struct* instruction, char* string, uint16_t* offset);
-void heater_instruction_to_string(struct cnc_heater_instruction_struct* instruction, char* string, uint16_t* offset);
+void motor_instruction_to_string(struct cnc_motor_instruction_struct* instruction, uint8_t* string, uint16_t* offset);
+void heater_instruction_to_string(struct cnc_heater_instruction_struct* instruction, uint8_t* string, uint16_t* offset);
 
-void string_to_motor_instruction(struct cnc_motor_instruction_struct* instruction, char* string, uint16_t* offset);
-void string_to_heater_instruction(struct cnc_heater_instruction_struct* instruction, char* string, uint16_t* offset);
+void string_to_motor_instruction(struct cnc_motor_instruction_struct* instruction, uint8_t* string, uint16_t* offset);
+void string_to_heater_instruction(struct cnc_heater_instruction_struct* instruction, uint8_t* string, uint16_t* offset);
 
-uint16_t config_to_string(struct cnc_config_struct* config, char* string);
-void string_to_config(struct cnc_config_struct* config, char* string);
+uint16_t config_to_string(struct cnc_config_struct* config, uint8_t* string);
+void string_to_config(struct cnc_config_struct* config, uint8_t* string);
 
-uint16_t status_to_string(struct cnc_status_struct* status, char* string);
-void string_to_status(struct cnc_status_struct* status, char* string);
+uint16_t status_to_string(struct cnc_status_struct* status, uint8_t* string);
+void string_to_status(struct cnc_status_struct* status, uint8_t* string);
 
 void clear_instruction(struct cnc_instruction_struct* instruction);
 void clear_motor_instruction(struct cnc_motor_instruction_struct* instruction);

@@ -13,6 +13,7 @@
 #include "cnc_functions.h"
 #include "string.h"
 #include "stdarg.h"
+#include "common_cnc.h"
 
 #ifdef SILABS
    #include "rtcdriver.h"
@@ -21,16 +22,7 @@
 #endif
 
 #define MAX_MOTOR_NAME_LENGTH 8
-
-typedef enum {
-	AUX_MOTOR,          // extra...
-	EXTRUDER_0_MOTOR,   // 3d printer 0
-	EXTRUDER_1_MOTOR,   // 3d printer 1
-	X_AXIS_L_MOTOR,     // left right direction
-	Y_AXIS_F_MOTOR,     // front back direction
-	Z_AXIS_L_MOTOR,     // up down
-	Z_AXIS_R_MOTOR      // up down
-} CNC_MOTOR_SELECTIONS;
+#define MOTOR_PRECISION ((cnc_double) 1.0)
 
 struct cnc_motor_port_struct {
 	GPIO_Port_TypeDef en_port;
@@ -38,8 +30,6 @@ struct cnc_motor_port_struct {
 	GPIO_Port_TypeDef dir_port;
 	GPIO_Port_TypeDef ms0_port;
 	GPIO_Port_TypeDef ms1_port;
-	GPIO_Port_TypeDef min_es_port;
-	GPIO_Port_TypeDef max_es_port;
 };
 
 struct cnc_motor_pin_struct {
@@ -48,42 +38,44 @@ struct cnc_motor_pin_struct {
 	uint8_t dir_pin;
 	uint8_t ms0_pin;
 	uint8_t ms1_pin;
-	uint8_t min_es_pin;
-	uint8_t max_es_pin;
 };
 
 struct cnc_motor_struct {
 	uint8_t enabled;
-	uint8_t homed;
+	uint8_t known_position;
 	uint8_t find_zero;
 	uint8_t find_max;
-	uint8_t set;
-	uint8_t step_high;
-	uint8_t min_range_flag;
-	uint8_t max_range_flag;
-	int8_t direction; // -1 , 0, 1
-	int64_t position;
-	int64_t axis_length;
-	int64_t safe_position;
-	int64_t home_position;
-	int32_t ramp_count;
-	int32_t move_count;
-	uint32_t period;
-	uint32_t current_period;
-	uint32_t step_timer;
+	uint8_t step_set;
+   uint8_t* min_range_flag;
+   uint8_t* max_range_flag;
+	cnc_double target;
+   cnc_double position;
+	uint8_t direction;
+   cnc_double speed;
+	uint32_t next_step_count;
 	char name[MAX_MOTOR_NAME_LENGTH] = {};
 	struct cnc_motor_pin_struct pins;
 	struct cnc_motor_port_struct ports;
 };
 
 struct cnc_motor_list_struct {
-	struct cnc_motor_struct aux;
-	struct cnc_motor_struct extruder_0;
-	struct cnc_motor_struct extruder_1;
-	struct cnc_motor_struct xl_axis;
-	struct cnc_motor_struct yf_axis;
-	struct cnc_motor_struct zl_axis;
-	struct cnc_motor_struct zr_axis;
+   uint8_t motor_irq;
+   cnc_double next_period;
+	struct cnc_motor_struct motor[NUM_MOTORS];
+};
+
+struct cnc_endstop_struct {
+	uint8_t enabled;
+   uint8_t status;
+   uint8_t previous_status;
+   GPIO_Port_TypeDef port;
+	uint8_t pin;
+};
+
+struct cnc_endstop_list_struct {
+   uint8_t new_event;
+	struct cnc_endstop_struct endstop[NUM_ENDSTOPS];
+   uint8_t empty_endstop;
 };
 
 #ifdef SILABS
@@ -179,9 +171,8 @@ struct cnc_motor_list_struct {
 
 #define MOTOR_ENABLED        0
 #define MOTOR_DISABLED       1
-#define MOTOR_STILL          0
+#define MOTOR_MOVE_DECREASE  0
 #define MOTOR_MOVE_INCREASE  1
-#define MOTOR_MOVE_DECREASE -1
 #define MOTOR_MOVE_RIGHT     MOTOR_MOVE_INCREASE
 #define MOTOR_MOVE_LEFT      MOTOR_MOVE_DECREASE
 #define MOTOR_MOVE_FORWARD   MOTOR_MOVE_INCREASE
@@ -189,28 +180,32 @@ struct cnc_motor_list_struct {
 #define MOTOR_MOVE_UP        MOTOR_MOVE_INCREASE
 #define MOTOR_MOVE_DOWN      MOTOR_MOVE_DECREASE
 
-#define ENDSTOP_HIT_OR_NO_POWER 1
-#define ENDSTOP_NOT_HIT 0
+#define ENDSTOP_HIT_OR_NO_POWER 0
+#define ENDSTOP_NOT_HIT 1
 
-extern uint8_t motor_irq;
+extern cnc_double next_period;
 
 void process_motors(struct cnc_motor_list_struct* motors);
+void get_next_period(struct cnc_motor_list_struct* motors);
 void enable_motor(struct cnc_motor_struct* motor);
 void disable_motor(struct cnc_motor_struct* motor);
 void set_motor_direction(struct cnc_motor_struct* motor, int8_t direction);
 void enable_axis_motors(struct cnc_motor_list_struct* motors);
 void disable_axis_motors(struct cnc_motor_list_struct* motors);
-void check_endstops(struct cnc_motor_list_struct* motors);
-void check_endstop(struct cnc_motor_struct* motor);
-void init_motors(struct cnc_motor_list_struct* motors);
+void check_endstops(struct cnc_state_struct* cnc);
+void check_endstop(struct cnc_endstop_struct* endstop);
+void init_motors(struct cnc_motor_list_struct* motors, struct cnc_endstop_list_struct* endstops);
 void init_motor(struct cnc_motor_struct* motor, const char* name);
 void handle_motors(struct cnc_state_struct* cnc);
+void init_endstops(struct cnc_endstop_list_struct* endstops);
+void init_endstop(struct cnc_endstop_struct* endstop);
 void handle_step(struct cnc_motor_struct* motor);
-void check_periods(struct cnc_state_struct* cnc, struct cnc_motor_list_struct* motors);
-void check_period(struct cnc_state_struct* cnc, struct cnc_motor_struct* motors);
-void step_motor_high(struct cnc_motor_struct* motor);
-void step_motor_low(struct cnc_motor_struct* motor);
-void check_directions(struct cnc_state_struct* cnc, struct cnc_motor_list_struct* motor);
-void check_direction(struct cnc_state_struct* cnc, struct cnc_motor_struct* motor);
+void set_next_step(struct cnc_motor_struct* motor);
+//void check_periods(struct cnc_state_struct* cnc, struct cnc_motor_list_struct* motors);
+//void check_period(struct cnc_state_struct* cnc, struct cnc_motor_struct* motors);
+void step_motor_set_step(struct cnc_motor_struct* motor);
+void step_motor_clear_step(struct cnc_motor_struct* motor);
+//void check_directions(struct cnc_state_struct* cnc, struct cnc_motor_list_struct* motor);
+//void check_direction(struct cnc_state_struct* cnc, struct cnc_motor_struct* motor);
 
 #endif /* SRC_CNC_MOTORS_H_ */

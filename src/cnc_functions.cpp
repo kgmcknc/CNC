@@ -16,7 +16,7 @@ void init_cnc(struct cnc_state_struct* cnc){
 	uint8_t print_count = 0;
 
 	cnc->state = CNC_IDLE;
-	cnc->program_running = 0;
+	cnc->program.program_running = 0;
 	cnc->print_rp = 0;
 	cnc->print_wp = 0;
 	cnc->print_fullness = 0;
@@ -25,8 +25,6 @@ void init_cnc(struct cnc_state_struct* cnc){
 	cnc->read_complete = 0;
 	cnc->read_in_progress = 0;
 	cnc->marker_set = 0;
-	cnc->config_loaded = 0;
-   cnc->comm_connected = 0;
 
 	for(print_count=0;print_count<PRINT_DEPTH;print_count++){
 		cnc->print_buffer[print_count][0] = 0; // use % to mark end of print string
@@ -43,16 +41,12 @@ void handle_state(struct cnc_state_struct* cnc){
 	switch(cnc->state){
 		case CNC_IDLE : {
 			cnc->state = CNC_IDLE;
-			if((cnc->print_fullness > 0) && (!cnc_serial.tx_pending) && (!cnc->instruction_request_sent)){
+			if((cnc->print_fullness > 0) && (!cnc_serial.tx_pending) && (!cnc->program.instruction_request_sent)){
 				// send print if print is ready
 				cnc->state = SEND_CNC_PRINT;
 			} else {
-				if(cnc->marker_set){
-					cnc->state = SEND_CNC_MARKER;
-				} else {
-					if(cnc->comm_connected && !cnc->config_loaded){
-						cnc->state = GET_CONFIG;
-					}
+				if(cnc->endstops->new_event){
+					cnc->state = SEND_ENDPOINT_EVENT;
 				}
 			}
 			break;
@@ -60,7 +54,6 @@ void handle_state(struct cnc_state_struct* cnc){
 		case GET_STATUS : {
          cnc->cnc_write_data[0] = (char) GET_CNC_STATUS;
          update_status(cnc);
-         //parse_status(cnc);
          cnc->cnc_write_length = status_to_string(&cnc->status, &cnc->cnc_write_data[1]);
          cnc->cnc_write_length = cnc->cnc_write_length + 1;
          if(cnc_serial.send(cnc->cnc_write_length, cnc->cnc_write_data) > 0){
@@ -76,14 +69,6 @@ void handle_state(struct cnc_state_struct* cnc){
          }
 			break;
 		}
-		case GET_CONFIG : {
-         cnc->cnc_write_data[0] = (char) SET_CNC_CONFIG;
-         if(cnc_serial.send(1, cnc->cnc_write_data) > 0){
-            cnc->config_loaded = 1;
-            cnc->state = CNC_IDLE;
-         }
-			break;
-		}
 		case SEND_CNC_PRINT : {
          cnc->cnc_write_data[0] = (char) NEW_CNC_PRINT;
          parse_print(cnc);
@@ -93,10 +78,11 @@ void handle_state(struct cnc_state_struct* cnc){
          }
 			break;
 		}
-		case SEND_CNC_MARKER : {
+		case SEND_ENDPOINT_EVENT : {
          cnc->cnc_write_data[0] = (char) MARKER;
          cnc->cnc_write_length = 1;
          if(cnc_serial.send(cnc->cnc_write_length, cnc->cnc_write_data) > 0){
+            cnc->endstops->new_event = 0;
             cnc->marker_set = 0;
             cnc->state = CNC_IDLE;
          }
@@ -112,7 +98,7 @@ void handle_state(struct cnc_state_struct* cnc){
 void process_request(struct cnc_state_struct* cnc){
 	// setting state to default...
 	// it will change in switch if needed
-	cnc->state = CNC_IDLE;
+	
 	switch((CNC_OPCODES) cnc->cnc_read_data[0]){
 		case GET_CNC_VERSION : {
 			cnc->state = GET_VERSION;
@@ -122,7 +108,7 @@ void process_request(struct cnc_state_struct* cnc){
 			cnc->state = GET_STATUS;
 			break;
 		}
-		case SET_CNC_CONFIG : {
+		/*case SET_CNC_CONFIG : {
 			string_to_config(&cnc->config, &cnc->cnc_read_data[1]);
 			if(cnc->config.valid_config){
 				cnc->config.config_loaded = 1;
@@ -131,7 +117,7 @@ void process_request(struct cnc_state_struct* cnc){
 			cnc_printf(cnc, "Received Configuration!");
 			cnc->state = CNC_IDLE;
 			break;
-		}
+		}*/
 		case NEW_CNC_PRINT : {
 			// shouldn't receive this
 			break;
@@ -144,26 +130,6 @@ void process_request(struct cnc_state_struct* cnc){
 			receive_instruction(cnc);
 			break;
 		}
-		case DISABLE_ROUTE : {
-
-			break;
-		}
-		case ENABLE_ROUTE : {
-
-			break;
-		}
-		case PAUSE_PROGRAM : {
-
-			break;
-		}
-		case RESUME_PROGRAM : {
-
-			break;
-		}
-		case ERROR : {
-
-			break;
-		}
 		default : {
 			cnc->state = CNC_IDLE;
 			break;
@@ -171,36 +137,16 @@ void process_request(struct cnc_state_struct* cnc){
 	}
 }
 
-void parse_status(struct cnc_state_struct* cnc){
-	sprintf((char*) &cnc->cnc_write_data[1], "L:%d%d,R:%d%d,ZL:%d%d,ZR:%d%d,X:%ld,Y:%ld, T0:%f, T1:%f",
-			cnc->motors->xl_axis.min_range_flag, cnc->motors->xl_axis.max_range_flag,
-			cnc->motors->yf_axis.min_range_flag, cnc->motors->yf_axis.max_range_flag,
-			cnc->motors->zl_axis.min_range_flag, cnc->motors->zl_axis.max_range_flag,
-			cnc->motors->zr_axis.min_range_flag, cnc->motors->zr_axis.max_range_flag,
-			cnc->motors->xl_axis.position,
-			cnc->motors->yf_axis.position,
-			cnc->heaters->heater_0.current_temp,
-			cnc->heaters->heater_1.current_temp);
-	cnc->cnc_write_length = strlen((char*) cnc->cnc_write_data);
-}
-
 void update_status(struct cnc_state_struct* cnc){
-	cnc->status.xl_min_flag = cnc->motors->xl_axis.min_range_flag;
-	cnc->status.xl_max_flag = cnc->motors->xl_axis.max_range_flag;
-	cnc->status.yf_min_flag = cnc->motors->yf_axis.min_range_flag;
-	cnc->status.yf_max_flag = cnc->motors->yf_axis.max_range_flag;
-	cnc->status.zl_min_flag = cnc->motors->zl_axis.min_range_flag;
-	cnc->status.zl_max_flag = cnc->motors->zl_axis.max_range_flag;
-	cnc->status.zr_min_flag = cnc->motors->zr_axis.min_range_flag;
-	cnc->status.zr_max_flag = cnc->motors->zr_axis.max_range_flag;
-	cnc->status.xl_position = cnc->motors->xl_axis.position;
-	cnc->status.yf_position = cnc->motors->yf_axis.position;
-	cnc->status.zl_position = cnc->motors->zl_axis.position;
-	cnc->status.zr_position = cnc->motors->zr_axis.position;
-	cnc->status.heater_0_temp = cnc->heaters->heater_0.current_temp;
-	cnc->status.heater_1_temp = cnc->heaters->heater_1.current_temp;
-	cnc->status.heater_2_temp = cnc->heaters->heater_2.current_temp;
-	cnc->status.heater_3_temp = cnc->heaters->heater_3.current_temp;
+   for(int i=0;i<NUM_MOTORS;i++){
+      cnc->status.position[i] = cnc->motors->motor[i].position;
+   }
+   for(int i=0;i<NUM_ENDSTOPS;i++){
+      cnc->status.endstop_status[i] = cnc->endstops->endstop[i].status;
+   }
+   for(int i=0;i<NUM_HEATERS;i++){
+      cnc->status.temp[i] = cnc->heaters->heater[i].current_temp;
+   }
 }
 
 void parse_print(struct cnc_state_struct* cnc){
@@ -212,7 +158,7 @@ void parse_print(struct cnc_state_struct* cnc){
 }
 
 void parse_version(struct cnc_state_struct* cnc){
-	sprintf(&cnc->cnc_write_data[1], "Major: %d, Minor: %d, Beta: %d, Patch: %d",
+	sprintf((char*) &cnc->cnc_write_data[1], "Major: %d, Minor: %d, Beta: %d, Patch: %d",
 			(int16_t) HW_REV_MAJOR, (int16_t) HW_REV_MINOR,
 			(int16_t) HW_REV_BETA, (int16_t) HW_REV_PATCH);
 	cnc->cnc_write_length = (strlen((char*) &cnc->cnc_write_data[1]) + 1);
@@ -231,19 +177,3 @@ void cnc_printf(struct cnc_state_struct* cnc, const char* print_string, ...){
 	cnc->print_fullness++;
 }
 
-void load_config(struct cnc_state_struct* cnc){
-	cnc->motors->xl_axis.axis_length = cnc->config.x_axis_size;
-	cnc->motors->yf_axis.axis_length = cnc->config.y_axis_size;
-	cnc->motors->zl_axis.axis_length = cnc->config.zl_axis_size;
-	cnc->motors->zr_axis.axis_length = cnc->config.zr_axis_size;
-
-	cnc->motors->xl_axis.safe_position = cnc->config.xl_min_safe_pos;
-	cnc->motors->yf_axis.safe_position = cnc->config.yf_min_safe_pos;
-	cnc->motors->zl_axis.safe_position = cnc->config.zl_min_safe_pos;
-	cnc->motors->zr_axis.safe_position = cnc->config.zr_min_safe_pos;
-
-	cnc->motors->xl_axis.home_position = cnc->config.xl_min_home_pos;
-	cnc->motors->yf_axis.home_position = cnc->config.yf_min_home_pos;
-	cnc->motors->zl_axis.home_position = cnc->config.zl_min_home_pos;
-	cnc->motors->zr_axis.home_position = cnc->config.zr_min_home_pos;
-}

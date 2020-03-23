@@ -15,11 +15,9 @@
 
 #include "cnc_gpio.h"
 #include "cnc_serial.h"
-#include "cnc_pid.h"
 #include "cnc_functions.h"
 #include "cnc_instructions.h"
 #include "cnc_motors.h"
-#include "cnc_adc.h"
 #include "cnc_heaters.h"
 #include "cnc_timers.h"
 #include "math.h"
@@ -31,6 +29,7 @@ uint32_t instruction_array_fullness = 0, instruction_array_wp = 0, instruction_a
 
 struct cnc_heater_list_struct cnc_heaters;
 struct cnc_motor_list_struct cnc_motors;
+struct cnc_endstop_list_struct cnc_endstops;
 
 serial_class cnc_serial(0);
 
@@ -46,74 +45,35 @@ int cnc_main(void)
 
 	cnc.motors = &cnc_motors;
 	cnc.heaters = &cnc_heaters;
+   cnc.endstops = &cnc_endstops;
    
-	system_init(cnc.motors);
-	variable_init(&cnc, cnc.motors);
+	variable_init(&cnc);
+	system_init(&cnc);
 
    Serial.begin(57600);
    while (!Serial) {
       ; // wait for serial port to connect. Needed for native USB port only
    }
    
+   cnc_printf(&cnc, "Micro Controller Here!");
+
    /* Infinite loop */
 	while (1) {
       cnc_serial.process();
       handle_state(&cnc);
       handle_instructions(&cnc);
+      handle_motors(&cnc);
+      //handle_heaters(&cnc);
+      //handle_fans(&cnc);
    }
-   /*char tx_string[32] = "Micro Is Here!";
-   char rx_string[32];
-   uint8_t send_one = 1;
-   uint32_t send_count = 0;
-   while(1){
-      //check_endstops(cnc.motors);
-      cnc_serial.process();
-      if(cnc_serial.is_connected){
-         sprintf(tx_string, "Micro Is Here! %d", send_count);
-         if(cnc_serial.send(32, tx_string)){
-            send_count = send_count + 1;
-         }
-      }
-      if(cnc_serial.rx_queue_fullness > 0){
-         cnc_serial.receive((uint8_t*) rx_string);
-      }
-      if(pid_irq){
-         pid_irq = 0;
-         step_motor_high(&cnc.motors->xl_axis);
-      } else {
-         step_motor_low(&cnc.motors->xl_axis);
-      }
-      if(motor_irq){
-         motor_irq = 0;
-         step_motor_high(&cnc.motors->yf_axis);
-      } else {
-         step_motor_low(&cnc.motors->yf_axis);
-      }
-      if(cnc.motors->xl_axis.max_range_flag){
-         set_motor_direction(&cnc.motors->xl_axis, MOTOR_MOVE_DECREASE);
-      }
-      if(cnc.motors->xl_axis.min_range_flag){
-         set_motor_direction(&cnc.motors->xl_axis, MOTOR_MOVE_INCREASE);
-      }
-      if(cnc.motors->yf_axis.max_range_flag){
-         set_motor_direction(&cnc.motors->yf_axis, MOTOR_MOVE_DECREASE);
-      }
-      if(cnc.motors->yf_axis.min_range_flag){
-         set_motor_direction(&cnc.motors->yf_axis, MOTOR_MOVE_INCREASE);
-      }
-   }*/
-
+   
    return 0;
 }
 
-void system_init(cnc_motor_list_struct* cnc_motors){
-	//init_clocks();
-	//init_gpio();
-	//init_adc();
+void system_init(struct cnc_state_struct* cnc){
+	init_clocks();
+	init_gpio(cnc);
 	init_timers();
-
-	// init timer with interrupt for hotend pid loop
-	// init timer with interrupt for motor movements
 }
 
 void init_clocks(void){
@@ -129,38 +89,10 @@ void init_clocks(void){
    #endif
 }
 
-void variable_init(cnc_state_struct* cnc, cnc_motor_list_struct* cnc_motors){
-	init_motors(cnc_motors);
-	//init_instructions(cnc);
-	//init_cnc(cnc);
-	//init_config(&cnc->config);
-	//init_pid();
-}
-
-void init_config(cnc_config_struct* config){
-	config->config_loaded = 0;
-	config->valid_config = 0;
-	config->max_speed = 0;
-	config->min_speed = 0;
-	config->ramp_period = 0;
-	config->xl_min_safe_pos = 0;
-	config->xr_max_safe_pos = 0;
-	config->yf_min_safe_pos = 0;
-	config->yb_max_safe_pos = 0;
-	config->zl_min_safe_pos = 0;
-	config->zl_max_safe_pos = 0;
-	config->zr_min_safe_pos = 0;
-	config->zr_max_safe_pos = 0;
-	config->xl_min_home_pos = 0;
-	config->xr_max_home_pos = 0;
-	config->yf_min_home_pos = 0;
-	config->yb_max_home_pos = 0;
-	config->zl_min_home_pos = 0;
-	config->zl_max_home_pos = 0;
-	config->zr_min_home_pos = 0;
-	config->zr_max_home_pos = 0;
-	config->x_axis_size = 0;
-	config->y_axis_size = 0;
-	config->zl_axis_size = 0;
-	config->zr_axis_size = 0;
+void variable_init(struct cnc_state_struct* cnc){
+   init_heaters(cnc->heaters);
+   init_endstops(cnc->endstops);
+	init_motors(cnc->motors, cnc->endstops);
+	init_instructions(cnc);
+	init_cnc(cnc);
 }

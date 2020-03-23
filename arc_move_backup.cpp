@@ -1,6 +1,6 @@
 
 #include "main.h"
-
+/*
 #ifdef SILABS
    #include "em_device.h"
    #include "em_chip.h"
@@ -38,7 +38,7 @@ int cnc_main(void)
 {
 	
    #ifdef SILABS
-      /* Chip errata */
+      
 	   CHIP_Init();
    #else
 
@@ -82,7 +82,7 @@ int cnc_main(void)
    double x_offset;
    double y_offset;
    double y_calc;
-   /* Infinite loop */
+
 	while (1) {
       if(x_per == 0.0){
          //printf("INIT X POS: %f\n", x_pos);
@@ -255,3 +255,4 @@ void init_config(cnc_config_struct* config){
 	config->zl_axis_size = 0;
 	config->zr_axis_size = 0;
 }
+*/

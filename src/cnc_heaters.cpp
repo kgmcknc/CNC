@@ -8,8 +8,6 @@
 #include "Arduino.h"
 #include "stdint.h"
 #include "cnc_heaters.h"
-#include "cnc_pid.h"
-#include "cnc_adc.h"
 #include "cnc_gpio.h"
 
 #include "cnc_motors.h"
@@ -27,20 +25,19 @@
 #define FAN_ON 1
 #define UPDATE_INTERVAL 200
 #define AVERAGE_COUNT 64
-
-
+/*
 uint16_t adc_av[NUM_ADCS][AVERAGE_COUNT] = {0};
 uint16_t av_pnt[NUM_ADCS] = {0};
 uint32_t print_count = 0;
 uint32_t update_count = 0;
-
+*/
 void handle_heaters(struct cnc_state_struct* cnc){
-	uint8_t heater_count = 0;
+	/*uint8_t heater_count = 0;
 	uint32_t current_average[NUM_ADCS];
-	double current_temp[NUM_ADCS];
-	double current_voltage[NUM_ADCS];
-	double current_resistance[NUM_ADCS];
-	double log_val;
+	cnc_double current_temp[NUM_ADCS];
+	cnc_double current_voltage[NUM_ADCS];
+	cnc_double current_resistance[NUM_ADCS];
+	cnc_double log_val;
 	uint16_t av_cnt;
 
 	//if(update_pid){
@@ -64,11 +61,11 @@ void handle_heaters(struct cnc_state_struct* cnc){
 				}
 				current_average[heater_count] = current_average[heater_count] / AVERAGE_COUNT;
 				adc_channel_valid[heater_count] = 0;
-				current_voltage[heater_count] = ((double) IN_VOLT*adc_channel_data[heater_count])/ADC_MAX;
-				current_resistance[heater_count] = (((double) IN_VOLT*BASE_RESISTANCE)/current_voltage[heater_count])-BASE_RESISTANCE;
+				current_voltage[heater_count] = ((cnc_double) IN_VOLT*adc_channel_data[heater_count])/ADC_MAX;
+				current_resistance[heater_count] = (((cnc_double) IN_VOLT*BASE_RESISTANCE)/current_voltage[heater_count])-BASE_RESISTANCE;
 				if(current_resistance[heater_count] > 0){
-					log_val = (double) log(BASE_RESISTANCE/current_resistance[heater_count]);
-					current_temp[heater_count] = ((double) (log_val*(KELVIN_CONV*(BASE_TEMP+KELVIN_CONV)))+(BASE_TEMP*BETA_VALUE))/(BETA_VALUE-(log_val*(BASE_TEMP+KELVIN_CONV)));
+					log_val = (cnc_double) log(BASE_RESISTANCE/current_resistance[heater_count]);
+					current_temp[heater_count] = ((cnc_double) (log_val*(KELVIN_CONV*(BASE_TEMP+KELVIN_CONV)))+(BASE_TEMP*BETA_VALUE))/(BETA_VALUE-(log_val*(BASE_TEMP+KELVIN_CONV)));
 					if(!print_count && !heater_count){
 						//cnc_printf(&cnc,"volt: %f, res: %f, log: %f", current_voltage[heater_count], current_resistance[heater_count], log_val);
 						//cnc_printf(&cnc,"ADC: %ld, Temp: %f C, %f F", adc_channel_data[heater_count], current_temp[heater_count], (((current_temp[heater_count]*9)/5)+32));
@@ -90,15 +87,25 @@ void handle_heaters(struct cnc_state_struct* cnc){
 		if(cnc->heaters->heater_0.fan_on == FAN_ON){
 			// turn off fan
 		}
-	}
+	}*/
 }
 
 void init_heaters(cnc_heater_list_struct* heaters){
-
+   heaters->heater_irq = 0;
+   for(int i=0;i<NUM_HEATERS;i++){
+      init_heater(&heaters->heater[i]);
+   }
 }
 
 void init_heater(cnc_heater_struct* heater){
-
+   heater->fan_on = 0;
+   heater->fan_duty = 0;
+   heater->enabled = 0;
+   heater->reset_heater = 0;
+   heater->temp_locked = 0;
+   heater->wait_for_temp = 0;
+   heater->target_temp = 0;
+   heater->current_temp = 0;
 }
 
 void enable_heater_fans(void){

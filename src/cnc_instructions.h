@@ -11,14 +11,9 @@
 #include "stdint.h"
 #include "cnc_functions.h"
 #include "cnc_heaters.h"
-#include "cnc_pid.h"
 #include "common_cnc.h"
 
 #define INSTRUCTION_FIFO_DEPTH 2
-#define PRINT_DEPTH 16
-#define MAX_PRINT_LENGTH 8
-#define INSTRUCTION_BYTE_LENGTH sizeof(cnc_instruction_struct)
-#define MAX_COMM_TRANSFER ((INSTRUCTION_BYTE_LENGTH > MAX_PRINT_LENGTH) ? INSTRUCTION_BYTE_LENGTH : MAX_PRINT_LENGTH)
 
 extern struct cnc_instruction_struct cnc_instruction, cnc_instruction_next;
 extern struct cnc_instruction_struct instruction_array[INSTRUCTION_FIFO_DEPTH];
@@ -32,13 +27,15 @@ void handle_instructions(struct cnc_state_struct* cnc);
 void set_instruction(struct cnc_state_struct* cnc);
 void set_motor_instruction(struct cnc_state_struct* cnc, struct cnc_motor_instruction_struct* current_instruction, struct cnc_motor_struct* motor);
 void set_heater_instruction(struct cnc_heater_instruction_struct* current_instruction, struct cnc_heater_struct* heater);
+void set_aux_instruction(struct cnc_state_struct* cnc, struct cnc_aux_instruction_struct* current_instruction);
 void clear_program(struct cnc_state_struct* cnc);
 void handle_program(struct cnc_state_struct* cnc);
 void process_instruction(struct cnc_state_struct* cnc);
 void init_instructions(struct cnc_state_struct* cnc);
 void copy_instruction(struct cnc_instruction_struct* new_instruction, struct cnc_instruction_struct* current_instruction);
-void check_motor_instruction(struct cnc_motor_instruction_struct* current_instruction, struct cnc_motor_struct* motor);
-void check_heater_instruction(struct cnc_heater_instruction_struct* current_instruction, struct cnc_heater_struct* heater);
+uint8_t check_motor_instruction(struct cnc_motor_instruction_struct* current_instruction, struct cnc_motor_struct* motor);
+uint8_t check_heater_instruction(struct cnc_heater_instruction_struct* current_instruction, struct cnc_heater_struct* heater);
+uint8_t check_aux_instruction(struct cnc_aux_instruction_struct* current_instruction);
 void abort_motor_instruction(struct cnc_motor_instruction_struct* current_instruction, struct cnc_motor_struct* motor);
 void abort_heater_instruction(struct cnc_heater_instruction_struct* current_instruction, struct cnc_heater_struct* heater);
 void check_instruction(struct cnc_state_struct* cnc);

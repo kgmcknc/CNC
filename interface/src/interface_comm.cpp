@@ -1,16 +1,14 @@
 #include "main.h"
 #include "interface_serial.h"
+#include "common_cnc.h"
 
-//void display_cnc_print(struct spi_struct* spi){
-	/*char read_string[PRINT_LENGTH];
-	if(spi->transfer_length > PRINT_LENGTH) spi->transfer_length = PRINT_LENGTH;
-	//wiringPiSPIDataRW(SPI_CHANNEL, spi->spi_data, spi->transfer_length+IDLE_LENGTH);
-	strncpy(read_string, spi->spi_data + IDLE_LENGTH, spi->transfer_length);
-	read_string[spi->transfer_length] = '\0';
+void display_cnc_print(uint8_t* print_string, uint32_t length){
+	char read_string[MAX_PRINT_LENGTH];
+	if(length > (MAX_PRINT_LENGTH-1)) length = MAX_PRINT_LENGTH;
+	strncpy(read_string, (const char*) print_string, length);
+	read_string[length] = '\0';
 	printf("CNC Print: %s\n", read_string);
-	spi->state = spi_idle;
-	spi->pending_opcode = idle;*/
-//}
+}
 
 char instruction_count = 0;
 

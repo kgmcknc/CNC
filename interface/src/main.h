@@ -23,6 +23,7 @@ struct interface_struct {
    uint8_t motors_enabled;
    uint8_t machine_marker;
    uint8_t machine_processing;
+   uint8_t instruction_requested;
    FILE* gcode_fp;
    char file_name[MAX_USER_COMMAND];
    char user_command[MAX_USER_COMMAND];
@@ -38,7 +39,6 @@ struct interface_struct {
    uint16_t command_counter = 0;
    uint8_t user_command_set = 0;
    uint8_t user_command_finished = 0;
-   uint8_t comm_connected = 0;
    uint8_t machine_configured = 0;
    struct cnc_instruction_struct user_instruction;
 };

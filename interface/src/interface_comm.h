@@ -20,7 +20,7 @@ extern int serial_fd;
 //enum spi_opcodes parse_opcode(char opcode_string[MAX_SPI_LENGTH]);
 void handle_opcode(struct spi_struct* spi, enum spi_opcodes new_opcode);
 void handle_request(struct spi_struct* spi);
-void display_cnc_print(struct spi_struct* spi);
+void display_cnc_print(uint8_t* print_string, uint32_t length);
 void send_cnc_instruction(struct spi_struct* spi);
 void send_cnc_opcode(struct spi_struct* spi);
 void request_reconnect(struct spi_struct* spi);

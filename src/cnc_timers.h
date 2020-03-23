@@ -9,9 +9,13 @@
 #define SRC_CNC_TIMERS_H_
 
 #include "stdint.h"
-#include "cnc_heaters.h"
-#include "cnc_motors.h"
-#include "cnc_pid.h"
+
+#define TIMER_BASE_HZ 16000000
+#define TIMER_BASE_DIVIDE 256
+#define TIMER_HZ (TIMER_BASE_HZ/TIMER_BASE_DIVIDE)
+#define TIMER_PERIOD_US ((cnc_double) (1/TIMER_HZ))
+#define IRQ_TIME_US 16
+#define DEFAULT_PERIOD 3125
 
 /*#define MOTOR_TIMER_PERIOD_US  1 // 1 microsecond
 #define MOTOR_TIMER_CLOCK      cmuClock_TIMER0

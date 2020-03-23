@@ -11,10 +11,12 @@
    #include "Arduino.h"
 #endif
 
+#include "common_cnc.h"
 #include "cnc_gpio.h"
+#include "main.h"
 #include "stdint.h"
 
-void init_gpio(void){
+void init_gpio(struct cnc_state_struct* cnc){
    #ifdef SILABS
       //GPIO_PinModeSet(SPI_REQUEST_PORT, SPI_REQUEST_PIN, gpioModePushPull, 0);
       //GPIO_PinModeSet(SPI_RESET_PORT, SPI_RESET_PIN, gpioModeInputPull, 1);
@@ -83,6 +85,10 @@ void init_gpio(void){
       GPIO_PinModeSet(MOTOR_6_MS0_PORT, MOTOR_6_MS0_PIN, gpioModePushPull, 0);
       GPIO_PinModeSet(MOTOR_6_MS1_PORT, MOTOR_6_MS1_PIN, gpioModePushPull, 0);
    #else
+      //for(int i=0;i<NUM_ENDSTOPS;i++){
+      //   pinMode(cnc->, INPUT_PULLUP);
+      //}
+      
       pinMode(ENDSTOP_0_PIN, INPUT_PULLUP);
       pinMode(ENDSTOP_1_PIN, INPUT_PULLUP);
       pinMode(ENDSTOP_2_PIN, INPUT_PULLUP);
@@ -91,6 +97,10 @@ void init_gpio(void){
       pinMode(ENDSTOP_5_PIN, INPUT_PULLUP);
       pinMode(ENDSTOP_6_PIN, INPUT_PULLUP);
       pinMode(ENDSTOP_7_PIN, INPUT_PULLUP);
+      pinMode(ENDSTOP_8_PIN, INPUT_PULLUP);
+      pinMode(ENDSTOP_9_PIN, INPUT_PULLUP);
+      pinMode(ENDSTOP_10_PIN, INPUT_PULLUP);
+      pinMode(ENDSTOP_11_PIN, INPUT_PULLUP);
 
       pinMode(TOOL_0_EN_PIN, OUTPUT);
       pinMode(TOOL_1_EN_PIN, OUTPUT);

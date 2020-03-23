@@ -8,30 +8,29 @@
 uint8_t print_set = 0;
 uint8_t configure_stage = 0;
 uint8_t configure_processing = 0;
-uint8_t rx_string[32];
-uint8_t tx_string[32];
-uint32_t send_count;
+
+#define MOVE_PERIOD 3125
+
 void handle_cnc_state(struct interface_struct* interface){
    cnc_serial.process();
+   if(cnc_serial.rx_queue_fullness > 0){
+      // received spi transaction
+      // process that instead of user input
+      interface->cnc_read_length = cnc_serial.receive(interface->cnc_read_data);
+      process_request(interface);
+   }
 	switch(interface->machine_state){
 		case MACHINE_IDLE : {
-			if(cnc_serial.rx_queue_fullness > 0){
-				// received spi transaction
-				// process that instead of user input
-            interface->cnc_read_length = cnc_serial.receive(interface->cnc_read_data);
-				process_request(interface);
-			} else {
-				// if not processing spi, process user input
-				socket_handler(&interface->user_command_set, interface->user_input);
-				receive_user_input(interface);
-				if(interface->user_command_finished){
-					interface->machine_state = PROCESS_INPUT;
-				} else {
-					//if(interface->comm_connected && !interface->machine_configured){
-					//	interface->machine_state = SEND_CONFIG;
-					//}
-				}
-			}
+         // if not processing spi, process user input
+         socket_handler(&interface->user_command_set, interface->user_input);
+         receive_user_input(interface);
+         if(interface->user_command_finished){
+            interface->machine_state = PROCESS_INPUT;
+         } else {
+            if(interface->instruction_requested){
+               interface->machine_state = SEND_INSTRUCTION;
+            }
+         }
 			break;
 		}
 		case PROCESS_INPUT : {
@@ -68,7 +67,7 @@ void handle_cnc_state(struct interface_struct* interface){
 			break;
 		}
 		case GET_STATUS : {
-         interface->cnc_write_data[0] = (char) GET_CNC_STATUS;
+         interface->cnc_write_data[0] = (uint8_t) GET_CNC_STATUS;
          if(cnc_serial.send(1, interface->cnc_write_data) > 0){
             interface->machine_state = MACHINE_IDLE;
          } else {
@@ -77,7 +76,7 @@ void handle_cnc_state(struct interface_struct* interface){
 			break;
 		}
 		case GET_VERSION : {
-         interface->cnc_write_data[0] = (char) GET_CNC_VERSION;
+         interface->cnc_write_data[0] = (uint8_t) GET_CNC_VERSION;
          if(cnc_serial.send(1, interface->cnc_write_data) > 0){
             interface->machine_state = MACHINE_IDLE;
          } else {
@@ -85,7 +84,7 @@ void handle_cnc_state(struct interface_struct* interface){
          }
 			break;
 		}
-		case SEND_CONFIG : {
+		/*case SEND_CONFIG : {
          interface->cnc_write_data[0] = (char) SET_CNC_CONFIG;
          interface->cnc_write_length = config_to_string(&interface->machine_config, (char*) &interface->cnc_write_data[1]);
          interface->cnc_write_length = interface->cnc_write_length + 1; // add one for opcode at first byte
@@ -98,41 +97,43 @@ void handle_cnc_state(struct interface_struct* interface){
             interface->machine_state = SEND_CONFIG;
          }
 			break;
-		}
+		}*/
 		case USER_CONTROL : {
-         if(cnc_serial.tx_pending){
-            // wait for instruction to be sent
+         if(interface->user_instruction.instruction_valid){
+            interface->cnc_write_data[0] = (uint8_t) NEW_CNC_INSTRUCTION;
+            interface->cnc_write_length = instruction_to_string(&interface->user_instruction, &interface->cnc_write_data[1]);
+            interface->cnc_write_length = interface->cnc_write_length + 1;
+            if(cnc_serial.send(interface->cnc_write_length, interface->cnc_write_data) > 0){
+               interface->user_instruction.instruction_valid = 0;
+               printf("Sent finally\n");
+            } else {
+               //printf("still can't send\n");
+            }
          } else {
-            if(interface->user_instruction.instruction_valid){
-               interface->cnc_write_data[0] = (char) NEW_CNC_INSTRUCTION;
-					interface->cnc_write_length = instruction_to_string(&interface->user_instruction, (char*) &interface->cnc_write_data[1]);
-					interface->cnc_write_length = interface->cnc_write_length + 1;
-					if(cnc_serial.send(interface->cnc_write_length, interface->cnc_write_data) > 0){
+            clear_instruction(&interface->user_instruction);
+            interface->user_instruction.instruction_valid = 0;
+            socket_handler(&interface->user_command_set, interface->user_input);
+            if(interface->user_command_set){
+               if(interface->user_input[0] == 13 || interface->user_input[0] == 10 || interface->user_input[0] == 'q'){
+                  // new line or CR so finish
+                  interface->machine_state = MACHINE_IDLE;
                   interface->user_instruction.instruction_valid = 0;
+                  print_set = 0;
+               } else {
+                  receive_user_control(interface);
                }
             } else {
-               clear_instruction(&interface->user_instruction);
-               interface->user_instruction.instruction_valid = 0;
-               socket_handler(&interface->user_command_set, interface->user_input);
-               if(interface->user_command_set){
-                  if(interface->user_input[0] == 13 || interface->user_input[0] == 10 || interface->user_input[0] == 'q'){
-                     // new line or CR so finish
-                     interface->machine_state = MACHINE_IDLE;
-                     interface->user_instruction.instruction_valid = 0;
-                     print_set = 0;
-                  } else {
-                     receive_user_control(interface);
-                  }
+               interface->machine_state = USER_CONTROL;
+            }
+            if(interface->user_instruction.instruction_valid){
+               interface->cnc_write_data[0] = (uint8_t) NEW_CNC_INSTRUCTION;
+               interface->cnc_write_length = instruction_to_string(&interface->user_instruction, &interface->cnc_write_data[1]);
+               interface->cnc_write_length = interface->cnc_write_length + 1;
+               if(cnc_serial.send(interface->cnc_write_length, interface->cnc_write_data) > 0){
+                  interface->user_instruction.instruction_valid = 0;
+                  //printf("Sent first time\n");
                } else {
-                  interface->machine_state = USER_CONTROL;
-               }
-               if(interface->user_instruction.instruction_valid){
-                  interface->cnc_write_data[0] = (char) NEW_CNC_INSTRUCTION;
-                  interface->cnc_write_length = instruction_to_string(&interface->user_instruction, (char*) &interface->cnc_write_data[1]);
-                  interface->cnc_write_length = interface->cnc_write_length + 1;
-                  if(cnc_serial.send(interface->cnc_write_length, interface->cnc_write_data) > 0){
-                     interface->user_instruction.instruction_valid = 0;
-                  }
+                  printf("couldn't send first time\n");
                }
             }
          }
@@ -169,9 +170,9 @@ void handle_cnc_state(struct interface_struct* interface){
 		case SEND_INSTRUCTION : {
          if(interface->program.instruction_rp <= interface->program.program_length){
             if(interface->program.instruction[interface->program.instruction_rp].instruction_valid){
-               interface->cnc_write_data[0] = (char) NEW_CNC_INSTRUCTION;
+               interface->cnc_write_data[0] = (uint8_t) NEW_CNC_INSTRUCTION;
                interface->cnc_write_length = instruction_to_string(&interface->program.instruction[interface->program.instruction_rp],
-                                                         (char*) &interface->cnc_write_data[1]);
+                                                         &interface->cnc_write_data[1]);
                interface->cnc_write_length = interface->cnc_write_length + 1; // add one for 0 opcode
                if(cnc_serial.send(interface->cnc_write_length, interface->cnc_write_data) > 0){
                   interface->program.instruction_rp++;
@@ -190,7 +191,7 @@ void handle_cnc_state(struct interface_struct* interface){
 			break;
 		}
 		case UPDATE_FIRMARE : {
-			update_si_firmware(interface);
+			update_firmware(interface);
 			interface->machine_state = MACHINE_IDLE;
 			break;
 		}
@@ -245,111 +246,103 @@ void receive_user_control(struct interface_struct* interface){
 		}
 		//printf("Data: %d, %d, %d, %d, %d, %d, %d\n", interface->user_input[0], interface->user_input[1], interface->user_input[2], interface->user_input[3], interface->user_input[4], interface->user_input[5], interface->user_input[6]);
 		switch(interface->user_input[0]){
-			interface->user_instruction.opcode = EMPTY_OPCODE;
 			case 'a' : {
 				// abort current instruction
+            interface->user_instruction.instruction_type = AUX_INSTRUCTION;
 				interface->user_instruction.instruction_valid = 1;
-				interface->user_instruction.opcode = ABORT_INSTRUCTION;
+				interface->user_instruction.instruction.aux.opcode = ABORT_INSTRUCTION;
 				break;
 			}
 			case 'e' : {
+            interface->user_instruction.instruction_type = AUX_INSTRUCTION;
 				interface->user_instruction.instruction_valid = 1;
-				interface->user_instruction.opcode = ENABLE_MOTORS;
-				interface->user_instruction.xl_axis.pending_enable = 1;
-				interface->user_instruction.xl_axis.opcode = ENABLE_MOTORS;
-				interface->user_instruction.yf_axis.pending_enable = 1;
-				interface->user_instruction.yf_axis.opcode = ENABLE_MOTORS;
-				interface->user_instruction.zl_axis.pending_enable = 1;
-				interface->user_instruction.zl_axis.opcode = ENABLE_MOTORS;
-				interface->user_instruction.zr_axis.pending_enable = 1;
-				interface->user_instruction.zr_axis.opcode = ENABLE_MOTORS;
-				interface->user_instruction.extruder_0.pending_enable = 1;
-				interface->user_instruction.extruder_0.opcode = ENABLE_MOTORS;
-				interface->user_instruction.extruder_1.pending_enable = 1;
-				interface->user_instruction.extruder_1.opcode = ENABLE_MOTORS;
-				interface->user_instruction.aux.pending_enable = 1;
-				interface->user_instruction.aux.opcode = ENABLE_MOTORS;
+				interface->user_instruction.instruction.aux.opcode = ENABLE_MOTORS;
+            for(int i=0;i<NUM_MOTORS;i++){
+               interface->user_instruction.instruction.aux.enable_motor[i] = 1;
+            }
 				break;
 			}
 			case 'd' : {
+				interface->user_instruction.instruction_type = AUX_INSTRUCTION;
 				interface->user_instruction.instruction_valid = 1;
-				interface->user_instruction.opcode = DISABLE_MOTORS;
-				interface->user_instruction.xl_axis.pending_disable = 1;
-				interface->user_instruction.xl_axis.opcode = DISABLE_MOTORS;
-				interface->user_instruction.yf_axis.pending_disable = 1;
-				interface->user_instruction.yf_axis.opcode = DISABLE_MOTORS;
-				interface->user_instruction.zl_axis.pending_disable = 1;
-				interface->user_instruction.zl_axis.opcode = DISABLE_MOTORS;
-				interface->user_instruction.zr_axis.pending_disable = 1;
-				interface->user_instruction.zr_axis.opcode = DISABLE_MOTORS;
-				interface->user_instruction.extruder_0.pending_disable = 1;
-				interface->user_instruction.extruder_0.opcode = DISABLE_MOTORS;
-				interface->user_instruction.extruder_1.pending_disable = 1;
-				interface->user_instruction.extruder_1.opcode = DISABLE_MOTORS;
-				interface->user_instruction.aux.pending_disable = 1;
-				interface->user_instruction.aux.opcode = DISABLE_MOTORS;
+				interface->user_instruction.instruction.aux.opcode = DISABLE_MOTORS;
+            for(int i=0;i<NUM_MOTORS;i++){
+               interface->user_instruction.instruction.aux.disable_motor[i] = 1;
+            }
 				break;
 			}
 			case 27 : { // escape character 
 				if(!strcmp(&interface->user_input[1], "[A")){
 					// up arrow - forward
+               interface->user_instruction.instruction_type = MOTOR_INSTRUCTION;
 					interface->user_instruction.instruction_valid = 1;
-					interface->user_instruction.yf_axis.instruction_valid = 1;
-					interface->user_instruction.yf_axis.move_count = 10;
-					interface->user_instruction.yf_axis.current_period = MOVE_PERIOD;
+					interface->user_instruction.instruction.motors.motor[MOTOR_AXIS_YF].instruction_valid = 1;
+               interface->user_instruction.instruction.motors.motor[MOTOR_AXIS_YF].relative_move = 1;
+					interface->user_instruction.instruction.motors.motor[MOTOR_AXIS_YF].end_position = 10.0;
+					interface->user_instruction.instruction.motors.speed = MOVE_PERIOD;
 					break;
 				}
 				if(!strcmp(&interface->user_input[1], "[B")){
 					// down arrow - backward
-					interface->user_instruction.instruction_valid = 1;
-					interface->user_instruction.yf_axis.instruction_valid = 1;
-					interface->user_instruction.yf_axis.move_count = -10;
-					interface->user_instruction.yf_axis.current_period = MOVE_PERIOD;
+					interface->user_instruction.instruction_type = MOTOR_INSTRUCTION;
+               interface->user_instruction.instruction_valid = 1;
+               interface->user_instruction.instruction.motors.motor[MOTOR_AXIS_YF].instruction_valid = 1;
+               interface->user_instruction.instruction.motors.motor[MOTOR_AXIS_YF].relative_move = 1;
+					interface->user_instruction.instruction.motors.motor[MOTOR_AXIS_YF].end_position = -10.0;
+					interface->user_instruction.instruction.motors.speed = MOVE_PERIOD;
 					break;
 				}
 				if(!strcmp(&interface->user_input[1], "[C")){
 					// right arrow - right
+               interface->user_instruction.instruction_type = MOTOR_INSTRUCTION;
 					interface->user_instruction.instruction_valid = 1;
-					interface->user_instruction.xl_axis.instruction_valid = 1;
-					interface->user_instruction.xl_axis.move_count = 10;
-					interface->user_instruction.xl_axis.current_period = MOVE_PERIOD;
+					interface->user_instruction.instruction.motors.motor[MOTOR_AXIS_XL].instruction_valid = 1;
+               interface->user_instruction.instruction.motors.motor[MOTOR_AXIS_XL].relative_move = 1;
+					interface->user_instruction.instruction.motors.motor[MOTOR_AXIS_XL].end_position = 10.0;
+					interface->user_instruction.instruction.motors.speed = MOVE_PERIOD;
 					break;
 				}
 				if(!strcmp(&interface->user_input[1], "[D")){
 					// left arrow - left
+               interface->user_instruction.instruction_type = MOTOR_INSTRUCTION;
 					interface->user_instruction.instruction_valid = 1;
-					interface->user_instruction.xl_axis.instruction_valid = 1;
-					interface->user_instruction.xl_axis.move_count = -10;
-					interface->user_instruction.xl_axis.current_period = MOVE_PERIOD;
+					interface->user_instruction.instruction.motors.motor[MOTOR_AXIS_XL].instruction_valid = 1;
+               interface->user_instruction.instruction.motors.motor[MOTOR_AXIS_XL].relative_move = 1;
+					interface->user_instruction.instruction.motors.motor[MOTOR_AXIS_XL].end_position = -10.0;
+					interface->user_instruction.instruction.motors.speed = MOVE_PERIOD;
 					break;
 				}
 				if(!strcmp(&interface->user_input[1], "[1;2A")){
 					// shift and up arrow - up
+               interface->user_instruction.instruction_type = MOTOR_INSTRUCTION;
 					interface->user_instruction.instruction_valid = 1;
-					interface->user_instruction.zl_axis.instruction_valid = 1;
-					interface->user_instruction.zl_axis.move_count = 10;
-					interface->user_instruction.zl_axis.current_period = MOVE_PERIOD;
-					interface->user_instruction.zr_axis.instruction_valid = 1;
-					interface->user_instruction.zr_axis.move_count = 10;
-					interface->user_instruction.zr_axis.current_period = MOVE_PERIOD;
+					interface->user_instruction.instruction.motors.motor[MOTOR_AXIS_ZL].instruction_valid = 1;
+               interface->user_instruction.instruction.motors.motor[MOTOR_AXIS_ZL].relative_move = 1;
+					interface->user_instruction.instruction.motors.motor[MOTOR_AXIS_ZL].end_position = 10.0;
+               interface->user_instruction.instruction.motors.motor[MOTOR_AXIS_ZR].instruction_valid = 1;
+               interface->user_instruction.instruction.motors.motor[MOTOR_AXIS_ZR].relative_move = 1;
+					interface->user_instruction.instruction.motors.motor[MOTOR_AXIS_ZR].end_position = 10.0;
+					interface->user_instruction.instruction.motors.speed = MOVE_PERIOD;
 					break;
 				}
 				if(!strcmp(&interface->user_input[1], "[1;2B")){
 					// shift and down arrow - down
+               interface->user_instruction.instruction_type = MOTOR_INSTRUCTION;
 					interface->user_instruction.instruction_valid = 1;
-					interface->user_instruction.zl_axis.move_count = -10;
-					interface->user_instruction.zl_axis.current_period = MOVE_PERIOD;
-					interface->user_instruction.zl_axis.instruction_valid = 1;
-					interface->user_instruction.zr_axis.move_count = -10;
-					interface->user_instruction.zr_axis.current_period = MOVE_PERIOD;
-					interface->user_instruction.zr_axis.instruction_valid = 1;
+					interface->user_instruction.instruction.motors.motor[MOTOR_AXIS_ZL].instruction_valid = 1;
+               interface->user_instruction.instruction.motors.motor[MOTOR_AXIS_ZL].relative_move = 1;
+					interface->user_instruction.instruction.motors.motor[MOTOR_AXIS_ZL].end_position = -10.0;
+               interface->user_instruction.instruction.motors.motor[MOTOR_AXIS_ZR].instruction_valid = 1;
+               interface->user_instruction.instruction.motors.motor[MOTOR_AXIS_ZR].relative_move = 1;
+					interface->user_instruction.instruction.motors.motor[MOTOR_AXIS_ZR].end_position = -10.0;
+					interface->user_instruction.instruction.motors.speed = MOVE_PERIOD;
 					break;
 				}
 				break;
 			}
 			case 'c' : {
 				// config which will measure all axis lengths
-				interface->user_instruction.instruction_valid = 1;
+				/*interface->user_instruction.instruction_valid = 1;
 				interface->user_instruction.opcode = MEASURE_AXIS;
 				interface->user_instruction.xl_axis.opcode = MEASURE_AXIS;
 				interface->user_instruction.xl_axis.current_period = MOVE_PERIOD;
@@ -362,39 +355,29 @@ void receive_user_control(struct interface_struct* interface){
 				interface->user_instruction.zl_axis.instruction_valid = 1;
 				interface->user_instruction.zr_axis.opcode = MEASURE_AXIS;
 				interface->user_instruction.zr_axis.current_period = MOVE_PERIOD;
-				interface->user_instruction.zr_axis.instruction_valid = 1;
+				interface->user_instruction.zr_axis.instruction_valid = 1;*/
 				break;
 			}
 			case 'z' : {
-				interface->user_instruction.instruction_valid = 1;
-				interface->user_instruction.xl_axis.opcode = ZERO_MOTOR;
-				interface->user_instruction.xl_axis.current_period = MOVE_PERIOD;
-				interface->user_instruction.xl_axis.instruction_valid = 1;
-				interface->user_instruction.yf_axis.opcode = ZERO_MOTOR;
-				interface->user_instruction.yf_axis.current_period = MOVE_PERIOD;
-				interface->user_instruction.yf_axis.instruction_valid = 1;
-				interface->user_instruction.zl_axis.opcode = ZERO_MOTOR;
-				interface->user_instruction.zl_axis.current_period = MOVE_PERIOD;
-				interface->user_instruction.zl_axis.instruction_valid = 1;
-				interface->user_instruction.zr_axis.opcode = ZERO_MOTOR;
-				interface->user_instruction.zr_axis.current_period = MOVE_PERIOD;
-				interface->user_instruction.zr_axis.instruction_valid = 1;
+            interface->user_instruction.instruction_type = AUX_INSTRUCTION;
+            interface->user_instruction.instruction_valid = 1;
+            interface->user_instruction.instruction.aux.opcode = MOVE_TO_ENDSTOP;
+            interface->user_instruction.instruction.aux.min_motor[MOTOR_AXIS_XL] = 1;
+            interface->user_instruction.instruction.aux.min_motor[MOTOR_AXIS_YF] = 1;
+            interface->user_instruction.instruction.aux.min_motor[MOTOR_AXIS_ZL] = 1;
+            interface->user_instruction.instruction.aux.min_motor[MOTOR_AXIS_ZR] = 1;
+            interface->user_instruction.instruction.aux.motor_speed = MOVE_PERIOD;
 				break;
 			}
 			case 'm' : {
-				interface->user_instruction.instruction_valid = 1;
-				interface->user_instruction.xl_axis.opcode = MAX_MOTOR;
-				interface->user_instruction.xl_axis.current_period = MOVE_PERIOD;
-				interface->user_instruction.xl_axis.instruction_valid = 1;
-				interface->user_instruction.yf_axis.opcode = MAX_MOTOR;
-				interface->user_instruction.yf_axis.current_period = MOVE_PERIOD;
-				interface->user_instruction.yf_axis.instruction_valid = 1;
-				interface->user_instruction.zl_axis.opcode = MAX_MOTOR;
-				interface->user_instruction.zl_axis.current_period = MOVE_PERIOD;
-				interface->user_instruction.zl_axis.instruction_valid = 1;
-				interface->user_instruction.zr_axis.opcode = MAX_MOTOR;
-				interface->user_instruction.zr_axis.current_period = MOVE_PERIOD;
-				interface->user_instruction.zr_axis.instruction_valid = 1;
+				interface->user_instruction.instruction_type = AUX_INSTRUCTION;
+            interface->user_instruction.instruction_valid = 1;
+            interface->user_instruction.instruction.aux.opcode = MOVE_TO_ENDSTOP;
+            interface->user_instruction.instruction.aux.max_motor[MOTOR_AXIS_XL] = 1;
+            interface->user_instruction.instruction.aux.max_motor[MOTOR_AXIS_YF] = 1;
+            interface->user_instruction.instruction.aux.max_motor[MOTOR_AXIS_ZL] = 1;
+            interface->user_instruction.instruction.aux.max_motor[MOTOR_AXIS_ZR] = 1;
+            interface->user_instruction.instruction.aux.motor_speed = MOVE_PERIOD;
 				break;
 			}
 			default : {
@@ -417,27 +400,27 @@ void process_request(struct interface_struct* interface){
 			break;
 		}
 		case GET_CNC_STATUS : {
-			string_to_status(&interface->machine_status, (char*) &interface->cnc_read_data[1]);
+			string_to_status(&interface->machine_status, &interface->cnc_read_data[1]);
 			interface->machine_marker = 1;
-			printf("CNC XL Min: %d\n", interface->machine_status.xl_min_flag);
-			printf("CNC XL Max: %d\n", interface->machine_status.xl_max_flag);
-			printf("CNC YF Min: %d\n", interface->machine_status.yf_min_flag);
-			printf("CNC YF Max: %d\n", interface->machine_status.yf_max_flag);
-			printf("CNC ZL Min: %d\n", interface->machine_status.zl_min_flag);
-			printf("CNC ZL Max: %d\n", interface->machine_status.zl_max_flag);
-			printf("CNC ZR Min: %d\n", interface->machine_status.zr_min_flag);
-			printf("CNC ZR Max: %d\n", interface->machine_status.zr_max_flag);
-			printf("CNC EX0 Pos: %lld\n", interface->machine_status.ex0_position);
-			printf("CNC EX1 Pos: %lld\n", interface->machine_status.ex1_position);
-			printf("CNC AUX Pos: %lld\n", interface->machine_status.aux_position);
-			printf("CNC XL Pos: %lld\n", interface->machine_status.xl_position);
-			printf("CNC YF Pos: %lld\n", interface->machine_status.yf_position);
-			printf("CNC ZL Pos: %lld\n", interface->machine_status.zl_position);
-			printf("CNC ZR Pos: %lld\n", interface->machine_status.zr_position);
-			printf("CNC H0 Temp: %lf\n", interface->machine_status.heater_0_temp);
+			printf("CNC XL Min: %d\n", interface->machine_status.endstop_status[X_L_MIN]);
+			printf("CNC XL Max: %d\n", interface->machine_status.endstop_status[X_R_MAX]);
+			printf("CNC YF Min: %d\n", interface->machine_status.endstop_status[Y_F_MIN]);
+			printf("CNC YF Max: %d\n", interface->machine_status.endstop_status[Y_B_MAX]);
+			printf("CNC ZL Min: %d\n", interface->machine_status.endstop_status[Z_L_MIN]);
+			printf("CNC ZL Max: %d\n", interface->machine_status.endstop_status[Z_L_MAX]);
+			printf("CNC ZR Min: %d\n", interface->machine_status.endstop_status[Z_R_MIN]);
+			printf("CNC ZR Max: %d\n", interface->machine_status.endstop_status[Z_R_MAX]);
+			printf("CNC EX0 Pos: %lld\n", interface->machine_status.position[MOTOR_AUX]);
+			printf("CNC EX1 Pos: %lld\n", interface->machine_status.position[MOTOR_EXTRUDER_0]);
+			printf("CNC AUX Pos: %lld\n", interface->machine_status.position[MOTOR_EXTRUDER_1]);
+			printf("CNC XL Pos: %lld\n", interface->machine_status.position[MOTOR_AXIS_XL]);
+			printf("CNC YF Pos: %lld\n", interface->machine_status.position[MOTOR_AXIS_YF]);
+			printf("CNC ZL Pos: %lld\n", interface->machine_status.position[MOTOR_AXIS_ZL]);
+			printf("CNC ZR Pos: %lld\n", interface->machine_status.position[MOTOR_AXIS_ZR]);
+			/*printf("CNC H0 Temp: %lf\n", interface->machine_status.heater_0_temp);
 			printf("CNC H1 Temp: %lf\n", interface->machine_status.heater_1_temp);
 			printf("CNC H2 Temp: %lf\n", interface->machine_status.heater_2_temp);
-			printf("CNC H3 Temp: %lf\n", interface->machine_status.heater_3_temp);
+			printf("CNC H3 Temp: %lf\n", interface->machine_status.heater_3_temp);*/
 			break;
 		}
 		case NEW_CNC_PRINT : {
@@ -445,8 +428,8 @@ void process_request(struct interface_struct* interface){
 			break;
 		}
 		case SET_CNC_CONFIG : {
-			interface->machine_state = SEND_CONFIG;
-			printf("Got Config Data Request\n");
+			//interface->machine_state = SEND_CONFIG;
+			//printf("Got Config Data Request\n");
 			break;
 		}
 		case FLASH_FIRMWARE : {
@@ -454,12 +437,12 @@ void process_request(struct interface_struct* interface){
 			break;
 		}
 		case NEW_CNC_INSTRUCTION : {
-			interface->machine_state = SEND_INSTRUCTION;
+         interface->instruction_requested = 1;
 			//printf("Machine Requested Instruction\n");
 			break;
 		}
 		case INSTANT_CNC_INSTRUCTION : {
-			interface->machine_state = USER_CONTROL;
+			//interface->machine_state = USER_CONTROL;
 			printf("Getting User Input To Control Machine:\n");
 			break;
 		}
@@ -558,7 +541,7 @@ void handle_input(struct interface_struct* interface){
 				break;
 			}
 			case 's' : {
-				printf("Config: X Min Home: %lld\n", interface->machine_config.xl_min_home_pos);
+				/*printf("Config: X Min Home: %lld\n", interface->machine_config.xl_min_home_pos);
 				printf("Config: X Min Safe: %lld\n", interface->machine_config.xl_min_safe_pos);
 				printf("Config: Y Min Home: %lld\n", interface->machine_config.yf_min_home_pos);
 				printf("Config: Y Min Safe: %lld\n", interface->machine_config.yf_min_safe_pos);
@@ -570,7 +553,7 @@ void handle_input(struct interface_struct* interface){
 				printf("Config: Y  Axis Length: %lld\n", interface->machine_config.y_axis_size);
 				printf("Config: ZL  Axis Length: %lld\n", interface->machine_config.zl_axis_size);
 				printf("Config: ZR  Axis Length: %lld\n", interface->machine_config.zr_axis_size);
-				printf("Config: Ramp: %d\n", interface->machine_config.ramp_period);
+				printf("Config: Ramp: %d\n", interface->machine_config.ramp_period);*/
 				break;
 			}
 			default : {
@@ -606,24 +589,18 @@ void configure_machine(struct interface_struct* interface){
             if(!configure_processing){
                printf("Enabled Motors for Config...\n");
                interface->user_instruction.instruction_valid = 1;
+               interface->user_instruction.instruction_type = AUX_INSTRUCTION;
                interface->user_instruction.instant_instruction = 1;
-               interface->user_instruction.opcode = ENABLE_MOTORS;
-               interface->user_instruction.xl_axis.pending_enable = 1;
-               interface->user_instruction.xl_axis.opcode = ENABLE_MOTORS;
-               interface->user_instruction.yf_axis.pending_enable = 1;
-               interface->user_instruction.yf_axis.opcode = ENABLE_MOTORS;
-               interface->user_instruction.zl_axis.pending_enable = 1;
-               interface->user_instruction.zl_axis.opcode = ENABLE_MOTORS;
-               interface->user_instruction.zr_axis.pending_enable = 1;
-               interface->user_instruction.zr_axis.opcode = ENABLE_MOTORS;
-               interface->user_instruction.extruder_0.pending_enable = 1;
-               interface->user_instruction.extruder_0.opcode = ENABLE_MOTORS;
-               interface->user_instruction.extruder_1.pending_enable = 1;
-               interface->user_instruction.extruder_1.opcode = ENABLE_MOTORS;
-               interface->user_instruction.aux.pending_enable = 1;
-               interface->user_instruction.aux.opcode = ENABLE_MOTORS;
+               interface->user_instruction.instruction.aux.opcode = ENABLE_MOTORS;
+               interface->user_instruction.instruction.aux.enable_motor[MOTOR_AUX] = 1;
+               interface->user_instruction.instruction.aux.enable_motor[MOTOR_EXTRUDER_0] = 1;
+               interface->user_instruction.instruction.aux.enable_motor[MOTOR_EXTRUDER_1] = 1;
+               interface->user_instruction.instruction.aux.enable_motor[MOTOR_AXIS_XL] = 1;
+               interface->user_instruction.instruction.aux.enable_motor[MOTOR_AXIS_YF] = 1;
+               interface->user_instruction.instruction.aux.enable_motor[MOTOR_AXIS_ZL] = 1;
+               interface->user_instruction.instruction.aux.enable_motor[MOTOR_AXIS_ZR] = 1;
             }
-            if(interface->machine_marker){
+            if(configure_processing){
                configure_stage = 1;
                configure_processing = 0;
                interface->machine_marker = 0;
@@ -635,17 +612,17 @@ void configure_machine(struct interface_struct* interface){
             if(!configure_processing){
                printf("Max Z Motors...\n");
                interface->user_instruction.instruction_valid = 1;
+               interface->user_instruction.instruction_type = AUX_INSTRUCTION;
                interface->user_instruction.instant_instruction = 1;
-               interface->user_instruction.zl_axis.opcode = MAX_MOTOR;
-               interface->user_instruction.zl_axis.current_period = MOVE_PERIOD;
-               interface->user_instruction.zl_axis.instruction_valid = 1;
-               interface->user_instruction.zr_axis.opcode = MAX_MOTOR;
-               interface->user_instruction.zr_axis.current_period = MOVE_PERIOD;
-               interface->user_instruction.zr_axis.instruction_valid = 1;
+               interface->user_instruction.instruction.aux.opcode = MOVE_TO_ENDSTOP;
+               interface->user_instruction.instruction.aux.max_motor[MOTOR_AXIS_ZL] = 1;
+               interface->user_instruction.instruction.aux.max_motor[MOTOR_AXIS_ZR] = 1;
             }
             if(interface->machine_marker){
-               configure_stage = 2;
-               configure_processing = 0;
+               if(interface->machine_status.endstop_status[Z_L_MAX] && interface->machine_status.endstop_status[Z_R_MAX]){
+                  configure_stage = 2;
+                  configure_processing = 0;
+               }
                interface->machine_marker = 0;
             }
             break;
@@ -655,17 +632,17 @@ void configure_machine(struct interface_struct* interface){
             if(!configure_processing){
                printf("Zero X and Y Motors...\n");
                interface->user_instruction.instruction_valid = 1;
+               interface->user_instruction.instruction_type = AUX_INSTRUCTION;
                interface->user_instruction.instant_instruction = 1;
-               interface->user_instruction.xl_axis.opcode = ZERO_MOTOR;
-               interface->user_instruction.xl_axis.current_period = MOVE_PERIOD;
-               interface->user_instruction.xl_axis.instruction_valid = 1;
-               interface->user_instruction.yf_axis.opcode = ZERO_MOTOR;
-               interface->user_instruction.yf_axis.current_period = MOVE_PERIOD;
-               interface->user_instruction.yf_axis.instruction_valid = 1;
+               interface->user_instruction.instruction.aux.opcode = MOVE_TO_ENDSTOP;
+               interface->user_instruction.instruction.aux.min_motor[MOTOR_AXIS_XL] = 1;
+               interface->user_instruction.instruction.aux.min_motor[MOTOR_AXIS_YF] = 1;
             }
             if(interface->machine_marker){
-               configure_stage = 3;
-               configure_processing = 0;
+               if(interface->machine_status.endstop_status[X_L_MIN] && interface->machine_status.endstop_status[Y_F_MIN]){
+                  configure_stage = 3;
+                  configure_processing = 0;
+               }
                interface->machine_marker = 0;
             }
             break;
@@ -675,20 +652,19 @@ void configure_machine(struct interface_struct* interface){
             if(!configure_processing){
                printf("Setting Zl and Zr to 0...\n");
                interface->user_instruction.instruction_valid = 1;
+               interface->user_instruction.instruction_type = AUX_INSTRUCTION;
                interface->user_instruction.instant_instruction = 1;
-               interface->user_instruction.opcode = POSITION_AXIS;
-               interface->user_instruction.zl_axis.opcode = POSITION_AXIS;
-               interface->user_instruction.zl_axis.move_count = 0;
-               interface->user_instruction.zl_axis.instruction_valid = 1;
-               interface->user_instruction.zr_axis.opcode = POSITION_AXIS;
-               interface->user_instruction.zr_axis.move_count = 0;
-               interface->user_instruction.zr_axis.instruction_valid = 1;
+               interface->user_instruction.instruction.aux.opcode = MOVE_TO_ENDSTOP;
+               interface->user_instruction.instruction.aux.min_motor[MOTOR_AXIS_ZL] = 1;
+               interface->user_instruction.instruction.aux.min_motor[MOTOR_AXIS_ZR] = 1;
             }
             if(interface->machine_marker){
-               printf("Manually adjust Zl and Zr for new safe position...\n");
-               printf("Press Enter When Finished\n");
-               configure_stage = 4;
-               configure_processing = 0;
+               if(interface->machine_status.endstop_status[Z_L_MIN] && interface->machine_status.endstop_status[Z_R_MIN]){
+                  printf("Manually adjust Zl and Zr for new safe position...\n");
+                  printf("Press Enter When Finished\n");
+                  configure_stage = 4;
+                  configure_processing = 0;
+               }
                interface->machine_marker = 0;
             }
             break;
@@ -700,25 +676,27 @@ void configure_machine(struct interface_struct* interface){
                if(interface->user_input[0] == 27){
                   if(!strcmp(&interface->user_input[1], "[A")){
                      // up arrow - up
+                     interface->user_instruction.instruction_type = MOTOR_INSTRUCTION;
                      interface->user_instruction.instruction_valid = 1;
-                     interface->user_instruction.instant_instruction = 1;
-                     interface->user_instruction.zl_axis.instruction_valid = 1;
-                     interface->user_instruction.zl_axis.move_count = 200;
-                     interface->user_instruction.zl_axis.current_period = MOVE_PERIOD;
-                     interface->user_instruction.zr_axis.instruction_valid = 1;
-                     interface->user_instruction.zr_axis.move_count = 200;
-                     interface->user_instruction.zr_axis.current_period = MOVE_PERIOD;
+                     interface->user_instruction.instruction.motors.motor[MOTOR_AXIS_ZL].instruction_valid = 1;
+                     interface->user_instruction.instruction.motors.motor[MOTOR_AXIS_ZL].relative_move = 1;
+                     interface->user_instruction.instruction.motors.motor[MOTOR_AXIS_ZL].end_position = 200;
+                     interface->user_instruction.instruction.motors.motor[MOTOR_AXIS_ZR].instruction_valid = 1;
+                     interface->user_instruction.instruction.motors.motor[MOTOR_AXIS_ZR].relative_move = 1;
+                     interface->user_instruction.instruction.motors.motor[MOTOR_AXIS_ZR].end_position = 200;
+                     interface->user_instruction.instruction.motors.speed = MOVE_PERIOD;
                   }
                   if(!strcmp(&interface->user_input[1], "[B")){
                      // down arrow - down
+                     interface->user_instruction.instruction_type = MOTOR_INSTRUCTION;
                      interface->user_instruction.instruction_valid = 1;
-                     interface->user_instruction.instant_instruction = 1;
-                     interface->user_instruction.zl_axis.instruction_valid = 1;
-                     interface->user_instruction.zl_axis.move_count = -200;
-                     interface->user_instruction.zl_axis.current_period = MOVE_PERIOD;
-                     interface->user_instruction.zr_axis.instruction_valid = 1;
-                     interface->user_instruction.zr_axis.move_count = -200;
-                     interface->user_instruction.zr_axis.current_period = MOVE_PERIOD;
+                     interface->user_instruction.instruction.motors.motor[MOTOR_AXIS_ZL].instruction_valid = 1;
+                     interface->user_instruction.instruction.motors.motor[MOTOR_AXIS_ZL].relative_move = 1;
+                     interface->user_instruction.instruction.motors.motor[MOTOR_AXIS_ZL].end_position = -200;
+                     interface->user_instruction.instruction.motors.motor[MOTOR_AXIS_ZR].instruction_valid = 1;
+                     interface->user_instruction.instruction.motors.motor[MOTOR_AXIS_ZR].relative_move = 1;
+                     interface->user_instruction.instruction.motors.motor[MOTOR_AXIS_ZR].end_position = -200;
+                     interface->user_instruction.instruction.motors.speed = MOVE_PERIOD;
                   }
                } else {
                   if(interface->user_input[0] == 13 || interface->user_input[0] == 10){
@@ -736,8 +714,8 @@ void configure_machine(struct interface_struct* interface){
             // get status and update safe position for xl
             if(configure_processing){
                if(interface->machine_marker){
-                  interface->machine_config.zl_min_safe_pos = interface->machine_status.zl_position;
-                  interface->machine_config.zr_min_safe_pos = interface->machine_status.zr_position;
+                  interface->machine_config.safe_position[MOTOR_AXIS_ZL] = interface->machine_status.position[MOTOR_AXIS_ZL];
+                  interface->machine_config.safe_position[MOTOR_AXIS_ZL] = interface->machine_status.position[MOTOR_AXIS_ZR];
                   interface->machine_marker = 0;
                   configure_processing = 0;
                   configure_stage = 6;
@@ -762,19 +740,21 @@ void configure_machine(struct interface_struct* interface){
                if(interface->user_input[0] == 27){
                   if(!strcmp(&interface->user_input[1], "[A")){
                      // up arrow - up
+                     interface->user_instruction.instruction_type = MOTOR_INSTRUCTION;
                      interface->user_instruction.instruction_valid = 1;
-                     interface->user_instruction.instant_instruction = 1;
-                     interface->user_instruction.zl_axis.instruction_valid = 1;
-                     interface->user_instruction.zl_axis.move_count = 1;
-                     interface->user_instruction.zl_axis.current_period = MOVE_PERIOD;
+                     interface->user_instruction.instruction.motors.motor[MOTOR_AXIS_ZL].instruction_valid = 1;
+                     interface->user_instruction.instruction.motors.motor[MOTOR_AXIS_ZL].relative_move = 1;
+                     interface->user_instruction.instruction.motors.motor[MOTOR_AXIS_ZL].end_position = 1;
+                     interface->user_instruction.instruction.motors.speed = MOVE_PERIOD;
                   }
                   if(!strcmp(&interface->user_input[1], "[B")){
                      // down arrow - down
+                     interface->user_instruction.instruction_type = MOTOR_INSTRUCTION;
                      interface->user_instruction.instruction_valid = 1;
-                     interface->user_instruction.instant_instruction = 1;
-                     interface->user_instruction.zl_axis.instruction_valid = 1;
-                     interface->user_instruction.zl_axis.move_count = -1;
-                     interface->user_instruction.zl_axis.current_period = MOVE_PERIOD;
+                     interface->user_instruction.instruction.motors.motor[MOTOR_AXIS_ZL].instruction_valid = 1;
+                     interface->user_instruction.instruction.motors.motor[MOTOR_AXIS_ZL].relative_move = 1;
+                     interface->user_instruction.instruction.motors.motor[MOTOR_AXIS_ZL].end_position = -1;
+                     interface->user_instruction.instruction.motors.speed = MOVE_PERIOD;
                   }
                } else {
                   if(interface->user_input[0] == 13 || interface->user_input[0] == 10){
@@ -791,21 +771,20 @@ void configure_machine(struct interface_struct* interface){
             if(!configure_processing){
                printf("Moving X and Y to max to measure bed and level...\n");
                interface->user_instruction.instruction_valid = 1;
+               interface->user_instruction.instruction_type = AUX_INSTRUCTION;
                interface->user_instruction.instant_instruction = 1;
-               interface->user_instruction.opcode = MEASURE_AXIS;
-               interface->user_instruction.xl_axis.instruction_valid = 1;
-               interface->user_instruction.xl_axis.opcode = MEASURE_AXIS;
-               interface->user_instruction.xl_axis.current_period = MOVE_PERIOD;
-               interface->user_instruction.yf_axis.instruction_valid = 1;
-               interface->user_instruction.yf_axis.opcode = MEASURE_AXIS;
-               interface->user_instruction.yf_axis.current_period = MOVE_PERIOD;
+               interface->user_instruction.instruction.aux.opcode = MOVE_TO_ENDSTOP;
+               interface->user_instruction.instruction.aux.max_motor[MOTOR_AXIS_XL] = 1;
+               interface->user_instruction.instruction.aux.max_motor[MOTOR_AXIS_YF] = 1;
             }
             if(interface->machine_marker){
-               configure_stage = 8;
-               configure_processing = 0;
+               if(interface->machine_status.endstop_status[Z_L_MIN] && interface->machine_status.endstop_status[Z_R_MIN]){
+                  printf("Manually adjust ZR for new zero position...\n");
+                  printf("Press Enter When Finished\n");
+                  configure_stage = 8;
+                  configure_processing = 0;
+               }
                interface->machine_marker = 0;
-               printf("Manually adjust ZR for new zero position...\n");
-               printf("Press Enter When Finished\n");
             }
             break;
          }
@@ -816,19 +795,21 @@ void configure_machine(struct interface_struct* interface){
                if(interface->user_input[0] == 27){
                   if(!strcmp(&interface->user_input[1], "[A")){
                      // up arrow - up
-                     interface->user_instruction.instant_instruction = 1;
+                     interface->user_instruction.instruction_type = MOTOR_INSTRUCTION;
                      interface->user_instruction.instruction_valid = 1;
-                     interface->user_instruction.zr_axis.instruction_valid = 1;
-                     interface->user_instruction.zr_axis.move_count = 1;
-                     interface->user_instruction.zr_axis.current_period = MOVE_PERIOD;
+                     interface->user_instruction.instruction.motors.motor[MOTOR_AXIS_ZL].instruction_valid = 1;
+                     interface->user_instruction.instruction.motors.motor[MOTOR_AXIS_ZL].relative_move = 1;
+                     interface->user_instruction.instruction.motors.motor[MOTOR_AXIS_ZL].end_position = 1;
+                     interface->user_instruction.instruction.motors.speed = MOVE_PERIOD;
                   }
                   if(!strcmp(&interface->user_input[1], "[B")){
                      // down arrow - down
-                     interface->user_instruction.instant_instruction = 1;
+                     interface->user_instruction.instruction_type = MOTOR_INSTRUCTION;
                      interface->user_instruction.instruction_valid = 1;
-                     interface->user_instruction.zr_axis.instruction_valid = 1;
-                     interface->user_instruction.zr_axis.move_count = -1;
-                     interface->user_instruction.zr_axis.current_period = MOVE_PERIOD;
+                     interface->user_instruction.instruction.motors.motor[MOTOR_AXIS_ZL].instruction_valid = 1;
+                     interface->user_instruction.instruction.motors.motor[MOTOR_AXIS_ZL].relative_move = 1;
+                     interface->user_instruction.instruction.motors.motor[MOTOR_AXIS_ZL].end_position = -1;
+                     interface->user_instruction.instruction.motors.speed = MOVE_PERIOD;
                   }
                } else {
                   if(interface->user_input[0] == 13 || interface->user_input[0] == 10){
@@ -844,19 +825,19 @@ void configure_machine(struct interface_struct* interface){
             // read cnc status to get zero positions and axis lengths
             if(configure_processing){
                if(interface->machine_marker){
-                  interface->machine_config.ramp_period = RAMP_PERIOD;
-                  interface->machine_config.xl_min_home_pos = 0;
-                  interface->machine_config.yf_min_home_pos = 0;
-                  interface->machine_config.zl_min_home_pos = 0;
-                  interface->machine_config.zr_min_home_pos = 0;
-                  interface->machine_config.zl_axis_size = -1*interface->machine_status.zl_position;
-                  interface->machine_config.zr_axis_size = -1*interface->machine_status.zr_position;
-                  interface->machine_config.xl_min_safe_pos = 0;
-                  interface->machine_config.yf_min_safe_pos = 0;
-                  interface->machine_config.zl_min_safe_pos = interface->machine_config.zl_min_safe_pos + interface->machine_config.zl_axis_size;
-                  interface->machine_config.zr_min_safe_pos = interface->machine_config.zr_min_safe_pos + interface->machine_config.zr_axis_size;
-                  interface->machine_config.x_axis_size = interface->machine_status.xl_position;
-                  interface->machine_config.y_axis_size = interface->machine_status.yf_position;
+                  //interface->machine_config.ramp_period = RAMP_PERIOD;
+                  interface->machine_config.home_position[MOTOR_AXIS_XL] = 0;
+                  interface->machine_config.home_position[MOTOR_AXIS_YF] = 0;
+                  interface->machine_config.home_position[MOTOR_AXIS_ZL] = 0;
+                  interface->machine_config.home_position[MOTOR_AXIS_ZR] = 0;
+                  interface->machine_config.axis_size[MOTOR_AXIS_ZL] = -1*interface->machine_status.position[MOTOR_AXIS_ZL];
+                  interface->machine_config.axis_size[MOTOR_AXIS_ZR] = -1*interface->machine_status.position[MOTOR_AXIS_ZR];
+                  interface->machine_config.safe_position[MOTOR_AXIS_XL] = 0;
+                  interface->machine_config.safe_position[MOTOR_AXIS_YF] = 0;
+                  interface->machine_config.safe_position[MOTOR_AXIS_ZL] = interface->machine_config.safe_position[MOTOR_AXIS_ZL] + interface->machine_config.axis_size[MOTOR_AXIS_ZL];
+                  interface->machine_config.safe_position[MOTOR_AXIS_ZR] = interface->machine_config.safe_position[MOTOR_AXIS_ZR] + interface->machine_config.axis_size[MOTOR_AXIS_ZR];
+                  interface->machine_config.axis_size[MOTOR_AXIS_XL] = interface->machine_status.position[MOTOR_AXIS_XL];
+                  interface->machine_config.axis_size[MOTOR_AXIS_YF] = interface->machine_status.position[MOTOR_AXIS_YF];
                   interface->machine_marker = 0;
                   interface->machine_config.config_loaded = 1;
                   configure_processing = 0;
@@ -880,14 +861,13 @@ void configure_machine(struct interface_struct* interface){
             if(!configure_processing){
                printf("Setting Zl and Zr to New 0...\n");
                interface->user_instruction.instruction_valid = 1;
+               interface->user_instruction.instruction_type = AUX_INSTRUCTION;
                interface->user_instruction.instant_instruction = 1;
-               interface->user_instruction.opcode = POSITION_AXIS;
-               interface->user_instruction.zl_axis.opcode = POSITION_AXIS;
-               interface->user_instruction.zl_axis.move_count = 0;
-               interface->user_instruction.zl_axis.instruction_valid = 1;
-               interface->user_instruction.zr_axis.opcode = POSITION_AXIS;
-               interface->user_instruction.zr_axis.move_count = 0;
-               interface->user_instruction.zr_axis.instruction_valid = 1;
+               interface->user_instruction.instruction.aux.opcode = SET_POSITION;
+               interface->user_instruction.instruction.aux.set_position[MOTOR_AXIS_ZL] = 1;
+               interface->user_instruction.instruction.aux.set_position[MOTOR_AXIS_ZR] = 1;
+               interface->user_instruction.instruction.aux.motor_position[MOTOR_AXIS_ZL] = 0;
+               interface->user_instruction.instruction.aux.motor_position[MOTOR_AXIS_ZR] = 0;
             }
             if(interface->machine_marker){
                configure_stage = 11;
@@ -901,15 +881,17 @@ void configure_machine(struct interface_struct* interface){
             if(!configure_processing){
                printf("Moving Y to front to level bed...\n");
                interface->user_instruction.instruction_valid = 1;
+               interface->user_instruction.instruction_type = AUX_INSTRUCTION;
                interface->user_instruction.instant_instruction = 1;
-               interface->user_instruction.yf_axis.instruction_valid = 1;
-               interface->user_instruction.yf_axis.opcode = ZERO_MOTOR;
-               interface->user_instruction.yf_axis.current_period = MOVE_PERIOD;
+               interface->user_instruction.instruction.aux.opcode = MOVE_TO_ENDSTOP;
+               interface->user_instruction.instruction.aux.min_motor[MOTOR_AXIS_YF] = 1;
             }
             if(interface->machine_marker){
-               printf("Press Enter When Finished Leveling\n");
-               configure_stage = 12;
-               configure_processing = 0;
+               if(interface->machine_status.endstop_status[Y_F_MIN]){
+                  printf("Press Enter When Finished Leveling\n");
+                  configure_stage = 12;
+                  configure_processing = 0;
+               }
                interface->machine_marker = 0;
             }
             break;
@@ -931,18 +913,18 @@ void configure_machine(struct interface_struct* interface){
             if(!configure_processing){
                printf("Moving X to Left and Y to Front to Level Bed...\n");
                interface->user_instruction.instruction_valid = 1;
+               interface->user_instruction.instruction_type = AUX_INSTRUCTION;
                interface->user_instruction.instant_instruction = 1;
-               interface->user_instruction.xl_axis.instruction_valid = 1;
-               interface->user_instruction.xl_axis.opcode = ZERO_MOTOR;
-               interface->user_instruction.xl_axis.current_period = MOVE_PERIOD;
-               interface->user_instruction.yf_axis.instruction_valid = 1;
-               interface->user_instruction.yf_axis.opcode = MAX_MOTOR;
-               interface->user_instruction.yf_axis.current_period = MOVE_PERIOD;
+               interface->user_instruction.instruction.aux.opcode = MOVE_TO_ENDSTOP;
+               interface->user_instruction.instruction.aux.min_motor[MOTOR_AXIS_XL] = 1;
+               interface->user_instruction.instruction.aux.max_motor[MOTOR_AXIS_YF] = 1;
             }
             if(interface->machine_marker){
-               printf("Press Enter When Finished Leveling\n");
-               configure_stage = 14;
-               configure_processing = 0;
+               if(interface->machine_status.endstop_status[X_L_MIN] && interface->machine_status.endstop_status[Y_B_MAX]){
+                  printf("Press Enter When Finished Leveling\n");
+                  configure_stage = 14;
+                  configure_processing = 0;
+               }
                interface->machine_marker = 0;
             }
             break;
@@ -964,22 +946,16 @@ void configure_machine(struct interface_struct* interface){
             if(!configure_processing){
                printf("Disabled Motors for Config...\n");
                interface->user_instruction.instruction_valid = 1;
+               interface->user_instruction.instruction_type = AUX_INSTRUCTION;
                interface->user_instruction.instant_instruction = 1;
-               interface->user_instruction.opcode = DISABLE_MOTORS;
-               interface->user_instruction.xl_axis.pending_disable = 1;
-               interface->user_instruction.xl_axis.opcode = DISABLE_MOTORS;
-               interface->user_instruction.yf_axis.pending_disable = 1;
-               interface->user_instruction.yf_axis.opcode = DISABLE_MOTORS;
-               interface->user_instruction.zl_axis.pending_disable = 1;
-               interface->user_instruction.zl_axis.opcode = DISABLE_MOTORS;
-               interface->user_instruction.zr_axis.pending_disable = 1;
-               interface->user_instruction.zr_axis.opcode = DISABLE_MOTORS;
-               interface->user_instruction.extruder_0.pending_disable = 1;
-               interface->user_instruction.extruder_0.opcode = DISABLE_MOTORS;
-               interface->user_instruction.extruder_1.pending_disable = 1;
-               interface->user_instruction.extruder_1.opcode = DISABLE_MOTORS;
-               interface->user_instruction.aux.pending_disable = 1;
-               interface->user_instruction.aux.opcode = DISABLE_MOTORS;
+               interface->user_instruction.instruction.aux.opcode = DISABLE_MOTORS;
+               interface->user_instruction.instruction.aux.disable_motor[MOTOR_AUX] = 1;
+               interface->user_instruction.instruction.aux.disable_motor[MOTOR_EXTRUDER_0] = 1;
+               interface->user_instruction.instruction.aux.disable_motor[MOTOR_EXTRUDER_1] = 1;
+               interface->user_instruction.instruction.aux.disable_motor[MOTOR_AXIS_XL] = 1;
+               interface->user_instruction.instruction.aux.disable_motor[MOTOR_AXIS_YF] = 1;
+               interface->user_instruction.instruction.aux.disable_motor[MOTOR_AXIS_ZL] = 1;
+               interface->user_instruction.instruction.aux.disable_motor[MOTOR_AXIS_ZR] = 1;
             }
             if(interface->machine_marker){
                configure_stage = 0;
@@ -996,7 +972,7 @@ void configure_machine(struct interface_struct* interface){
       }
       if(interface->user_instruction.instruction_valid){
          interface->cnc_write_data[0] = (char) NEW_CNC_INSTRUCTION;
-         interface->cnc_write_length = instruction_to_string(&interface->user_instruction, (char*) &interface->cnc_write_data[1]);
+         interface->cnc_write_length = instruction_to_string(&interface->user_instruction, &interface->cnc_write_data[1]);
          interface->cnc_write_length = interface->cnc_write_length + 1;
          if(cnc_serial.send(interface->cnc_write_length, interface->cnc_write_data) > 0){
             configure_processing = 1;
@@ -1007,7 +983,7 @@ void configure_machine(struct interface_struct* interface){
 
 void load_config_file(struct cnc_config_struct* config){
 	FILE* config_file;
-	char config_string[sizeof(cnc_config_struct)];
+	uint8_t config_string[sizeof(cnc_config_struct)];
 	config_file = fopen("./user_config.cnfg", "r+");
 	uint16_t count = 0;
 	uint8_t file_valid = 0;
@@ -1028,7 +1004,7 @@ void load_config_file(struct cnc_config_struct* config){
 	if(file_valid){
 		// load_from_file
 		while(count < (sizeof(cnc_config_struct) - 1)){
-			config_string[count] = fgetc(config_file);
+			config_string[count] = (uint8_t) fgetc(config_file);
 			count = count + 1;
 		}
 		string_to_config(config, config_string);
@@ -1047,7 +1023,7 @@ void load_config_file(struct cnc_config_struct* config){
 
 void save_config_file(struct cnc_config_struct* config){
 	FILE* config_file;
-	char config_string[sizeof(cnc_config_struct)];
+	uint8_t config_string[sizeof(cnc_config_struct)];
 	config_file = fopen("./user_config.cnfg", "w+");
 	uint16_t count = 0;
 	uint8_t file_valid = 0;
@@ -1069,7 +1045,7 @@ void save_config_file(struct cnc_config_struct* config){
 		config_to_string(config, config_string);
 		// load to file
 		while(count < (sizeof(cnc_config_struct) - 1)){
-			fputc(config_string[count], config_file);
+			fputc((uint8_t) config_string[count], config_file);
 			count = count + 1;
 		}
 	} else {
@@ -1103,7 +1079,7 @@ void length_to_string(uint8_t byte_length, char* length_string){
 	}
 }
 
-void update_si_firmware(struct interface_struct* interface){
+void update_firmware(struct interface_struct* interface){
 	/*
    //enum spi_opcodes opcode;
 	//char send_string[IDLE_LENGTH] = {0};
