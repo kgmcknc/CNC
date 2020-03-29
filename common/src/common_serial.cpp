@@ -160,6 +160,7 @@ void serial_class::process(void){
             if(serial_get_data(1, &temp_data)){
                switch((serial_opcodes) temp_data){
                   case TX_REQ : {
+                        rx_pending = 0;
                         if(rx_queue_fullness >= RX_QUEUE_DEPTH){
                            state = SEND_QUEUE_FULL;
                         } else {
@@ -172,7 +173,7 @@ void serial_class::process(void){
                   }
                }
             } else {
-               if(tx_pending){
+               if(tx_pending && !rx_pending){
                   state = SEND_TRANSFER_INIT;
                } else {
                   state = IDLE;
@@ -217,12 +218,15 @@ void serial_class::process(void){
                switch((serial_opcodes) temp_data){
                   case TX_REQ : {
                      // master can ignore a request assuming slave will ignore it and respond to his
-                     if(invalid_response_count < 1){
+                     if(invalid_response_count < 2){
                         invalid_response_count = invalid_response_count + 1;
                         state = WAIT_TRANSFER_RESPONSE;
                      } else {
                         invalid_response_count = 0;
                         state = IDLE;
+                     }
+                     if(!is_master){
+                        rx_pending = 1;
                      }
                      break;
                   }
@@ -263,6 +267,7 @@ void serial_class::process(void){
                      break;
                   }
                   case RX_FULL : {
+                     printf("rx full!!!\n");
                      state = IDLE;
                      break;
                   }

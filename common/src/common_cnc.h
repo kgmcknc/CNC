@@ -16,8 +16,8 @@
 #define MAX_COMM_TRANSFER ((INSTRUCTION_BYTE_LENGTH > MAX_PRINT_LENGTH) ? INSTRUCTION_BYTE_LENGTH : MAX_PRINT_LENGTH)
 
 #define RAMP_PERIOD 0 // start/end period of ramp... should be slow
-#define MOTOR_TIMER_FREQ (cnc_double) 48000000
-#define MOTOR_TOP_COUNT (cnc_double) 1000
+#define cnc_double float
+
 #define STEPS_PER_SECOND (((cnc_double) MOTOR_TIMER_FREQ)/MOTOR_TOP_COUNT)
 #define STEPS_PER_MINUTE (((cnc_double) STEPS_PER_SECOND)*60)
 
@@ -26,11 +26,12 @@
 #define STEPS_PER_REV (((cnc_double) MOTOR_STEPS_PER_REV)/MOTOR_STEP_FACTOR)
 #define LEADSCREW_MM_PER_REV ((cnc_double) 8)
 #define REVS_PER_MM (((cnc_double) 1)/LEADSCREW_MM_PER_REV)
-#define REVS_PER_IN (((cnc_double) 25.4)/LEADSCREW_MM_PER_REV)
 #define STEPS_PER_MM (((cnc_double) STEPS_PER_REV)*REVS_PER_MM)
-#define STEPS_PER_IN (((cnc_double) STEPS_PER_REV)*REVS_PER_IN)
 
-#define cnc_double float
+#define STEP_MM (LEADSCREW_MM_PER_REV / STEPS_PER_REV)
+#define PRECISION STEP_MM
+
+#define USEC_PER_SEC ((cnc_double) (1000000))
 
 #define NUM_MOTORS 7
 enum MOTOR_NUMBERS {
@@ -80,6 +81,7 @@ enum CNC_OPCODES {
 	PAUSE_PROGRAM,
 	RESUME_PROGRAM,
 	MARKER,
+   INSTANT_DONE,
 	ERROR
 };
 

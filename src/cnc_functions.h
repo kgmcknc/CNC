@@ -17,7 +17,8 @@ enum cnc_state {
 	GET_STATUS,
 	GET_VERSION,
 	SEND_CNC_PRINT,
-	SEND_ENDPOINT_EVENT
+	SEND_ENDPOINT_EVENT,
+   SEND_INSTANT_INSTRUCTION_DONE
 };
 
 struct cnc_program_struct {
@@ -54,7 +55,7 @@ struct cnc_state_struct {
 	int32_t cnc_write_length;
 	uint8_t write_in_progress;
 	uint8_t write_complete;
-	uint8_t marker_set;
+   uint8_t instant_instruction_done;
 	// cnc_printf variables
 	uint8_t print_buffer[PRINT_DEPTH][MAX_PRINT_LENGTH];
 	uint8_t print_rp;

@@ -22,7 +22,6 @@
 #endif
 
 #define MAX_MOTOR_NAME_LENGTH 8
-#define MOTOR_PRECISION ((cnc_double) 1.0)
 
 struct cnc_motor_port_struct {
 	GPIO_Port_TypeDef en_port;
@@ -42,6 +41,7 @@ struct cnc_motor_pin_struct {
 
 struct cnc_motor_struct {
 	uint8_t enabled;
+   uint8_t active;
 	uint8_t known_position;
 	uint8_t find_zero;
 	uint8_t find_max;
@@ -52,7 +52,10 @@ struct cnc_motor_struct {
    cnc_double position;
 	uint8_t direction;
    cnc_double speed;
+   uint8_t period_set;
 	uint32_t next_step_count;
+   uint32_t last_step_error;
+   uint32_t total_period_count;
 	char name[MAX_MOTOR_NAME_LENGTH] = {};
 	struct cnc_motor_pin_struct pins;
 	struct cnc_motor_port_struct ports;
@@ -60,7 +63,9 @@ struct cnc_motor_struct {
 
 struct cnc_motor_list_struct {
    uint8_t motor_irq;
-   cnc_double next_period;
+   uint8_t valid_irq;
+   uint8_t next_period_loaded;
+   uint32_t next_period;
 	struct cnc_motor_struct motor[NUM_MOTORS];
 };
 
@@ -200,7 +205,7 @@ void handle_motors(struct cnc_state_struct* cnc);
 void init_endstops(struct cnc_endstop_list_struct* endstops);
 void init_endstop(struct cnc_endstop_struct* endstop);
 void handle_step(struct cnc_motor_struct* motor);
-void set_next_step(struct cnc_motor_struct* motor);
+void set_next_step(struct cnc_motor_list_struct* motors);
 //void check_periods(struct cnc_state_struct* cnc, struct cnc_motor_list_struct* motors);
 //void check_period(struct cnc_state_struct* cnc, struct cnc_motor_struct* motors);
 void step_motor_set_step(struct cnc_motor_struct* motor);

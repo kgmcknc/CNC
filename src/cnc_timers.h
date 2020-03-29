@@ -10,30 +10,18 @@
 
 #include "stdint.h"
 
-#define TIMER_BASE_HZ 16000000
-#define TIMER_BASE_DIVIDE 256
-#define TIMER_HZ (TIMER_BASE_HZ/TIMER_BASE_DIVIDE)
-#define TIMER_PERIOD_US ((cnc_double) (1/TIMER_HZ))
-#define IRQ_TIME_US 16
-#define DEFAULT_PERIOD 3125
+#define TIMER_BASE_HZ ((cnc_double) 16000000.0)
+#define TIMER_PRESCALE_DIVIDE ((cnc_double) 1.0)
+#define TIMER_HZ (TIMER_BASE_HZ/TIMER_PRESCALE_DIVIDE)
+#define TIMER_PERIOD_US ((cnc_double) (((cnc_double) 1000000.0)/TIMER_HZ))
+#define IRQ_TIME_US ((cnc_double) 16.0)
+#define DEFAULT_PERIOD ((uint32_t) 1000)
+#define SMALLEST_PERIOD (uint32_t) (IRQ_TIME_US/TIMER_PERIOD_US)
+#define MAX_PERIOD ((uint32_t) 65535)
 
-/*#define MOTOR_TIMER_PERIOD_US  1 // 1 microsecond
-#define MOTOR_TIMER_CLOCK      cmuClock_TIMER0
-#define MOTOR_TIMER            TIMER0
-#define MOTOR_TIMER_TOP        500
-#define MOTOR_TIMER_IRQ_NUMBER TIMER0_IRQn*/
+#define MOTOR_TIMER_PERIOD_US ((cnc_double) TIMER_PERIOD_US)
 
-#define MOTOR_TIMER_PERIOD_US  1 // 1 microsecond
-#define MOTOR_TIMER_CLOCK      cmuClock_TIMER1
-#define MOTOR_TIMER            TIMER1
-#define MOTOR_TIMER_TOP        1000
-#define MOTOR_TIMER_IRQ_NUMBER TIMER1_IRQn
-
-/*#define PID_TIMER_PERIOD_US  10  // 10 milliseconds
-#define PID_TIMER_CLOCK      cmuClock_TIMER1
-#define PID_TIMER            TIMER1
-#define PID_TIMER_TOP        1000
-#define PID_TIMER_IRQ_NUMBER TIMER1_IRQn*/
+extern uint32_t timer_count;
 
 void init_timers(void);
 void init_motor_timer(void);

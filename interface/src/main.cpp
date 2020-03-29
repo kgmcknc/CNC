@@ -136,6 +136,7 @@ void init_interface_struct(struct interface_struct* interface){
    interface->write_in_progress = 0;
    interface->write_complete = 0;
    interface->machine_marker = 0;
+   interface->instant_done = 0;
    interface->machine_configured = 0;
    interface->instruction_requested = 0;
 }

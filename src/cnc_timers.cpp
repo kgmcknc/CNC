@@ -14,6 +14,7 @@
    #include "Arduino.h"
 #endif
 
+#include "main.h"
 #include "cnc_timers.h"
 #include "cnc_motors.h"
 #include <stddef.h>
@@ -69,14 +70,13 @@ void init_motor_timer(void){
 	TIMER_Init(MOTOR_TIMER, &motor_timer_init);
    #else
    // initialize Timer1 for motors
-   next_period = DEFAULT_PERIOD;
    TCCR3A = 0;
    TCCR3B = 0;
    TCNT3 = 0;
 
-   OCR3A = next_period - 1; // compare match register 16MHz/256/2Hz
+   OCR3A = DEFAULT_PERIOD - 1; // compare match register 16MHz/256/2Hz
    TCCR3B |= (1 << WGM12); // CTC mode
-   TCCR3B |= (1 << CS12); // 256 prescaler
+   TCCR3B |= (1 << CS10); // 1 prescaler
    TIMSK3 |= (1 << OCIE3A); // enable timer compare interrupt
    
    #endif
@@ -91,8 +91,14 @@ ISR(TIMER1_COMPA_vect){ // timer compare interrupt service routine
 }
 
 ISR(TIMER3_COMPA_vect){ // timer compare interrupt service routine
-   // set next overflow count value
-   OCR3A = next_period - 1; // compare match register 16MHz/256/2Hz
+   // set next overflow count valued
+   if(cnc.motors->next_period_loaded){
+      cnc.motors->valid_irq = 1;
+      OCR3A = cnc.motors->next_period - 1; // compare match register 16MHz/256/2Hz
+   } else {
+      cnc.motors->valid_irq = 0;
+      OCR3A = DEFAULT_PERIOD;
+   }
    // clear current count to reset
    TCNT3 = 0;
    cnc.motors->motor_irq = 1;

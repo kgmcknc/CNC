@@ -141,6 +141,11 @@ void init_motors(struct cnc_motor_list_struct* motors, struct cnc_endstop_list_s
    motors->motor[MOTOR_AXIS_ZR].max_range_flag   = &endstops->endstop[Z_R_MAX].status;
    #endif
 
+   motors->motor_irq = 0;
+   motors->next_period = DEFAULT_PERIOD;
+   motors->next_period_loaded = 0;
+   motors->valid_irq = 0;
+
 	init_motor(&motors->motor[MOTOR_AUX], "Aux");
 	init_motor(&motors->motor[MOTOR_EXTRUDER_0], "Extd-0");
 	init_motor(&motors->motor[MOTOR_EXTRUDER_1], "Extd-1");
@@ -152,9 +157,8 @@ void init_motors(struct cnc_motor_list_struct* motors, struct cnc_endstop_list_s
 
 void init_motor(struct cnc_motor_struct* motor, const char* name){
    motor->enabled = 0;
+   motor->active = 0;
 	motor->direction = MOTOR_MOVE_DECREASE;
-	motor->max_range_flag = 0;
-	motor->min_range_flag = 0;
 	motor->step_set = 0;
 	motor->position = 0.0;
    motor->target = 0.0;
@@ -164,6 +168,9 @@ void init_motor(struct cnc_motor_struct* motor, const char* name){
    }
 	motor->speed = 0;
    motor->next_step_count = 0;
+   motor->last_step_error = 0;
+   motor->total_period_count = 0;
+   motor->period_set = 0;
 	motor->find_zero = 0;
 	motor->find_max = 0;
 	strcpy(motor->name, name);
@@ -264,25 +271,105 @@ void disable_axis_motors(struct cnc_motor_list_struct* motors){
 void handle_motors(struct cnc_state_struct* cnc){
    if(cnc->motors->motor_irq){
       cnc->motors->motor_irq = 0;
-      check_endstops(cnc);
-      process_motors(cnc->motors);
-      get_next_period(cnc->motors);
+      cnc->motors->next_period_loaded = 0;
+      if(cnc->motors->valid_irq){
+         cnc->motors->valid_irq = 0;
+         check_endstops(cnc);
+         process_motors(cnc->motors);
+      }
    } else {
-      for(int i=0;i<NUM_MOTORS;i++){
-         set_next_step(&cnc->motors->motor[i]);
+      if(cnc->motors->next_period_loaded == 0){
+         get_next_period(cnc->motors);
+         set_next_step(cnc->motors);
+         cnc->motors->next_period_loaded = 1;
       }
    }
 }
 
-void set_next_step(struct cnc_motor_struct* motor){
-   if((motor->position > motor->target) || motor->find_zero){
-      motor->direction = MOTOR_MOVE_DECREASE;
+void get_next_period(struct cnc_motor_list_struct* motors){
+   uint32_t smallest_count = 4294967295;
+   uint8_t count_set = 0;
+   next_period = DEFAULT_PERIOD;
+   cnc_double steps_per_sec;
+   cnc_double temp;
+   
+   for(int i=0;i<NUM_MOTORS;i++){
+      if(motors->motor[i].active){
+         if(motors->motor[i].next_step_count <= motors->next_period){
+            // time for motor to move and then find next step
+            motors->motor[i].period_set = 0;
+            motors->motor[i].next_step_count = 0;
+         } else {
+            motors->motor[i].next_step_count = motors->motor[i].next_step_count - motors->next_period;
+         }
+      }
    }
-   if((motor->position < motor->target) || motor->find_max){
-      motor->direction = MOTOR_MOVE_INCREASE;
+
+   // NEED TO ADD CHECK FOR IF THE next step count is greater than timer can do. max count value based on prescale
+   // then your irq fires but no motors move
+
+   // also just make user control in interface "s" to set speed in mm/sec... save that in global.
+   // then whenever you do move you can move at that speed. and if it's zero, use a default value.
+   // do same for d for distance. then you can set speed and distance in each direction. or use default
+   for(int i=0;i<NUM_MOTORS;i++){
+      if(motors->motor[i].active && !motors->motor[i].period_set){
+         steps_per_sec = STEPS_PER_MM * motors->motor[i].speed; // steps per sec
+         temp = USEC_PER_SEC / steps_per_sec; // usec per step
+         motors->motor[i].total_period_count = (uint32_t) (temp / MOTOR_TIMER_PERIOD_US);
+         motors->motor[i].next_step_count = motors->motor[i].total_period_count;
+         motors->motor[i].period_set = 1;
+         if(motors->motor[i].last_step_error > 0){
+            motors->motor[i].next_step_count = motors->motor[i].next_step_count + motors->motor[i].last_step_error;
+            motors->motor[i].last_step_error = 0;
+         }
+      }
    }
-   if((abs(motor->position - motor->target) > MOTOR_PRECISION) || motor->find_max || motor->find_zero){
-      motor->step_set = 1;
+
+   // find smallest period for next irq
+   for(int i=0;i<NUM_MOTORS;i++){
+      if(motors->motor[i].active){
+         if(motors->motor[i].next_step_count <= smallest_count){
+            smallest_count = motors->motor[i].next_step_count;
+            count_set = 1;
+         }
+      }
+   }
+
+   if(count_set){
+      motors->next_period = smallest_count;
+      motors->next_period_loaded = 1;
+   } else {
+      motors->next_period_loaded = 0;
+      motors->next_period = DEFAULT_PERIOD;
+   }
+}
+
+void set_next_step(struct cnc_motor_list_struct* motors){
+   for(int i=0;i<NUM_MOTORS;i++){
+      if(motors->motor[i].active){
+         if(((motors->motor[i].position > motors->motor[i].target) || motors->motor[i].find_zero) && !motors->motor[i].find_max){
+            motors->motor[i].direction = MOTOR_MOVE_DECREASE;
+         }
+         if(((motors->motor[i].position < motors->motor[i].target) || motors->motor[i].find_max) && !motors->motor[i].find_zero){
+            motors->motor[i].direction = MOTOR_MOVE_INCREASE;
+         }
+         if((fabs(motors->motor[i].position - motors->motor[i].target) > PRECISION) || motors->motor[i].find_max || motors->motor[i].find_zero){
+            if(motors->motor[i].next_step_count <= motors->next_period){
+               motors->motor[i].step_set = 1;
+               motors->motor[i].last_step_error = 0;
+            } else {
+               if(motors->motor[i].next_step_count < (SMALLEST_PERIOD + motors->next_period)){
+                  // we have to go ahead and do this move early because it's too short for next interrupt
+                  motors->motor[i].step_set = 1;
+                  // save error that will get added to next step
+                  motors->motor[i].last_step_error = (SMALLEST_PERIOD + motors->next_period) - motors->motor[i].next_step_count;
+               } else {
+                  motors->motor[i].step_set = 0;
+                  motors->motor[i].last_step_error = 0;
+               }
+            }
+         }
+      }  
    }
 }
 
@@ -311,32 +398,34 @@ void check_endstops(struct cnc_state_struct* cnc){
 }
 
 void handle_step(struct cnc_motor_struct* motor){
-	if(motor->enabled){
-      if(motor->step_set){
-         motor->step_set = 0;
-         step_motor_clear_step(motor);
-         if(motor->direction == MOTOR_MOVE_INCREASE){
-            if(motor->max_range_flag){
-               motor->find_max = 0;
-            } else {
-               // step motor, adjust position, set flag to clear rising edge next loop
-               set_motor_direction(motor, MOTOR_MOVE_INCREASE);
-               motor->position = motor->position + 1.0;
-               step_motor_set_step(motor);
-            }
+   if(motor->step_set){
+      motor->step_set = 0;
+      step_motor_clear_step(motor);
+      if(motor->direction == MOTOR_MOVE_INCREASE){
+         if(*motor->max_range_flag){
+            cnc_printf(&cnc, "Hit Max %s", motor->name);
+            //motor->find_max = 0;
+            //motor->active = 0;
          } else {
-            if(motor->min_range_flag){
-               // min endstop hit
-               motor->find_zero = 0;
-            } else {
-               // step motor, adjust position, set flag to clear rising edge next loop
-               set_motor_direction(motor, MOTOR_MOVE_DECREASE);
-               motor->position = motor->position - 1.0;
-               step_motor_set_step(motor);
-            }
+            // step motor, adjust position, set flag to clear rising edge next loop
+            set_motor_direction(motor, MOTOR_MOVE_INCREASE);
+            motor->position = motor->position + STEP_MM;
+            step_motor_set_step(motor);
+         }
+      } else {
+         if(*motor->min_range_flag){
+            // min endstop hit
+            //motor->find_zero = 0;
+            //motor->active = 0;
+            cnc_printf(&cnc, "Hit Min %s", motor->name);
+         } else {
+            // step motor, adjust position, set flag to clear rising edge next loop
+            set_motor_direction(motor, MOTOR_MOVE_DECREASE);
+            motor->position = motor->position - STEP_MM;
+            step_motor_set_step(motor);
          }
       }
-	}
+   }
 }
 
 void process_motors(struct cnc_motor_list_struct* motors){
@@ -345,20 +434,12 @@ void process_motors(struct cnc_motor_list_struct* motors){
    }
 }
 
-void get_next_period(struct cnc_motor_list_struct* motors){
-   next_period = 3125;
-   // check if any motor timers have rolled under zero (or to max?)
-   // if so, set motor->step;
-
-   // check all the things
-}
-
 void step_motor_set_step(struct cnc_motor_struct* motor){
-   cnc_gpio_write(motor->pins.step_pin, motor->ports.step_port, 1);
+   cnc_gpio_write(motor->pins.step_pin, motor->ports.step_port, 0);
 }
 
 void step_motor_clear_step(struct cnc_motor_struct* motor){
-   cnc_gpio_write(motor->pins.step_pin, motor->ports.step_port, 0);
+   cnc_gpio_write(motor->pins.step_pin, motor->ports.step_port, 1);
 }
 /*
 void check_directions(struct cnc_state_struct* cnc, struct cnc_motor_list_struct* motors){

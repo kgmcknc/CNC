@@ -88,7 +88,8 @@ void init_gpio(struct cnc_state_struct* cnc){
       //for(int i=0;i<NUM_ENDSTOPS;i++){
       //   pinMode(cnc->, INPUT_PULLUP);
       //}
-      
+      pinMode(LED, OUTPUT);
+
       pinMode(ENDSTOP_0_PIN, INPUT_PULLUP);
       pinMode(ENDSTOP_1_PIN, INPUT_PULLUP);
       pinMode(ENDSTOP_2_PIN, INPUT_PULLUP);

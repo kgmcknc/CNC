@@ -24,7 +24,7 @@ void init_cnc(struct cnc_state_struct* cnc){
 	cnc->write_in_progress = 0;
 	cnc->read_complete = 0;
 	cnc->read_in_progress = 0;
-	cnc->marker_set = 0;
+   cnc->instant_instruction_done = 0;
 
 	for(print_count=0;print_count<PRINT_DEPTH;print_count++){
 		cnc->print_buffer[print_count][0] = 0; // use % to mark end of print string
@@ -45,9 +45,13 @@ void handle_state(struct cnc_state_struct* cnc){
 				// send print if print is ready
 				cnc->state = SEND_CNC_PRINT;
 			} else {
+            if(cnc->instant_instruction_done){
+               cnc->state = SEND_INSTANT_INSTRUCTION_DONE;
+            }
 				if(cnc->endstops->new_event){
 					cnc->state = SEND_ENDPOINT_EVENT;
 				}
+
 			}
 			break;
 		}
@@ -80,10 +84,20 @@ void handle_state(struct cnc_state_struct* cnc){
 		}
 		case SEND_ENDPOINT_EVENT : {
          cnc->cnc_write_data[0] = (char) MARKER;
-         cnc->cnc_write_length = 1;
+         update_status(cnc);
+         cnc->cnc_write_length = status_to_string(&cnc->status, &cnc->cnc_write_data[1]);
+         cnc->cnc_write_length = cnc->cnc_write_length + 1;
          if(cnc_serial.send(cnc->cnc_write_length, cnc->cnc_write_data) > 0){
             cnc->endstops->new_event = 0;
-            cnc->marker_set = 0;
+            cnc->state = CNC_IDLE;
+         }
+			break;
+		}
+      case SEND_INSTANT_INSTRUCTION_DONE : {
+         cnc->cnc_write_data[0] = (char) INSTANT_DONE;
+         cnc->cnc_write_length = 1;
+         if(cnc_serial.send(cnc->cnc_write_length, cnc->cnc_write_data) > 0){
+            cnc->instant_instruction_done = 0;
             cnc->state = CNC_IDLE;
          }
 			break;
@@ -165,15 +179,17 @@ void parse_version(struct cnc_state_struct* cnc){
 }
 
 void cnc_printf(struct cnc_state_struct* cnc, const char* print_string, ...){
-	va_list print_args;
-	char full_string[MAX_PRINT_LENGTH];
+   if(cnc->print_fullness < PRINT_DEPTH){
+      va_list print_args;
+      char full_string[MAX_PRINT_LENGTH];
 
-	va_start(print_args, print_string);
-	vsnprintf(full_string, MAX_PRINT_LENGTH, print_string, print_args);
-	va_end(print_args);
+      va_start(print_args, print_string);
+      vsnprintf(full_string, MAX_PRINT_LENGTH, print_string, print_args);
+      va_end(print_args);
 
-	strcpy((char*) cnc->print_buffer[cnc->print_wp], full_string);
-	cnc->print_wp = (cnc->print_wp < (PRINT_DEPTH-1)) ? (cnc->print_wp + 1) : 0;
-	cnc->print_fullness++;
+      strcpy((char*) cnc->print_buffer[cnc->print_wp], full_string);
+      cnc->print_wp = (cnc->print_wp < (PRINT_DEPTH-1)) ? (cnc->print_wp + 1) : 0;
+      cnc->print_fullness++;
+   }
 }
 
