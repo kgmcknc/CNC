@@ -50,7 +50,7 @@ int cnc_main(void)
 	variable_init(&cnc);
 	system_init(&cnc);
 
-   Serial.begin(57600);
+   Serial.begin(115200);
    while (!Serial) {
       ; // wait for serial port to connect. Needed for native USB port only
    }
@@ -60,7 +60,7 @@ int cnc_main(void)
 
    /* Infinite loop */
 	while (1) {
-      if(cnc_serial.is_connected){
+      /*if(cnc_serial.is_connected){
          if(!led_on){
             cnc_gpio_write(LED, 0, 1);
             led_on = 1;
@@ -70,12 +70,12 @@ int cnc_main(void)
             cnc_gpio_write(LED, 0, 0);
             led_on = 0;
          }
-      }
+      }*/
       cnc_serial.process();
       handle_state(&cnc);
       handle_instructions(&cnc);
       handle_motors(&cnc);
-      //handle_heaters(&cnc);
+      handle_heaters(&cnc);
       //handle_fans(&cnc);
    }
    

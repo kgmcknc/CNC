@@ -22,6 +22,7 @@ struct interface_struct {
    struct gcode_program_struct program;
    uint8_t motors_enabled;
    uint8_t machine_marker;
+   uint8_t status_received;
    uint8_t instant_done;
    uint8_t machine_processing;
    uint8_t instruction_requested;

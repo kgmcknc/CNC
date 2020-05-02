@@ -5,9 +5,9 @@ build-mega2560/userlibs/src/main.cpp.o: \
  /home/pi/media_share/Projects/CNC//src/cnc_functions.h \
  /home/pi/media_share/Projects/CNC//src/cnc_instructions.h \
  /home/pi/media_share/Projects/CNC//src/cnc_heaters.h \
+ /home/pi/media_share/Projects/CNC//src/cnc_gpio.h \
  /home/pi/media_share/Projects/CNC//common/src/common_cnc.h \
  /home/pi/media_share/Projects/CNC//src/cnc_motors.h \
- /home/pi/media_share/Projects/CNC//src/cnc_gpio.h \
  /usr/share/arduino/hardware/arduino//cores/arduino/Arduino.h \
  /usr/share/arduino/hardware/arduino//cores/arduino/binary.h \
  /usr/share/arduino/hardware/arduino//cores/arduino/WCharacter.h \

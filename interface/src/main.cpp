@@ -67,7 +67,7 @@ int main(int argc, char **argv) {
          case INTERFACE_INIT : {
             sprintf(serial_port_string, "/dev/ttyACM%d", serial_port_index);
             printf("Initializing Serial: %s\n", serial_port_string);
-            serial_fd = serialOpen(serial_port_string, 57600);
+            serial_fd = serialOpen(serial_port_string, 115200);
             if(serial_fd != -1){
                interface.state = ENABLE_GPIO;
                printf("Connected %s!\n", serial_port_string);
@@ -136,6 +136,7 @@ void init_interface_struct(struct interface_struct* interface){
    interface->write_in_progress = 0;
    interface->write_complete = 0;
    interface->machine_marker = 0;
+   interface->status_received = 0;
    interface->instant_done = 0;
    interface->machine_configured = 0;
    interface->instruction_requested = 0;

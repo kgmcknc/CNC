@@ -116,6 +116,11 @@ void init_gpio(struct cnc_state_struct* cnc){
       pinMode(HEAT_2_PIN, OUTPUT);
       pinMode(HEAT_3_PIN, OUTPUT);
 
+      pinMode(FANS_0_PIN, OUTPUT);
+      pinMode(FANS_1_PIN, OUTPUT);
+      pinMode(FANS_2_PIN, OUTPUT);
+      pinMode(FANS_3_PIN, OUTPUT);
+
       pinMode(MOTOR_0_ENABLE_PIN, OUTPUT);
       pinMode(MOTOR_0_DIR_PIN, OUTPUT);
       pinMode(MOTOR_0_STEP_PIN, OUTPUT);

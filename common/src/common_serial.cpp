@@ -33,9 +33,13 @@ uint32_t serial_class::receive(uint8_t* receive_data){
       return 0;
    }
 }
-//#define debug_prints 1
+
 void serial_class::process(void){
    uint8_t temp_data;
+   if(timeout_count > MAX_WAIT_TIME){
+      timeout_count = 0;
+      state = INIT;
+   }
    switch(state){
       case INIT : {
          init();
@@ -130,54 +134,46 @@ void serial_class::process(void){
       }
       case IDLE : {
          timeout_count = 0;
-         if(is_master){
-            if(tx_pending){ // check to see if there is data ready to transmit
-               state = SEND_TRANSFER_INIT;
-            } else {
-               // see if there is data ready to be received
-               if(serial_get_data(1, &temp_data)){
-                  switch((serial_opcodes) temp_data){
-                     case TX_REQ : {
-                           #ifdef debug_prints
-                              printf("Master Received Request\n");
-                           #endif
+         // see if there is data ready to be received
+         if(serial_get_data(1, &temp_data)){
+            switch((serial_opcodes) temp_data){
+               case TX_REQ : {
+                     if(is_master){
+                        // check to see if there is data ready to transmit
+                        if(tx_pending){
+                           // master transmit takes priority over slave receive
+                           state = SEND_TRANSFER_INIT;
+                        } else {
                            if(rx_queue_fullness >= RX_QUEUE_DEPTH){
                               state = SEND_QUEUE_FULL;
                            } else {
                               state = SEND_TRANSFER_ACCEPT;
                            }
-                        break;
-                     }
-                     default : {
-                        state = IDLE;
-                     }
-                  }
-               } else {
-                  state = IDLE;
-               }
-            }
-         } else {
-            if(serial_get_data(1, &temp_data)){
-               switch((serial_opcodes) temp_data){
-                  case TX_REQ : {
-                        rx_pending = 0;
+                        }
+                     } else {
+                        // if slave, always have to process master request first
                         if(rx_queue_fullness >= RX_QUEUE_DEPTH){
                            state = SEND_QUEUE_FULL;
                         } else {
                            state = SEND_TRANSFER_ACCEPT;
                         }
-                     break;
-                  }
-                  default : {
-                     state = INIT;
-                  }
+                     }
+                  break;
                }
-            } else {
-               if(tx_pending && !rx_pending){
-                  state = SEND_TRANSFER_INIT;
-               } else {
+               case MASTER_START : {
+                  state = INIT;
+                  break;
+               }
+               default : {
                   state = IDLE;
                }
+            }
+         } else {
+            // if no data received, process your requests
+            if(tx_pending){
+               state = SEND_TRANSFER_INIT;
+            } else {
+               state = IDLE;
             }
          }
          break;
@@ -213,77 +209,38 @@ void serial_class::process(void){
          break;
       }
       case WAIT_TRANSFER_RESPONSE : {
-         if(is_master){
-            if(serial_get_data(1, &temp_data)){
-               switch((serial_opcodes) temp_data){
-                  case TX_REQ : {
-                     // master can ignore a request assuming slave will ignore it and respond to his
-                     if(invalid_response_count < 2){
-                        invalid_response_count = invalid_response_count + 1;
-                        state = WAIT_TRANSFER_RESPONSE;
-                     } else {
-                        invalid_response_count = 0;
-                        state = IDLE;
-                     }
-                     if(!is_master){
-                        rx_pending = 1;
-                     }
-                     break;
-                  }
-                  case TX_ACCEPT : {
-                     state = SEND_TRANSFER_SIZE;
-                     break;
-                  }
-                  case RX_FULL : {
-                     state = IDLE;
-                     break;
-                  }
-                  default : {
-                     state = IDLE;
-                     break;
-                  }
-               }
-            } else {
-               /*if(timeout_count >= MAX_WAIT_TIME){
-                  state = INIT;
-                  timeout_count = 0;
-               } else {
-                  timeout_count = timeout_count + 1;
-               }*/
-            }
-         } else {
-            if(serial_get_data(1, &temp_data)){
-               switch((serial_opcodes) temp_data){
-                  case TX_REQ : {
+         if(serial_get_data(1, &temp_data)){
+            switch((serial_opcodes) temp_data){
+               case TX_REQ : {
+                  if(is_master){
+                     // slave issued request at same time as us... ignore this...
+                     // slave will respond to our tx req
+                  } else {
+                     // master sent a request when we did... ignore ours
+                     // send response for his
                      if(rx_queue_fullness >= RX_QUEUE_DEPTH){
                         state = SEND_QUEUE_FULL;
                      } else {
                         state = SEND_TRANSFER_ACCEPT;
-                     }
-                     break;
+                     }  
                   }
-                  case TX_ACCEPT : {
-                     state = SEND_TRANSFER_SIZE;
-                     break;
-                  }
-                  case RX_FULL : {
-                     printf("rx full!!!\n");
-                     state = IDLE;
-                     break;
-                  }
-                  default : {
-                     state = IDLE;
-                     break;
-                  }
+                  break;
                }
-            } else {
-               /*if(timeout_count >= MAX_WAIT_TIME){
-                  state = INIT;
-                  timeout_count = 0;
-               } else {
-                  timeout_count = timeout_count + 1;
-               }*/
+               case TX_ACCEPT : {
+                  state = SEND_TRANSFER_SIZE;
+                  break;
+               }
+               case RX_FULL : {
+                  state = IDLE;
+                  break;
+               }
+               default : {
+                  state = IDLE;
+                  break;
+               }
             }
+         } else {
+            // do nothing... wait for response
          }
          break;
       }

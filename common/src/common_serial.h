@@ -4,11 +4,13 @@
 
    #include <stdint.h>
 
-   #define RX_QUEUE_DEPTH 2
+   #define RX_QUEUE_DEPTH 4
    #define MAX_TRANSFER_SIZE 512
-   #define TRANSFER_BYTE_SIZE 16
+   #define TRANSFER_BYTE_SIZE 32
    #define INIT_WAIT_TIME 80000
    #define MAX_WAIT_TIME 20000
+
+   //#define debug_prints
 
    enum serial_opcodes {
       RESET, MASTER_START, MASTER_CONNECT, SLAVE_START, SLAVE_CONNECT,

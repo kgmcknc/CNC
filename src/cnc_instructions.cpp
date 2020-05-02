@@ -206,11 +206,35 @@ void set_motor_instruction(struct cnc_state_struct* cnc, struct cnc_motor_instru
 }
 
 void set_heater_instruction(struct cnc_heater_instruction_struct* current_instruction, struct cnc_heater_struct* heater){
-	if(current_instruction->instruction_valid){
+	cnc_double target_resistance;
+   cnc_double beta_temp;
+   cnc_double exp_val;
+   
+   if(current_instruction->instruction_valid){
 		heater->reset_heater = 1;
-		heater->target_temp = current_instruction->target_temp;
-		heater->wait_for_temp = current_instruction->wait_for_temp;
+      if(current_instruction->enable_heater){
+         heater->heater_active = 1;
+      }
+      if(current_instruction->disable_heater){
+         heater->heater_active = 0;
+      }
+      if(current_instruction->enable_fan){
+         heater->fan_active = 1;
+      }
+      if(current_instruction->disable_fan){
+         heater->fan_active = 0;
+      }
+
+      heater->target_temp = current_instruction->target_temp;
+      heater->wait_for_temp = current_instruction->wait_for_temp;
 		heater->fan_duty = current_instruction->fan_duty;
+      heater->pid_reset = 1;
+
+      beta_temp = ((BETA_VALUE/(heater->target_temp+KELVIN_CONV)) - (BETA_VALUE/BASE_TEMP_KELVIN));
+      exp_val = exp(beta_temp);
+      target_resistance = exp_val*THERMISTOR_RESISTANCE;
+      heater->target_adc = (uint32_t) ((cnc_double) (ADC_MAX*BASE_RESISTANCE)/(BASE_RESISTANCE + target_resistance));
+
 	}
 }
 
@@ -263,6 +287,7 @@ void set_aux_instruction(struct cnc_state_struct* cnc, struct cnc_aux_instructio
                }
             }
          }
+         cnc_printf(cnc, "Endstop Speed: %d", (int) cnc->program.current_instruction->instruction.aux.motor_speed);
          cnc->program.current_instruction->instruction_type = MOTOR_INSTRUCTION;
          for(int i=0;i<NUM_MOTORS;i++){
             cnc->program.current_instruction->instruction.motors.motor[i].instruction_valid = (cnc->motors->motor[i].find_zero || cnc->motors->motor[i].find_max);
@@ -301,6 +326,15 @@ uint8_t check_motor_instruction(struct cnc_motor_instruction_struct* current_ins
       } else {
          if(fabs(motor->position - motor->target) <= PRECISION){
             current_instruction->instruction_valid = 0;
+         } else {
+            if((motor->position < motor->target) && (*motor->max_range_flag)){
+               current_instruction->instruction_valid = 0;
+               motor->target = motor->position;
+            }
+            if((motor->position > motor->target) && (*motor->min_range_flag)){
+               current_instruction->instruction_valid = 0;
+               motor->target = motor->position;
+            }
          }
       }
 	}
@@ -310,8 +344,7 @@ uint8_t check_motor_instruction(struct cnc_motor_instruction_struct* current_ins
 uint8_t check_heater_instruction(struct cnc_heater_instruction_struct* current_instruction, struct cnc_heater_struct* heater){
 	if(current_instruction->instruction_valid){
 		if(current_instruction->wait_for_temp){
-			if(heater->current_temp == heater->target_temp){
-				heater->temp_locked = 1;
+			if(heater->temp_locked){
 				current_instruction->instruction_valid = 0;
 			}
 		} else {
@@ -471,6 +504,7 @@ void copy_instruction(struct cnc_instruction_struct* new_instruction, struct cnc
          current_instruction->instruction.aux.set_position[i] = new_instruction->instruction.aux.set_position[i];
          current_instruction->instruction.aux.motor_position[i] = new_instruction->instruction.aux.motor_position[i];
       }
+      current_instruction->instruction.aux.motor_speed = new_instruction->instruction.aux.motor_speed;
    }
 }
 

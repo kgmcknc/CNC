@@ -15,12 +15,6 @@
 #include "stdarg.h"
 #include "common_cnc.h"
 
-#ifdef SILABS
-   #include "rtcdriver.h"
-#else
-   #define GPIO_Port_TypeDef uint8_t
-#endif
-
 #define MAX_MOTOR_NAME_LENGTH 8
 
 struct cnc_motor_port_struct {
@@ -52,10 +46,10 @@ struct cnc_motor_struct {
    cnc_double position;
 	uint8_t direction;
    cnc_double speed;
-   uint8_t period_set;
+   uint8_t step_count_set;
 	uint32_t next_step_count;
-   uint32_t last_step_error;
-   uint32_t total_period_count;
+   uint32_t last_timer_error;
+   uint32_t total_timer_count;
 	char name[MAX_MOTOR_NAME_LENGTH] = {};
 	struct cnc_motor_pin_struct pins;
 	struct cnc_motor_port_struct ports;
@@ -63,9 +57,10 @@ struct cnc_motor_struct {
 
 struct cnc_motor_list_struct {
    uint8_t motor_irq;
+   uint8_t next_valid_irq;
    uint8_t valid_irq;
-   uint8_t next_period_loaded;
-   uint32_t next_period;
+   uint8_t next_timer_value_loaded;
+   uint32_t next_timer_value;
 	struct cnc_motor_struct motor[NUM_MOTORS];
 };
 
@@ -191,7 +186,7 @@ struct cnc_endstop_list_struct {
 extern cnc_double next_period;
 
 void process_motors(struct cnc_motor_list_struct* motors);
-void get_next_period(struct cnc_motor_list_struct* motors);
+void get_next_timer_value(struct cnc_motor_list_struct* motors);
 void enable_motor(struct cnc_motor_struct* motor);
 void disable_motor(struct cnc_motor_struct* motor);
 void set_motor_direction(struct cnc_motor_struct* motor, int8_t direction);
@@ -205,7 +200,7 @@ void handle_motors(struct cnc_state_struct* cnc);
 void init_endstops(struct cnc_endstop_list_struct* endstops);
 void init_endstop(struct cnc_endstop_struct* endstop);
 void handle_step(struct cnc_motor_struct* motor);
-void set_next_step(struct cnc_motor_list_struct* motors);
+void set_step(struct cnc_motor_list_struct* motors);
 //void check_periods(struct cnc_state_struct* cnc, struct cnc_motor_list_struct* motors);
 //void check_period(struct cnc_state_struct* cnc, struct cnc_motor_struct* motors);
 void step_motor_set_step(struct cnc_motor_struct* motor);

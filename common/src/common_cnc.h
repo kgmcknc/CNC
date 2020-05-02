@@ -13,7 +13,7 @@
 #define PRINT_DEPTH 16
 #define MAX_PRINT_LENGTH 64
 #define INSTRUCTION_BYTE_LENGTH sizeof(cnc_instruction_struct)
-#define MAX_COMM_TRANSFER ((INSTRUCTION_BYTE_LENGTH > MAX_PRINT_LENGTH) ? INSTRUCTION_BYTE_LENGTH : MAX_PRINT_LENGTH)
+#define MAX_COMM_TRANSFER ((INSTRUCTION_BYTE_LENGTH > MAX_PRINT_LENGTH) ? INSTRUCTION_BYTE_LENGTH + 1 : MAX_PRINT_LENGTH + 1)
 
 #define RAMP_PERIOD 0 // start/end period of ramp... should be slow
 #define cnc_double float
@@ -164,7 +164,7 @@ struct cnc_config_struct {
 struct cnc_status_struct {
    uint8_t endstop_status[NUM_ENDSTOPS];
    cnc_double position[NUM_MOTORS];
-	cnc_double temp[NUM_MOTORS];
+	cnc_double temp[NUM_HEATERS];
 };
 
 struct cnc_motor_instruction_struct {

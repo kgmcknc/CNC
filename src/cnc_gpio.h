@@ -12,8 +12,9 @@
 
 #ifdef SILABS
    #include "em_gpio.h"
+   #include "rtcdriver.h"
 #else
-
+   #define GPIO_Port_TypeDef uint8_t
 #endif
 
 #ifdef SILABS

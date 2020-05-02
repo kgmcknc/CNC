@@ -134,13 +134,13 @@ void heater_instruction_to_string(struct cnc_heater_instruction_struct* instruct
    local_offset = *offset;
    
    string[local_offset] = instruction->disable_fan;
-   offset++;
+   local_offset++;
    string[local_offset] = instruction->disable_heater;
-   offset++;
+   local_offset++;
    string[local_offset] = instruction->enable_fan;
-   offset++;
+   local_offset++;
    string[local_offset] = instruction->enable_heater;
-   offset++;
+   local_offset++;
    string[local_offset] = instruction->fan_duty;
    local_offset++;
    string[local_offset] = instruction->instruction_valid;
@@ -177,13 +177,13 @@ void string_to_heater_instruction(struct cnc_heater_instruction_struct* instruct
    local_offset = *offset;
    
    instruction->disable_fan = string[local_offset];
-   offset++;
+   local_offset++;
    instruction->disable_heater = string[local_offset];
-   offset++;
+   local_offset++;
    instruction->enable_fan = string[local_offset];
-   offset++;
+   local_offset++;
    instruction->enable_heater = string[local_offset];
-   offset++;
+   local_offset++;
    instruction->fan_duty = string[local_offset];
    local_offset++;
    instruction->instruction_valid = string[local_offset];

@@ -52,7 +52,7 @@ void init_heater_timer(void){
    TCCR1B = 0;
    TCNT1 = 0;
 
-   OCR1A = DEFAULT_PERIOD - 1; // compare match register 16MHz/256/2Hz
+   OCR1A = DEFAULT_HEATER_TIMER_COUNT - 1; // compare match register 16MHz/256/2Hz
    TCCR1B |= (1 << WGM12); // CTC mode
    TCCR1B |= (1 << CS12); // 256 prescaler
    TIMSK1 |= (1 << OCIE1A); // enable timer compare interrupt
@@ -74,7 +74,7 @@ void init_motor_timer(void){
    TCCR3B = 0;
    TCNT3 = 0;
 
-   OCR3A = DEFAULT_PERIOD - 1; // compare match register 16MHz/256/2Hz
+   OCR3A = DEFAULT_TIMER_COUNT - 1; // compare match register 16MHz/256/2Hz
    TCCR3B |= (1 << WGM12); // CTC mode
    TCCR3B |= (1 << CS10); // 1 prescaler
    TIMSK3 |= (1 << OCIE3A); // enable timer compare interrupt
@@ -84,7 +84,7 @@ void init_motor_timer(void){
 
 ISR(TIMER1_COMPA_vect){ // timer compare interrupt service routine
    // set next overflow count value
-   OCR1A = DEFAULT_PERIOD - 1; // compare match register 16MHz/256/2Hz
+   OCR1A = DEFAULT_HEATER_TIMER_COUNT - 1; // compare match register 16MHz/256/2Hz
    // clear current count to reset
    TCNT1 = 0;
    cnc.heaters->heater_irq = 1;
@@ -92,12 +92,13 @@ ISR(TIMER1_COMPA_vect){ // timer compare interrupt service routine
 
 ISR(TIMER3_COMPA_vect){ // timer compare interrupt service routine
    // set next overflow count valued
-   if(cnc.motors->next_period_loaded){
-      cnc.motors->valid_irq = 1;
-      OCR3A = cnc.motors->next_period - 1; // compare match register 16MHz/256/2Hz
+   cnc.motors->valid_irq = cnc.motors->next_valid_irq;
+   if(cnc.motors->next_timer_value_loaded){
+      cnc.motors->next_valid_irq = 1;
+      OCR3A = cnc.motors->next_timer_value - 1; // compare match register 16MHz/256/2Hz
    } else {
-      cnc.motors->valid_irq = 0;
-      OCR3A = DEFAULT_PERIOD;
+      cnc.motors->next_valid_irq = 0;
+      OCR3A = DEFAULT_TIMER_COUNT;
    }
    // clear current count to reset
    TCNT3 = 0;
