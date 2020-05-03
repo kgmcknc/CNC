@@ -43,6 +43,7 @@ struct cnc_motor_struct {
    uint8_t* min_range_flag;
    uint8_t* max_range_flag;
 	cnc_double target;
+	cnc_double distance;
    cnc_double position;
 	uint8_t direction;
    cnc_double speed;
@@ -61,7 +62,9 @@ struct cnc_motor_list_struct {
    uint8_t valid_irq;
    uint8_t next_timer_value_loaded;
    uint32_t next_timer_value;
-	struct cnc_motor_struct motor[NUM_MOTORS];
+   cnc_double motor_speed;
+   cnc_double max_distance;
+   struct cnc_motor_struct motor[NUM_MOTORS];
 };
 
 struct cnc_endstop_struct {
@@ -186,6 +189,7 @@ struct cnc_endstop_list_struct {
 extern cnc_double next_period;
 
 void process_motors(struct cnc_motor_list_struct* motors);
+void get_motor_speed(struct cnc_motor_list_struct* motors);
 void get_next_timer_value(struct cnc_motor_list_struct* motors);
 void enable_motor(struct cnc_motor_struct* motor);
 void disable_motor(struct cnc_motor_struct* motor);

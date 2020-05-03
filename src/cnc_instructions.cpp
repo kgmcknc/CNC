@@ -177,9 +177,13 @@ void check_errors(struct cnc_state_struct* cnc){
 void set_instruction(struct cnc_state_struct* cnc){
 	if(cnc->program.current_instruction->instruction_valid){
       if(cnc->program.current_instruction->instruction_type == MOTOR_INSTRUCTION){
+         cnc->motors->motor_speed = cnc->program.current_instruction->instruction.motors.speed;
+         cnc->motors->max_distance = 0.0;
          for(int i=0;i<NUM_MOTORS;i++){
             set_motor_instruction(cnc, &cnc->program.current_instruction->instruction.motors.motor[i], &cnc->motors->motor[i]);
-            cnc->motors->motor[i].speed = cnc->program.current_instruction->instruction.motors.speed;
+            if(cnc->motors->max_distance < cnc->motors->motor[i].distance){
+               cnc->motors->max_distance = cnc->motors->motor[i].distance;
+            }
          }
       }
       if(cnc->program.current_instruction->instruction_type == HEATER_INSTRUCTION){
@@ -196,9 +200,11 @@ void set_instruction(struct cnc_state_struct* cnc){
 void set_motor_instruction(struct cnc_state_struct* cnc, struct cnc_motor_instruction_struct* current_instruction, struct cnc_motor_struct* motor){
 	if(current_instruction->instruction_valid){
 		if(current_instruction->relative_move){
+         motor->distance = fabs(current_instruction->end_position);
          motor->target = motor->position + current_instruction->end_position;
          motor->active = 1;
       } else {
+         motor->distance = fabs(motor->position - current_instruction->end_position);
          motor->target = current_instruction->end_position;
          motor->active = 1;
       }

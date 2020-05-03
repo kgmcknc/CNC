@@ -278,6 +278,7 @@ void handle_motors(struct cnc_state_struct* cnc){
       }
    }
    if(cnc->motors->next_timer_value_loaded == 0){
+      get_motor_speed(cnc->motors);
       get_next_timer_value(cnc->motors);
       cnc->motors->next_timer_value_loaded = 1;
    }
@@ -307,6 +308,15 @@ void set_step(struct cnc_motor_list_struct* motors){
          }
       } else {
          motors->motor[i].step_set = 0;
+      }
+   }
+}
+
+void get_motor_speed(struct cnc_motor_list_struct* motors){
+   for(int i=0;i<NUM_MOTORS;i++){
+      if(motors->motor[i].active){
+         motors->motor[i].speed = motors->motor_speed * motors->motor[i].distance;
+         motors->motor[i].speed = motors->motor[i].speed / motors->max_distance;
       }
    }
 }

@@ -690,7 +690,7 @@ void process_instruction(struct interface_struct* interface){
                interface->user_instruction.instruction.heaters.heater[0].enable_heater = 1;
                interface->user_instruction.instruction.heaters.heater[0].fan_duty = 100;
                interface->user_instruction.instruction.heaters.heater[0].enable_fan = 1;
-               interface->user_instruction.instruction.heaters.heater[0].wait_for_temp = 0;
+               interface->user_instruction.instruction.heaters.heater[0].wait_for_temp = 1;
                interface->user_instruction.instruction.heaters.heater[0].target_temp = temp;
                valid_instruction = 1;
             } else {

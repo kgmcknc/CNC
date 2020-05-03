@@ -23,6 +23,9 @@ uint8_t duty_count = 0;
 #define MAX_ADJUSTMENTS 256
 #define PID_PRINTS
 
+#define P_ERROR_LOCK ((int16_t) 10)
+#define I_ERROR_LOCK ((int64_t) 10)
+
 /*
 working temp backup
 cnc_double current_voltage;
@@ -183,12 +186,12 @@ void reset_heater_pid(struct cnc_heater_struct* heater){
    heater->windup_rounds = WINDUP_COUNT;
    heater->adj_count = 0;
    for(int i=0;i<AVERAGE_COUNT;i++){
-      heater->pid_average[i] = (int16_t) 65535;
+      heater->pid_average[i] = (int16_t) 50000;
    }
 }
 
 void update_heater_pid(struct cnc_heater_struct* heater){
-   int16_t p_average;
+   int32_t p_average;
    int16_t p_error;
    int16_t d_error;
    cnc_double adj;
@@ -251,8 +254,14 @@ void update_heater_pid(struct cnc_heater_struct* heater){
       }
    }
 
+   if((heater->anti_windup == 0) &&(abs(p_average) <= P_ERROR_LOCK) && (abs(heater->i_error) <= I_ERROR_LOCK)){
+      heater->temp_locked = 1;
+   } else {
+      heater->temp_locked = 0;
+   }
+
    #ifdef PID_PRINTS
-      cnc_printf(&cnc, "PID:%d,%d,%d,%d,%d,%d", p_error,(int16_t) heater->i_error,d_error,(int16_t) adj,heater->adj_count,heater->anti_windup);
+      cnc_printf(&cnc, "PID:%d,%d,%d,%d,%d,%d,%d", p_error,(int16_t) heater->i_error,d_error,(int16_t) adj,heater->adj_count,heater->anti_windup,heater->temp_locked);
    #endif
 
    heater->last_p_error = p_error;
