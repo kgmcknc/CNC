@@ -317,27 +317,24 @@ void get_next_timer_value(struct cnc_motor_list_struct* motors){
    motors->next_timer_value = DEFAULT_TIMER_COUNT;
    cnc_double steps_per_sec;
    cnc_double temp;
-   cnc_motor_struct this_motor;
+   cnc_motor_struct *this_motor;
    
    for(int i=0;i<NUM_MOTORS;i++){
-      if(motors->motor[i].active && !motors->motor[i].step_count_set){
-         steps_per_sec = STEPS_PER_MM * motors->motor[i].speed; // steps per sec
+      this_motor = &motors->motor[i];
+      if(this_motor->active && !this_motor->step_count_set){
+         steps_per_sec = STEPS_PER_MM * this_motor->speed; // steps per sec
          temp = USEC_PER_SEC / steps_per_sec; // usec per step
-         motors->motor[i].total_timer_count = (uint32_t) (temp / MOTOR_TIMER_PERIOD_US);
-         motors->motor[i].next_step_count = motors->motor[i].total_timer_count;
-         motors->motor[i].step_count_set = 1;
-         if(motors->motor[i].last_timer_error > 0){
-            motors->motor[i].next_step_count = motors->motor[i].next_step_count + motors->motor[i].last_timer_error;
-            motors->motor[i].last_timer_error = 0;
+         this_motor->total_timer_count = (uint32_t) (temp / MOTOR_TIMER_PERIOD_US);
+         this_motor->next_step_count = this_motor->total_timer_count;
+         this_motor->step_count_set = 1;
+         if(this_motor->last_timer_error > 0){
+            this_motor->next_step_count = this_motor->next_step_count + this_motor->last_timer_error;
+            this_motor->last_timer_error = 0;
          }
       }
-   }
-
-   // find smallest period for next irq
-   for(int i=0;i<NUM_MOTORS;i++){
-      if(motors->motor[i].active && motors->motor[i].step_count_set){
-         if(motors->motor[i].next_step_count <= smallest_count){
-            smallest_count = motors->motor[i].next_step_count;
+      if(this_motor->active && this_motor->step_count_set){
+         if(this_motor->next_step_count <= smallest_count){
+            smallest_count = this_motor->next_step_count;
             count_set = 1;
          }
       }
@@ -422,7 +419,9 @@ void handle_step(struct cnc_motor_struct* motor){
 
 void process_motors(struct cnc_motor_list_struct* motors){
    for(int i=0;i<NUM_MOTORS;i++){
-      handle_step(&motors->motor[i]);
+      if(motors->motor[i].active){
+         handle_step(&motors->motor[i]);
+      }
    }
 }
 

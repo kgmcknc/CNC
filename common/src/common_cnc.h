@@ -164,7 +164,7 @@ struct cnc_config_struct {
 struct cnc_status_struct {
    uint8_t endstop_status[NUM_ENDSTOPS];
    cnc_double position[NUM_MOTORS];
-	cnc_double temp[NUM_HEATERS];
+   cnc_double temp[NUM_HEATERS];
 };
 
 struct cnc_motor_instruction_struct {

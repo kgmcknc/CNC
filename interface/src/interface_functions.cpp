@@ -19,6 +19,7 @@ uint8_t configure_processing = 0;
 cnc_double move_speed = DEFAULT_SPEED;
 cnc_double move_distance = DEFAULT_DISTANCE;
 cnc_double z_move_distance = DEFAULT_DISTANCE;
+cnc_double new_position = 0.0;
 
 void handle_cnc_state(struct interface_struct* interface){
    cnc_serial.process();
@@ -433,13 +434,13 @@ void process_request(struct interface_struct* interface){
 			printf("CNC ZL Max: %d\n", interface->machine_status.endstop_status[Z_L_MAX]);
 			printf("CNC ZR Min: %d\n", interface->machine_status.endstop_status[Z_R_MIN]);
 			printf("CNC ZR Max: %d\n", interface->machine_status.endstop_status[Z_R_MAX]);
-			printf("CNC EX0 Pos: %lld\n", interface->machine_status.position[MOTOR_AUX]);
-			printf("CNC EX1 Pos: %lld\n", interface->machine_status.position[MOTOR_EXTRUDER_0]);
-			printf("CNC AUX Pos: %lld\n", interface->machine_status.position[MOTOR_EXTRUDER_1]);
-			printf("CNC XL Pos: %lld\n", interface->machine_status.position[MOTOR_AXIS_XL]);
-			printf("CNC YF Pos: %lld\n", interface->machine_status.position[MOTOR_AXIS_YF]);
-			printf("CNC ZL Pos: %lld\n", interface->machine_status.position[MOTOR_AXIS_ZL]);
-			printf("CNC ZR Pos: %lld\n", interface->machine_status.position[MOTOR_AXIS_ZR]);
+			printf("CNC EX0 Pos: %lf\n", interface->machine_status.position[MOTOR_AUX]);
+			printf("CNC EX1 Pos: %lf\n", interface->machine_status.position[MOTOR_EXTRUDER_0]);
+			printf("CNC AUX Pos: %lf\n", interface->machine_status.position[MOTOR_EXTRUDER_1]);
+			printf("CNC XL Pos: %lf\n", interface->machine_status.position[MOTOR_AXIS_XL]);
+			printf("CNC YF Pos: %lf\n", interface->machine_status.position[MOTOR_AXIS_YF]);
+			printf("CNC ZL Pos: %lf\n", interface->machine_status.position[MOTOR_AXIS_ZL]);
+			printf("CNC ZR Pos: %lf\n", interface->machine_status.position[MOTOR_AXIS_ZR]);
          
          #define IN_VOLT ((cnc_double) 3.3)
          #define BETA_VALUE ((cnc_double) 3950.0)
@@ -617,21 +618,49 @@ void handle_input(struct interface_struct* interface){
 				break;
 			}
 			case 's' : {
-				/*printf("Config: X Min Home: %lld\n", interface->machine_config.xl_min_home_pos);
-				printf("Config: X Min Safe: %lld\n", interface->machine_config.xl_min_safe_pos);
-				printf("Config: Y Min Home: %lld\n", interface->machine_config.yf_min_home_pos);
-				printf("Config: Y Min Safe: %lld\n", interface->machine_config.yf_min_safe_pos);
-				printf("Config: Zl Min Home: %lld\n", interface->machine_config.zl_min_home_pos);
-				printf("Config: Zl Min Safe: %lld\n", interface->machine_config.zl_min_safe_pos);
-				printf("Config: Zr Min Home: %lld\n", interface->machine_config.zr_min_home_pos);
-				printf("Config: Zr Min Safe: %lld\n", interface->machine_config.zr_min_safe_pos);
-				printf("Config: X  Axis Length: %lld\n", interface->machine_config.x_axis_size);
-				printf("Config: Y  Axis Length: %lld\n", interface->machine_config.y_axis_size);
-				printf("Config: ZL  Axis Length: %lld\n", interface->machine_config.zl_axis_size);
-				printf("Config: ZR  Axis Length: %lld\n", interface->machine_config.zr_axis_size);
-				printf("Config: Ramp: %d\n", interface->machine_config.ramp_period);*/
+            sscanf(&interface->user_command[1], "%f", &move_speed);
+            if(move_speed > 0.0){
+
+            } else {
+               move_speed = DEFAULT_SPEED;
+            }
 				break;
 			}
+         case 'p' : {
+            if(interface->user_command[1] == 'x'){
+               sscanf(&interface->user_command[2], "%f", &new_position);
+               interface->user_instruction.instruction_type = AUX_INSTRUCTION;
+               interface->user_instruction.instruction_valid = 1;
+               interface->user_instruction.instant_instruction = 1;
+               interface->user_instruction.instruction.aux.opcode = SET_POSITION;
+               interface->user_instruction.instruction.aux.set_position[MOTOR_AXIS_XL] = 1;
+               interface->user_instruction.instruction.aux.motor_position[MOTOR_AXIS_XL] = new_position;
+               interface->machine_state = SEND_INSTANT_INSTRUCTION;
+            }
+            if(interface->user_command[1] == 'y'){
+               sscanf(&interface->user_command[2], "%f", &new_position);
+               interface->user_instruction.instruction_type = AUX_INSTRUCTION;
+               interface->user_instruction.instruction_valid = 1;
+               interface->user_instruction.instant_instruction = 1;
+               interface->user_instruction.instruction.aux.opcode = SET_POSITION;
+               interface->user_instruction.instruction.aux.set_position[MOTOR_AXIS_YF] = 1;
+               interface->user_instruction.instruction.aux.motor_position[MOTOR_AXIS_YF] = new_position;
+               interface->machine_state = SEND_INSTANT_INSTRUCTION;
+            }
+            if(interface->user_command[1] == 'z'){
+               sscanf(&interface->user_command[2], "%f", &new_position);
+               interface->user_instruction.instruction_type = AUX_INSTRUCTION;
+               interface->user_instruction.instruction_valid = 1;
+               interface->user_instruction.instant_instruction = 1;
+               interface->user_instruction.instruction.aux.opcode = SET_POSITION;
+               interface->user_instruction.instruction.aux.set_position[MOTOR_AXIS_ZL] = 1;
+               interface->user_instruction.instruction.aux.set_position[MOTOR_AXIS_ZR] = 1;
+               interface->user_instruction.instruction.aux.motor_position[MOTOR_AXIS_ZL] = new_position;
+               interface->user_instruction.instruction.aux.motor_position[MOTOR_AXIS_ZR] = new_position;
+               interface->machine_state = SEND_INSTANT_INSTRUCTION;
+            }
+            break;
+         }
 			default : {
 				//spi_struct->pending_opcode = idle;
 				interface->machine_state = MACHINE_IDLE;

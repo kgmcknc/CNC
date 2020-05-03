@@ -298,6 +298,7 @@ void set_aux_instruction(struct cnc_state_struct* cnc, struct cnc_aux_instructio
          for(int i=0;i<NUM_MOTORS;i++){
             if(cnc->program.current_instruction->instruction.aux.set_position[i]){
                cnc->motors->motor[i].position = cnc->program.current_instruction->instruction.aux.motor_position[i];
+               cnc->motors->motor[i].target = cnc->motors->motor[i].position;
             }
          }
          break;
@@ -326,14 +327,18 @@ uint8_t check_motor_instruction(struct cnc_motor_instruction_struct* current_ins
       } else {
          if(fabs(motor->position - motor->target) <= PRECISION){
             current_instruction->instruction_valid = 0;
+            motor->position = motor->target;
+            motor->active = 0;
          } else {
             if((motor->position < motor->target) && (*motor->max_range_flag)){
                current_instruction->instruction_valid = 0;
                motor->target = motor->position;
+               motor->active = 0;
             }
             if((motor->position > motor->target) && (*motor->min_range_flag)){
                current_instruction->instruction_valid = 0;
                motor->target = motor->position;
+               motor->active = 0;
             }
          }
       }
