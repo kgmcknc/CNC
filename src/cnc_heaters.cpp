@@ -18,10 +18,10 @@
 uint8_t duty_count = 0;
 
 #define P_VAL ((cnc_double) 0.05)
-#define I_VAL ((cnc_double) 0.0001)
+#define I_VAL ((cnc_double) 0.000)
 #define D_VAL ((cnc_double) 0.5)
 #define MAX_ADJUSTMENTS 256
-#define PID_PRINTS
+//#define PID_PRINTS
 
 #define P_ERROR_LOCK ((int16_t) 10)
 #define I_ERROR_LOCK ((int64_t) 10)
@@ -254,7 +254,7 @@ void update_heater_pid(struct cnc_heater_struct* heater){
       }
    }
 
-   if((heater->anti_windup == 0) &&(abs(p_average) <= P_ERROR_LOCK) && (abs(heater->i_error) <= I_ERROR_LOCK)){
+   if((heater->anti_windup == 0) &&(abs(p_average) <= P_ERROR_LOCK)){// && (abs(heater->i_error) <= I_ERROR_LOCK)){
       heater->temp_locked = 1;
    } else {
       heater->temp_locked = 0;

@@ -18,6 +18,7 @@
 #define RAMP_PERIOD 0 // start/end period of ramp... should be slow
 #define cnc_double float
 
+#define MINUTE_TO_SECOND ((cnc_double) 60.0)
 #define STEPS_PER_SECOND (((cnc_double) MOTOR_TIMER_FREQ)/MOTOR_TOP_COUNT)
 #define STEPS_PER_MINUTE (((cnc_double) STEPS_PER_SECOND)*60)
 
@@ -28,10 +29,14 @@
 #define REVS_PER_MM (((cnc_double) 1)/LEADSCREW_MM_PER_REV)
 #define STEPS_PER_MM (((cnc_double) STEPS_PER_REV)*REVS_PER_MM)
 
+#define IN_TO_MM ((cnc_double) 25.4)
+
 #define STEP_MM (LEADSCREW_MM_PER_REV / STEPS_PER_REV)
 #define PRECISION STEP_MM
 
 #define USEC_PER_SEC ((cnc_double) (1000000))
+
+#define RAPID_MOVE_SPEED 600.0
 
 #define NUM_MOTORS 7
 enum MOTOR_NUMBERS {
@@ -165,6 +170,7 @@ struct cnc_status_struct {
    uint8_t endstop_status[NUM_ENDSTOPS];
    cnc_double position[NUM_MOTORS];
    cnc_double temp[NUM_HEATERS];
+   uint8_t temp_locked[NUM_HEATERS];
 };
 
 struct cnc_motor_instruction_struct {
@@ -225,12 +231,12 @@ struct cnc_instruction_struct {
 	uint8_t instant_instruction;
    union cnc_instruction_union instruction;
 #ifdef INTERFACE
-    cnc_double instruction_number;
-    cnc_double speed;
-    uint8_t comment_flag;
-    char comment[256];
-    uint8_t message_flag;
-    char message[256];
+   cnc_double instruction_number;
+   cnc_double speed;
+   uint8_t comment_flag;
+   char comment[256];
+   uint8_t message_flag;
+   char message[256];
 #endif
 };
 

@@ -315,8 +315,12 @@ void set_step(struct cnc_motor_list_struct* motors){
 void get_motor_speed(struct cnc_motor_list_struct* motors){
    for(int i=0;i<NUM_MOTORS;i++){
       if(motors->motor[i].active){
-         motors->motor[i].speed = motors->motor_speed * motors->motor[i].distance;
-         motors->motor[i].speed = motors->motor[i].speed / motors->max_distance;
+         if(motors->motor[i].find_max || motors->motor[i].find_zero){
+            motors->motor[i].speed = motors->motor_speed;
+         } else {
+            motors->motor[i].speed = motors->motor_speed * motors->motor[i].distance;
+            motors->motor[i].speed = motors->motor[i].speed / motors->max_distance;
+         }
       }
    }
 }

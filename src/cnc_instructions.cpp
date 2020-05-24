@@ -27,7 +27,9 @@ void init_instructions(struct cnc_state_struct* cnc){
 void receive_instruction(struct cnc_state_struct* cnc){
 	parse_instruction(cnc);
 	if(cnc->program.new_instruction.instruction_valid){
+      //cnc_printf(cnc, "New Instruction Valid");
 		if(cnc->program.new_instruction.instant_instruction){
+         //cnc_printf(cnc, "Instant Instruction");
          if(cnc->program.instant_instruction.instruction_valid){
             // instant instruction already set... can't overwrite...
             // but we can check to see if this is an abort...
@@ -38,14 +40,17 @@ void receive_instruction(struct cnc_state_struct* cnc){
                   cnc->program.instant_instruction.instruction_type = AUX_INSTRUCTION;
                   cnc->program.instant_instruction.instruction.aux.opcode = ABORT_INSTRUCTION;
                }
+            } else {
+               //cnc_printf(cnc, "Already Processing Instant Instruction...");
             }
          } else {
             copy_instruction(&cnc->program.new_instruction, &cnc->program.instant_instruction);
          }
 		} else {
+         //cnc_printf(cnc, "Not Instant Instruction");
 			cnc->program.instruction_request_sent = 0;
 			if(cnc->program.program_running){
-				cnc_printf(cnc, "Received Program Instruction!");
+				//cnc_printf(cnc, "Received Program Instruction!");
 				// add to running program
 				copy_instruction(&cnc->program.new_instruction, &cnc->program.instruction_array[cnc->program.instruction_wp]);
 				cnc->program.instruction_wp = (cnc->program.instruction_wp<(INSTRUCTION_FIFO_DEPTH-1)) ? cnc->program.instruction_wp + 1 : 0;
@@ -53,21 +58,29 @@ void receive_instruction(struct cnc_state_struct* cnc){
 				cnc->program.new_instruction.instruction_valid = 0;
             if(cnc->program.new_instruction.instruction_type == AUX_INSTRUCTION){
                if(cnc->program.new_instruction.instruction.aux.opcode == PROGRAM_END){
+                  //cnc_printf(cnc, "Received Program End!");
                   cnc->program.program_received = 1;
-                  cnc_printf(cnc, "Received Program End!");
+                  cnc->program.program_running = 0;
+                  //copy_instruction(&cnc->program.new_instruction, &cnc->program.instruction_array[cnc->program.instruction_wp]);
+                  //cnc->program.instruction_wp = (cnc->program.instruction_wp<(INSTRUCTION_FIFO_DEPTH-1)) ? cnc->program.instruction_wp + 1 : 0;
+                  //cnc->program.instruction_fullness++;
+                  //cnc->program.new_instruction.instruction_valid = 0;
                }
             }
 			} else {
             if(cnc->program.new_instruction.instruction_type == AUX_INSTRUCTION){
                if(cnc->program.new_instruction.instruction.aux.opcode == PROGRAM_START){
-                  cnc_printf(cnc, "Received Program Start!");
-                  copy_instruction(&cnc->program.new_instruction, &cnc->program.instruction_array[cnc->program.instruction_wp]);
-                  cnc->program.instruction_wp = (cnc->program.instruction_wp<(INSTRUCTION_FIFO_DEPTH-1)) ? cnc->program.instruction_wp + 1 : 0;
-                  cnc->program.instruction_fullness++;
+                  //cnc_printf(cnc, "Received Program Start!");
+                  clear_program(cnc);
+                  cnc->program.program_received = 0;
+                  cnc->program.program_running = 1;
                   cnc->program.new_instruction.instruction_valid = 0;
                } else {
                   // program isn't running and it's not an immediate instruction  or start of program... so ignore...
+                  //cnc_printf(cnc, "Ignoring Instruction");
                }
+            } else {
+               //cnc_printf(cnc, "Program Not Running and Not Aux");
             }
 			}
 		}
@@ -78,7 +91,7 @@ void receive_instruction(struct cnc_state_struct* cnc){
 }
 
 void clear_program(struct cnc_state_struct* cnc){
-	cnc_printf(cnc, "resetting program information");
+	//cnc_printf(cnc, "resetting program information");
 	cnc->program.program_running = 0;
 	cnc->program.program_received = 0;
 	cnc->program.program_length = 0;
@@ -112,7 +125,6 @@ void get_next_instruction(struct cnc_state_struct* cnc){
 			//copy_instruction(&cnc->instruction_array[cnc->instruction_rp], &cnc->current_instruction);
 			//cnc->instruction_array[cnc->instruction_rp].instruction_valid = 0;
 			cnc->program.instruction_rp = (cnc->program.instruction_rp<(INSTRUCTION_FIFO_DEPTH-1)) ? cnc->program.instruction_rp + 1 : 0;
-			cnc->program.instruction_fullness--;
 		} else {
 			// shouldn't ever hit this when program is running!
 			// means instruction request underflowed!!!
@@ -126,7 +138,7 @@ void check_instruction_fifo(struct cnc_state_struct* cnc){
 	// if not, write to request instruction
 	if(cnc->program.program_running && !cnc->program.program_received){
 		if(cnc->program.request_instruction){
-			if(cnc->program.instruction_fullness >= (INSTRUCTION_FIFO_DEPTH-2)){
+			if(cnc->program.instruction_fullness >= INSTRUCTION_FIFO_DEPTH){
 				cnc->program.request_instruction = 0;
 			} else {
 				if(!cnc->program.instruction_request_sent && (cnc->state == CNC_IDLE)){
@@ -138,9 +150,9 @@ void check_instruction_fifo(struct cnc_state_struct* cnc){
 				}
 			}
 		} else {
-			if(cnc->program.instruction_fullness < (INSTRUCTION_FIFO_DEPTH/2)){
+			if(cnc->program.instruction_fullness <= (INSTRUCTION_FIFO_DEPTH/2)){
 				cnc->program.request_instruction = 1;
-				cnc_printf(cnc, "setting instruction read request high");
+				//cnc_printf(cnc, "setting instruction read request high");
 			} else {
 				// we have enough instructions, so do nothing
 			}
@@ -251,14 +263,14 @@ void set_aux_instruction(struct cnc_state_struct* cnc, struct cnc_aux_instructio
          break;
       }
       case PROGRAM_START : {
+         clear_program(cnc);
          cnc->program.program_received = 0;
          cnc->program.program_running = 1;
          break;
       }
       case PROGRAM_END : {
-         cnc->program.program_received = 0;
+         cnc->program.program_received = 1;
          cnc->program.program_running = 0;
-         clear_program(cnc);
          break;
       }
       case ENABLE_MOTORS : {
@@ -319,13 +331,13 @@ uint8_t check_motor_instruction(struct cnc_motor_instruction_struct* current_ins
 	if(current_instruction->instruction_valid){
       if(motor->find_max || motor->find_zero){
          if(motor->find_max && *motor->max_range_flag){
-            cnc_printf(&cnc, "Inst Hit Max %s", motor->name);
+            //cnc_printf(&cnc, "Inst Hit Max %s", motor->name);
             motor->find_max = 0;
             motor->active = 0;
             current_instruction->instruction_valid = 0;
          }
          if(motor->find_zero && *motor->min_range_flag){
-            cnc_printf(&cnc, "Inst Hit Min %s", motor->name);
+            //cnc_printf(&cnc, "Inst Hit Min %s", motor->name);
             motor->find_zero = 0;
             motor->active = 0;
             current_instruction->instruction_valid = 0;
@@ -461,11 +473,13 @@ void check_instruction(struct cnc_state_struct* cnc){
 		if(valid_instruction){
 			// instruction isn't done
 		} else {
-         cnc_printf(cnc, "instruction done: %d", cnc->program.current_instruction->instruction_type);
+         //cnc_printf(cnc, "instruction done: %d", cnc->program.current_instruction->instruction_type);
          cnc->program.current_instruction->instruction_valid = 0;
 			if(cnc->program.current_instruction->instant_instruction){
 			 	cnc->instant_instruction_done = 1;
-			}
+			} else {
+            cnc->program.instruction_fullness--;
+         }
 			clear_instruction(cnc->program.current_instruction);
          cnc->program.current_instruction = &cnc->program.empty_instruction;
 		}

@@ -267,6 +267,10 @@ uint16_t status_to_string(struct cnc_status_struct* status, uint8_t* string){
       memcpy(&string[offset], &status->temp[i], sizeof(status->temp[0]));
       offset = offset + sizeof(status->temp[0]);
    }
+   for(int i=0;i<NUM_HEATERS;i++){
+      string[offset] = status->temp_locked[i];
+      offset = offset + 1;
+   }
    
    return offset;
 }
@@ -283,6 +287,10 @@ void string_to_status(struct cnc_status_struct* status, uint8_t* string){
    for(int i=0;i<NUM_HEATERS;i++){
       memcpy(&status->temp[i], &string[offset], sizeof(status->temp[0]));
       offset = offset + sizeof(status->temp[0]);
+   }
+   for(int i=0;i<NUM_HEATERS;i++){
+      status->temp_locked[i] = string[offset];
+      offset = offset + 1;
    }
 }
 

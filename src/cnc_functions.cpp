@@ -160,6 +160,7 @@ void update_status(struct cnc_state_struct* cnc){
    }
    for(int i=0;i<NUM_HEATERS;i++){
       cnc->status.temp[i] = cnc->heaters->heater[i].current_temp;
+      cnc->status.temp_locked[i] = cnc->heaters->heater[i].temp_locked;
    }
 }
 

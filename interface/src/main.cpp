@@ -98,6 +98,7 @@ int main(int argc, char **argv) {
             disable_interface_gpio();
             if(interface.program.instruction != 0){
                free(interface.program.instruction);
+               interface.program.instruction = 0;
             }
             sleep(1);
             interface.state = EXIT_INTERFACE;
@@ -153,6 +154,7 @@ void system_shutdown(int sig){
    disable_interface_gpio();
    if(interface.program.instruction != 0){
       free(interface.program.instruction);
+      interface.program.instruction = 0;
    }
    serialClose(serial_fd);
    kill(system_control_fork, SIGTERM);

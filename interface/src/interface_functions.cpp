@@ -16,7 +16,7 @@ uint8_t configure_processing = 0;
 #define SLOW_SPEED ((cnc_double) 1.0)
 #define FAST_SPEED ((cnc_double) 15.0)
 
-cnc_double move_speed = DEFAULT_SPEED;
+cnc_double move_speed = FAST_SPEED;
 cnc_double move_distance = DEFAULT_DISTANCE;
 cnc_double z_move_distance = DEFAULT_DISTANCE;
 cnc_double new_position = 0.0;
@@ -160,6 +160,7 @@ void handle_cnc_state(struct interface_struct* interface){
 				interface->machine_state = OPEN_PROGRAM;
 				strcpy(interface->file_name, interface->user_command);
 				clear_user_command(interface);
+            printf("\n");
 			}
 			break;
 		}
@@ -173,7 +174,7 @@ void handle_cnc_state(struct interface_struct* interface){
 			break;
 		}
 		case RUN_PROGRAM : {
-			printf("starting program, length: %llu\n", interface->program.program_length);
+			//printf("starting program, length: %llu\n", interface->program.program_length);
 			interface->machine_state = SEND_INSTRUCTION;
 			break;
 		}
@@ -183,33 +184,37 @@ void handle_cnc_state(struct interface_struct* interface){
                                                    &interface->cnc_write_data[1]);
          interface->cnc_write_length = interface->cnc_write_length + 1; // add one for 0 opcode
          if(cnc_serial.send(interface->cnc_write_length, interface->cnc_write_data) > 0){
-            printf("Sent user instruction!\n");
+            //printf("Sent user instruction!\n");
             clear_instruction(&interface->user_instruction);
             interface->machine_state = MACHINE_IDLE;
          } else {
-            interface->machine_state = SEND_INSTRUCTION;
+            interface->machine_state = SEND_INSTANT_INSTRUCTION;
          }
          break;
       }
 		case SEND_INSTRUCTION : {
-         if(interface->program.instruction_rp <= interface->program.program_length){
+         if(interface->program.instruction_rp < interface->program.program_length){
             if(interface->program.instruction[interface->program.instruction_rp].instruction_valid){
                interface->cnc_write_data[0] = (uint8_t) NEW_CNC_INSTRUCTION;
-               interface->cnc_write_length = instruction_to_string(&interface->program.instruction[interface->program.instruction_rp],
+               interface->cnc_write_length = gcode_instruction_to_string(&interface->program.instruction[interface->program.instruction_rp],
                                                          &interface->cnc_write_data[1]);
                interface->cnc_write_length = interface->cnc_write_length + 1; // add one for 0 opcode
                if(cnc_serial.send(interface->cnc_write_length, interface->cnc_write_data) > 0){
                   interface->program.instruction_rp++;
-                  printf("Sent instruction!\n");
+                  //printf("Sent instruction!\n");
+                  interface->instruction_requested = 0;
                   interface->machine_state = MACHINE_IDLE;
+               } else {
+                  interface->machine_state = SEND_INSTRUCTION;
                }
             } else {
                // skip instruction that somehow isn't valid...
+               printf("SKIPPED INVALID INSTRUCTION?!\n");
                interface->program.instruction_rp++;
             }
-            interface->machine_state = SEND_INSTRUCTION;
          } else {
             printf("EXCEEDED PROGRAM LENGTH?!\n");
+            interface->instruction_requested = 0;
             interface->machine_state = MACHINE_IDLE;
          }
 			break;
@@ -297,22 +302,22 @@ void receive_user_control(struct interface_struct* interface){
 			}
 			case 27 : { // escape character 
 				if(!strcmp(&interface->user_input[1], "[A")){
-					// up arrow - backwards (motor is in front)
+					// up arrow - forward
                interface->user_instruction.instruction_type = MOTOR_INSTRUCTION;
 					interface->user_instruction.instruction_valid = 1;
 					interface->user_instruction.instruction.motors.motor[MOTOR_AXIS_YF].instruction_valid = 1;
                interface->user_instruction.instruction.motors.motor[MOTOR_AXIS_YF].relative_move = 1;
-					interface->user_instruction.instruction.motors.motor[MOTOR_AXIS_YF].end_position = -1*move_distance;
+					interface->user_instruction.instruction.motors.motor[MOTOR_AXIS_YF].end_position = move_distance;
 					interface->user_instruction.instruction.motors.speed = move_speed;
 					break;
 				}
 				if(!strcmp(&interface->user_input[1], "[B")){
-					// down arrow - foward (motor is in front)
+					// down arrow - backwarda
 					interface->user_instruction.instruction_type = MOTOR_INSTRUCTION;
                interface->user_instruction.instruction_valid = 1;
                interface->user_instruction.instruction.motors.motor[MOTOR_AXIS_YF].instruction_valid = 1;
                interface->user_instruction.instruction.motors.motor[MOTOR_AXIS_YF].relative_move = 1;
-					interface->user_instruction.instruction.motors.motor[MOTOR_AXIS_YF].end_position = move_distance;
+					interface->user_instruction.instruction.motors.motor[MOTOR_AXIS_YF].end_position = -1*move_distance;
 					interface->user_instruction.instruction.motors.speed = move_speed;
 					break;
 				}
@@ -469,10 +474,10 @@ void process_request(struct interface_struct* interface){
             }
          }
          temp_calc_f = temp_calc * 9/5 + 32;
-			printf("CNC H0 Temp: %lf,%lf,%lf\n", interface->machine_status.temp[0], temp_calc, temp_calc_f);
-			printf("CNC H1 Temp: %lf\n", interface->machine_status.temp[1]);
-			printf("CNC H2 Temp: %lf\n", interface->machine_status.temp[2]);
-			printf("CNC H3 Temp: %lf\n", interface->machine_status.temp[3]);
+			printf("CNC H0 Temp: %lf,%lf,%lf, %d\n", interface->machine_status.temp[0], temp_calc, temp_calc_f, interface->machine_status.temp_locked[0]);
+			printf("CNC H1 Temp: %lf, %d\n", interface->machine_status.temp[1], interface->machine_status.temp_locked[1]);
+			printf("CNC H2 Temp: %lf, %d\n", interface->machine_status.temp[2], interface->machine_status.temp_locked[2]);
+			printf("CNC H3 Temp: %lf, %d\n", interface->machine_status.temp[3], interface->machine_status.temp_locked[3]);
 			break;
 		}
 		case NEW_CNC_PRINT : {
@@ -515,7 +520,7 @@ void process_request(struct interface_struct* interface){
 			break;
 		}
 		case MARKER : {
-			printf("received machine marker!\n");
+			//printf("received machine marker!\n");
          string_to_status(&interface->machine_status, &interface->cnc_read_data[1]);
 			// printf("CNC XL Min: %d\n", interface->machine_status.endstop_status[X_L_MIN]);
 			// printf("CNC XL Max: %d\n", interface->machine_status.endstop_status[X_R_MAX]);
@@ -536,7 +541,7 @@ void process_request(struct interface_struct* interface){
 			break;
 		}
       case INSTANT_DONE : {
-			printf("instant instruction done!\n");
+			//printf("instant instruction done!\n");
 			interface->instant_done = 1;
 			break;
 		}
@@ -676,7 +681,7 @@ void process_instruction(struct interface_struct* interface){
    cnc_double temp = 0.0;
    switch(interface->user_command[1]){
       case 'm' : {
-         printf("motor instruction\n");
+         //printf("motor instruction\n");
          break;
       }
       case 'h' : {
