@@ -22,16 +22,36 @@
 #define STEPS_PER_SECOND (((cnc_double) MOTOR_TIMER_FREQ)/MOTOR_TOP_COUNT)
 #define STEPS_PER_MINUTE (((cnc_double) STEPS_PER_SECOND)*60)
 
-#define MOTOR_STEPS_PER_REV (cnc_double) 200
-#define MOTOR_STEP_FACTOR (((cnc_double) 1)/8)
-#define STEPS_PER_REV (((cnc_double) MOTOR_STEPS_PER_REV)/MOTOR_STEP_FACTOR)
-#define LEADSCREW_MM_PER_REV ((cnc_double) 8)
-#define REVS_PER_MM (((cnc_double) 1)/LEADSCREW_MM_PER_REV)
-#define STEPS_PER_MM (((cnc_double) STEPS_PER_REV)*REVS_PER_MM)
+#define AUX_MOTOR_STEPS_PER_REV (cnc_double) 200
+#define AUX_MOTOR_STEP_FACTOR (((cnc_double) 1)/8)
+
+#define EXTRUDER_MOTOR_STEPS_PER_REV (cnc_double) 200
+#define EXTRUDER_MOTOR_STEP_FACTOR (((cnc_double) 1)/8)
+
+#define AXIS_MOTOR_STEPS_PER_REV (cnc_double) 200
+#define AXIS_MOTOR_STEP_FACTOR (((cnc_double) 1)/8)
+
+#define AUX_STEPS_PER_REV (((cnc_double) AUX_MOTOR_STEPS_PER_REV)/AUX_MOTOR_STEP_FACTOR)
+#define AUX_MM_PER_REV ((cnc_double) 10)
+#define AUX_REVS_PER_MM (((cnc_double) 1)/AUX_MM_PER_REV)
+#define AUX_STEPS_PER_MM (((cnc_double) AUX_STEPS_PER_REV)*AUX_REVS_PER_MM)
+#define AUX_MM_PER_STEP ((cnc_double) (AUX_MM_PER_REV/AUX_MM_PER_REV))
+
+#define EXTRUDER_STEPS_PER_REV (((cnc_double) EXTRUDER_MOTOR_STEPS_PER_REV)/EXTRUDER_MOTOR_STEP_FACTOR)
+#define EXTRUDER_MM_PER_REV ((cnc_double) 34.5575)
+#define EXTRUDER_REVS_PER_MM (((cnc_double) 1)/EXTRUDER_MM_PER_REV)
+#define EXTRUDER_STEPS_PER_MM (((cnc_double) EXTRUDER_STEPS_PER_REV)*EXTRUDER_REVS_PER_MM)
+#define EXTRUDER_MM_PER_STEP ((cnc_double) (EXTRUDER_MM_PER_REV/EXTRUDER_STEPS_PER_REV))
+
+#define AXIS_STEPS_PER_REV (((cnc_double) AXIS_MOTOR_STEPS_PER_REV)/AXIS_MOTOR_STEP_FACTOR)
+#define AXIS_MM_PER_REV ((cnc_double) 8)
+#define AXIS_REVS_PER_MM (((cnc_double) 1)/AXIS_MM_PER_REV)
+#define AXIS_STEPS_PER_MM (((cnc_double) AXIS_STEPS_PER_REV)*AXIS_REVS_PER_MM)
+#define AXIS_MM_PER_STEP ((cnc_double) (AXIS_MM_PER_REV/AXIS_STEPS_PER_REV))
 
 #define IN_TO_MM ((cnc_double) 25.4)
 
-#define STEP_MM (LEADSCREW_MM_PER_REV / STEPS_PER_REV)
+#define STEP_MM (AXIS_MM_PER_REV / AXIS_STEPS_PER_REV)
 #define PRECISION STEP_MM
 
 #define USEC_PER_SEC ((cnc_double) (1000000))

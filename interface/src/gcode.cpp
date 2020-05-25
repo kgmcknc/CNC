@@ -492,14 +492,29 @@ int check_gcode_instruction(struct gcode_instruction_struct* instruction){
    char valid_instruction = 0;
 
     if(instruction->instruction_type == AUX_INSTRUCTION){
-        if(instruction->aux.opcode != EMPTY_OPCODE){
-           instruction->aux.motor_speed = instruction->motors.speed;
-           if(instruction->aux.motor_speed > 0.0){
-              valid_instruction = 1;
-           } else {
-              valid_instruction = 0;
-           }
-        }
+       switch(instruction->aux.opcode){
+          case EMPTY_OPCODE : {
+            valid_instruction = 0;
+             break;
+          }
+          case SET_POSITION : {
+             valid_instruction = 1;
+             break;
+          }
+          case MOVE_TO_ENDSTOP : {
+             instruction->aux.motor_speed = instruction->motors.speed;
+               if(instruction->aux.motor_speed > 0.0){
+                  valid_instruction = 1;
+               } else {
+                  valid_instruction = 0;
+               }
+             break;
+          }
+          default : {
+             valid_instruction = 0;
+             break;
+          }
+       }
     }
 
    if(instruction->instruction_type == MOTOR_INSTRUCTION){

@@ -290,6 +290,7 @@ void set_aux_instruction(struct cnc_state_struct* cnc, struct cnc_aux_instructio
          break;
       }
       case MOVE_TO_ENDSTOP : {
+         cnc->motors->motor_speed = cnc->program.current_instruction->instruction.aux.motor_speed;
          for(int i=0;i<NUM_MOTORS;i++){
             if(cnc->program.current_instruction->instruction.aux.min_motor[i]){
                cnc->motors->motor[i].speed = cnc->program.current_instruction->instruction.aux.motor_speed;
@@ -305,7 +306,6 @@ void set_aux_instruction(struct cnc_state_struct* cnc, struct cnc_aux_instructio
                }
             }
          }
-         cnc_printf(cnc, "Endstop Speed: %d", (int) cnc->program.current_instruction->instruction.aux.motor_speed);
          cnc->program.current_instruction->instruction_type = MOTOR_INSTRUCTION;
          for(int i=0;i<NUM_MOTORS;i++){
             cnc->program.current_instruction->instruction.motors.motor[i].instruction_valid = (cnc->motors->motor[i].find_zero || cnc->motors->motor[i].find_max);
@@ -343,9 +343,9 @@ uint8_t check_motor_instruction(struct cnc_motor_instruction_struct* current_ins
             current_instruction->instruction_valid = 0;
          }
       } else {
-         if(fabs(motor->position - motor->target) <= PRECISION){
+         if(fabs(motor->position - motor->target) < motor->float_error){
             current_instruction->instruction_valid = 0;
-            motor->position = motor->target;
+            //motor->position = motor->target;
             motor->active = 0;
          } else {
             if((motor->position < motor->target) && (*motor->max_range_flag)){

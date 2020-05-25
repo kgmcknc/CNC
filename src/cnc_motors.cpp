@@ -27,6 +27,9 @@ void init_motors(struct cnc_motor_list_struct* motors, struct cnc_endstop_list_s
 	motors->motor[MOTOR_AUX].pins.ms0_pin     = AUX_MOTOR_MS0_PIN;
 	motors->motor[MOTOR_AUX].pins.ms1_pin     = AUX_MOTOR_MS1_PIN;
 	motors->motor[MOTOR_AUX].pins.step_pin    = AUX_MOTOR_STEP_PIN;
+   motors->motor[MOTOR_AUX].steps_per_mm     = AUX_STEPS_PER_MM;
+   motors->motor[MOTOR_AUX].mm_per_step      = AUX_MM_PER_STEP;
+   motors->motor[MOTOR_AUX].float_error      = AUX_MM_PER_STEP;
    motors->motor[MOTOR_AUX].min_range_flag   = &endstops->empty_endstop;
    motors->motor[MOTOR_AUX].max_range_flag   = &endstops->empty_endstop;
    #endif
@@ -45,6 +48,9 @@ void init_motors(struct cnc_motor_list_struct* motors, struct cnc_endstop_list_s
 	motors->motor[MOTOR_EXTRUDER_0].pins.ms0_pin     = EXTRUDER_0_MOTOR_MS0_PIN;
 	motors->motor[MOTOR_EXTRUDER_0].pins.ms1_pin     = EXTRUDER_0_MOTOR_MS1_PIN;
 	motors->motor[MOTOR_EXTRUDER_0].pins.step_pin    = EXTRUDER_0_MOTOR_STEP_PIN;
+   motors->motor[MOTOR_EXTRUDER_0].steps_per_mm     = EXTRUDER_STEPS_PER_MM;
+   motors->motor[MOTOR_EXTRUDER_0].mm_per_step      = EXTRUDER_MM_PER_STEP;
+   motors->motor[MOTOR_EXTRUDER_0].float_error      = EXTRUDER_MM_PER_STEP;
    motors->motor[MOTOR_EXTRUDER_0].min_range_flag   = &endstops->empty_endstop;
    motors->motor[MOTOR_EXTRUDER_0].max_range_flag   = &endstops->empty_endstop;
    #endif
@@ -63,6 +69,9 @@ void init_motors(struct cnc_motor_list_struct* motors, struct cnc_endstop_list_s
 	motors->motor[MOTOR_EXTRUDER_1].pins.ms0_pin     = EXTRUDER_1_MOTOR_MS0_PIN;
 	motors->motor[MOTOR_EXTRUDER_1].pins.ms1_pin     = EXTRUDER_1_MOTOR_MS1_PIN;
 	motors->motor[MOTOR_EXTRUDER_1].pins.step_pin    = EXTRUDER_1_MOTOR_STEP_PIN;
+   motors->motor[MOTOR_EXTRUDER_1].steps_per_mm     = EXTRUDER_STEPS_PER_MM;
+   motors->motor[MOTOR_EXTRUDER_1].mm_per_step      = EXTRUDER_MM_PER_STEP;
+   motors->motor[MOTOR_EXTRUDER_1].float_error      = EXTRUDER_MM_PER_STEP;
    motors->motor[MOTOR_EXTRUDER_1].min_range_flag   = &endstops->empty_endstop;
    motors->motor[MOTOR_EXTRUDER_1].max_range_flag   = &endstops->empty_endstop;
    #endif
@@ -81,6 +90,9 @@ void init_motors(struct cnc_motor_list_struct* motors, struct cnc_endstop_list_s
 	motors->motor[MOTOR_AXIS_XL].pins.ms0_pin     = XL_AXIS_MOTOR_MS0_PIN;
 	motors->motor[MOTOR_AXIS_XL].pins.ms1_pin     = XL_AXIS_MOTOR_MS1_PIN;
 	motors->motor[MOTOR_AXIS_XL].pins.step_pin    = XL_AXIS_MOTOR_STEP_PIN;
+   motors->motor[MOTOR_AXIS_XL].steps_per_mm     = AXIS_STEPS_PER_MM;
+   motors->motor[MOTOR_AXIS_XL].mm_per_step      = AXIS_MM_PER_STEP;
+   motors->motor[MOTOR_AXIS_XL].float_error      = AXIS_MM_PER_STEP;
    motors->motor[MOTOR_AXIS_XL].min_range_flag   = &endstops->endstop[X_L_MIN].status;
    motors->motor[MOTOR_AXIS_XL].max_range_flag   = &endstops->endstop[X_R_MAX].status;
    #endif
@@ -99,6 +111,9 @@ void init_motors(struct cnc_motor_list_struct* motors, struct cnc_endstop_list_s
 	motors->motor[MOTOR_AXIS_YF].pins.ms0_pin     = YF_AXIS_MOTOR_MS0_PIN;
 	motors->motor[MOTOR_AXIS_YF].pins.ms1_pin     = YF_AXIS_MOTOR_MS1_PIN;
 	motors->motor[MOTOR_AXIS_YF].pins.step_pin    = YF_AXIS_MOTOR_STEP_PIN;
+   motors->motor[MOTOR_AXIS_YF].steps_per_mm     = AXIS_STEPS_PER_MM;
+   motors->motor[MOTOR_AXIS_YF].mm_per_step      = AXIS_MM_PER_STEP;
+   motors->motor[MOTOR_AXIS_YF].float_error      = AXIS_MM_PER_STEP;
    motors->motor[MOTOR_AXIS_YF].min_range_flag   = &endstops->endstop[Y_F_MIN].status;
    motors->motor[MOTOR_AXIS_YF].max_range_flag   = &endstops->endstop[Y_B_MAX].status;
    #endif
@@ -117,6 +132,9 @@ void init_motors(struct cnc_motor_list_struct* motors, struct cnc_endstop_list_s
 	motors->motor[MOTOR_AXIS_ZL].pins.ms0_pin     = ZL_AXIS_MOTOR_MS0_PIN;
 	motors->motor[MOTOR_AXIS_ZL].pins.ms1_pin     = ZL_AXIS_MOTOR_MS1_PIN;
 	motors->motor[MOTOR_AXIS_ZL].pins.step_pin    = ZL_AXIS_MOTOR_STEP_PIN;
+   motors->motor[MOTOR_AXIS_ZL].steps_per_mm     = AXIS_STEPS_PER_MM;
+   motors->motor[MOTOR_AXIS_ZL].mm_per_step      = AXIS_MM_PER_STEP;
+   motors->motor[MOTOR_AXIS_ZL].float_error      = AXIS_MM_PER_STEP;
    motors->motor[MOTOR_AXIS_ZL].min_range_flag   = &endstops->endstop[Z_L_MIN].status;
    motors->motor[MOTOR_AXIS_ZL].max_range_flag   = &endstops->endstop[Z_L_MAX].status;
    #endif
@@ -135,6 +153,9 @@ void init_motors(struct cnc_motor_list_struct* motors, struct cnc_endstop_list_s
 	motors->motor[MOTOR_AXIS_ZR].pins.ms0_pin     = ZR_AXIS_MOTOR_MS0_PIN;
 	motors->motor[MOTOR_AXIS_ZR].pins.ms1_pin     = ZR_AXIS_MOTOR_MS1_PIN;
 	motors->motor[MOTOR_AXIS_ZR].pins.step_pin    = ZR_AXIS_MOTOR_STEP_PIN;
+   motors->motor[MOTOR_AXIS_ZR].steps_per_mm     = AXIS_STEPS_PER_MM;
+   motors->motor[MOTOR_AXIS_ZR].mm_per_step      = AXIS_MM_PER_STEP;
+   motors->motor[MOTOR_AXIS_ZR].float_error      = AXIS_MM_PER_STEP;
    motors->motor[MOTOR_AXIS_ZR].min_range_flag   = &endstops->endstop[Z_R_MIN].status;
    motors->motor[MOTOR_AXIS_ZR].max_range_flag   = &endstops->endstop[Z_R_MAX].status;
    #endif
@@ -293,7 +314,7 @@ void set_step(struct cnc_motor_list_struct* motors){
          if(((motors->motor[i].position < motors->motor[i].target) || motors->motor[i].find_max) && !motors->motor[i].find_zero){
             motors->motor[i].direction = MOTOR_MOVE_INCREASE;
          }
-         if((fabs(motors->motor[i].position - motors->motor[i].target) > PRECISION) || motors->motor[i].find_max || motors->motor[i].find_zero){
+         if((fabs(motors->motor[i].position - motors->motor[i].target) > motors->motor[i].float_error) || motors->motor[i].find_max || motors->motor[i].find_zero){
             motors->motor[i].next_step_count = motors->motor[i].next_step_count - motors->next_timer_value;
             
             if(motors->motor[i].next_step_count <= MIN_TIMER_COUNT){
@@ -336,7 +357,7 @@ void get_next_timer_value(struct cnc_motor_list_struct* motors){
    for(int i=0;i<NUM_MOTORS;i++){
       this_motor = &motors->motor[i];
       if(this_motor->active && !this_motor->step_count_set){
-         steps_per_sec = STEPS_PER_MM * this_motor->speed; // steps per sec
+         steps_per_sec = this_motor->steps_per_mm * this_motor->speed; // steps per sec
          temp = USEC_PER_SEC / steps_per_sec; // usec per step
          this_motor->total_timer_count = (uint32_t) (temp / MOTOR_TIMER_PERIOD_US);
          this_motor->next_step_count = this_motor->total_timer_count;
@@ -412,7 +433,7 @@ void handle_step(struct cnc_motor_struct* motor){
          } else {
             // step motor, adjust position, set flag to clear rising edge next loop
             set_motor_direction(motor, MOTOR_MOVE_INCREASE);
-            motor->position = motor->position + STEP_MM;
+            motor->position = motor->position + motor->mm_per_step;
             step_motor_set_step(motor);
          }
       } else {
@@ -424,7 +445,7 @@ void handle_step(struct cnc_motor_struct* motor){
          } else {
             // step motor, adjust position, set flag to clear rising edge next loop
             set_motor_direction(motor, MOTOR_MOVE_DECREASE);
-            motor->position = motor->position - STEP_MM;
+            motor->position = motor->position - motor->mm_per_step;
             step_motor_set_step(motor);
          }
       }

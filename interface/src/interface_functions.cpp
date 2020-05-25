@@ -446,6 +446,7 @@ void process_request(struct interface_struct* interface){
 			printf("CNC YF Pos: %lf\n", interface->machine_status.position[MOTOR_AXIS_YF]);
 			printf("CNC ZL Pos: %lf\n", interface->machine_status.position[MOTOR_AXIS_ZL]);
 			printf("CNC ZR Pos: %lf\n", interface->machine_status.position[MOTOR_AXIS_ZR]);
+         printf("Program Length: %lld, Current Instruction: %lld\n", interface->program.program_length, interface->program.instruction_rp);
          
          #define IN_VOLT ((cnc_double) 3.3)
          #define BETA_VALUE ((cnc_double) 3950.0)

@@ -1,6 +1,6 @@
 // test program
-G21 ; units in mm
-G91 ; relative moves
-;M109 S215
-F9000.0
-G28 X0.0 Y0.0 Z0.0 ;Home
+G21 ;metric values
+G90 ;absolute positioning
+M82 ;absolute extrusion mode
+G92 E0 ;zero the extruded length again
+G1 F200 E8 ;extrude 6 mm of feed stock

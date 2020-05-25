@@ -47,6 +47,9 @@ struct cnc_motor_struct {
    cnc_double position;
 	uint8_t direction;
    cnc_double speed;
+   cnc_double steps_per_mm;
+   cnc_double mm_per_step;
+   cnc_double float_error;
    uint8_t step_count_set;
 	uint32_t next_step_count;
    uint32_t last_timer_error;

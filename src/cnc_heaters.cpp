@@ -23,7 +23,7 @@ uint8_t duty_count = 0;
 #define MAX_ADJUSTMENTS 256
 //#define PID_PRINTS
 
-#define P_ERROR_LOCK ((int16_t) 10)
+#define P_ERROR_LOCK ((int16_t) 18)
 #define I_ERROR_LOCK ((int64_t) 10)
 
 /*
