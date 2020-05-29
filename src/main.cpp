@@ -56,21 +56,9 @@ int cnc_main(void)
    }
    
    cnc_printf(&cnc, "Micro Controller Here!");
-   uint8_t led_on = 0;
 
    /* Infinite loop */
 	while (1) {
-      /*if(cnc_serial.is_connected){
-         if(!led_on){
-            cnc_gpio_write(LED, 0, 1);
-            led_on = 1;
-         }
-      } else {
-         if(led_on){
-            cnc_gpio_write(LED, 0, 0);
-            led_on = 0;
-         }
-      }*/
       cnc_serial.process();
       handle_state(&cnc);
       handle_instructions(&cnc);

@@ -10,6 +10,7 @@
 #include "stdlib.h"
 
 #include "gcode.h"
+#include "math.h"
 #include "common_cnc.h"
 
 int parse_gcode_file(FILE* gcode_fp, struct gcode_program_struct* program){
@@ -1188,10 +1189,22 @@ int parse_gcode_word(char* line, uint16_t* line_count, struct gcode_program_stru
                         if(!error){
                             error = parse_number(line, line_count, &temp_val);
                             if(!error){
-                               program->instruction[program->instruction_wp].instruction_type = HEATER_INSTRUCTION;
-                                program->instruction[program->instruction_wp].heaters.heater[program->extruder_select].enable_heater = 1;
-                                program->instruction[program->instruction_wp].heaters.heater[program->extruder_select].target_temp = temp_val;
+                                program->instruction[program->instruction_wp].instruction_type = HEATER_INSTRUCTION;
+                                if(temp_val > SHUTOFF_TEMP_C){
+                                 program->instruction[program->instruction_wp].heaters.heater[program->extruder_select].enable_heater = 1;
+                                 double target_resistance;
+                                double beta_temp;
+                                double exp_val;
+                                uint32_t adc_val;
+                                beta_temp = ((BETA_VALUE/(temp_val+KELVIN_CONV)) - (BETA_VALUE/BASE_TEMP_KELVIN));
+                                exp_val = exp(beta_temp);
+                                target_resistance = exp_val*THERMISTOR_RESISTANCE;
+                                adc_val = (uint32_t) (((double) (ADC_MAX*BASE_RESISTANCE)/(BASE_RESISTANCE + target_resistance)) + 0.5);
+                                program->instruction[program->instruction_wp].heaters.heater[program->extruder_select].target_temp = adc_val;
                                 program->instruction[program->instruction_wp].heaters.heater[program->extruder_select].wait_for_temp = 0;
+                                } else {
+                                   program->instruction[program->instruction_wp].heaters.heater[program->extruder_select].disable_heater = 1;
+                                }
                             }
                         }
                         break;
@@ -1239,10 +1252,23 @@ int parse_gcode_word(char* line, uint16_t* line_count, struct gcode_program_stru
                         if(!error){
                             error = parse_number(line, line_count, &temp_val);
                             if(!error){
-                               program->instruction[program->instruction_wp].instruction_type = HEATER_INSTRUCTION;
-                                program->instruction[program->instruction_wp].heaters.heater[program->extruder_select].enable_heater = 1;
-                                program->instruction[program->instruction_wp].heaters.heater[program->extruder_select].target_temp = temp_val;
+                              program->instruction[program->instruction_wp].instruction_type = HEATER_INSTRUCTION;
+                              if(temp_val > SHUTOFF_TEMP_C){
+                                 program->instruction[program->instruction_wp].heaters.heater[program->extruder_select].enable_heater = 1;
+                                double target_resistance;
+                                double beta_temp;
+                                double exp_val;
+                                uint32_t adc_val;
+                                beta_temp = ((BETA_VALUE/(temp_val+KELVIN_CONV)) - (BETA_VALUE/BASE_TEMP_KELVIN));
+                                exp_val = exp(beta_temp);
+                                target_resistance = exp_val*THERMISTOR_RESISTANCE;
+                                adc_val = (uint32_t) (((double) (ADC_MAX*BASE_RESISTANCE)/(BASE_RESISTANCE + target_resistance)) + 0.5);
+                                program->instruction[program->instruction_wp].heaters.heater[program->extruder_select].target_temp = adc_val;
                                 program->instruction[program->instruction_wp].heaters.heater[program->extruder_select].wait_for_temp = 1;
+                              } else {
+                                 program->instruction[program->instruction_wp].heaters.heater[program->extruder_select].disable_heater = 1;
+                                 program->instruction[program->instruction_wp].heaters.heater[program->extruder_select].wait_for_temp = 0;
+                              } 
                             }
                         }
                         break;

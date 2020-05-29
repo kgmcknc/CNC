@@ -85,10 +85,6 @@ void init_gpio(struct cnc_state_struct* cnc){
       GPIO_PinModeSet(MOTOR_6_MS0_PORT, MOTOR_6_MS0_PIN, gpioModePushPull, 0);
       GPIO_PinModeSet(MOTOR_6_MS1_PORT, MOTOR_6_MS1_PIN, gpioModePushPull, 0);
    #else
-      //for(int i=0;i<NUM_ENDSTOPS;i++){
-      //   pinMode(cnc->, INPUT_PULLUP);
-      //}
-      pinMode(LED, OUTPUT);
 
       pinMode(ENDSTOP_0_PIN, INPUT_PULLUP);
       pinMode(ENDSTOP_1_PIN, INPUT_PULLUP);
@@ -165,7 +161,7 @@ void init_gpio(struct cnc_state_struct* cnc){
    #endif
 }
 
-void cnc_gpio_write(uint32_t pin, uint32_t port, uint8_t value){
+void cnc_gpio_write(uint8_t pin, uint8_t* port, uint8_t value){
    #ifdef SILABS
    if(value == 0){
       GPIO_PinOutClear((cast to port) port, (cast to pin) pin);
@@ -173,16 +169,22 @@ void cnc_gpio_write(uint32_t pin, uint32_t port, uint8_t value){
       GPIO_PinOutSet((cast to port) port, (cast to pin) pin);
    }
    #else
-   digitalWrite(pin, value);
+   if(value == 0){
+      CLR(*port, pin);
+   } else {
+      SET(*port, pin);
+   }
+   //digitalWrite(pin, value);
    #endif
 }
 
-uint8_t cnc_gpio_read(uint32_t pin, uint32_t port){
+uint8_t cnc_gpio_read(uint8_t pin, uint8_t* port){
    uint8_t ret_data; 
    #ifdef SILABS
    ret_data = (uint8_t) GPIO_PinInGet((cast to port) port, (cast to pin) pin);
    #else
-   ret_data = (uint8_t) digitalRead(pin);
+   //ret_data = (uint8_t) digitalRead(pin);
+   ret_data = (uint8_t) GET(*port, pin);
    #endif
    return ret_data;
 }

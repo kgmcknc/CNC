@@ -13,15 +13,11 @@
 #include "math.h"
 
 void init_motors(struct cnc_motor_list_struct* motors, struct cnc_endstop_list_struct* endstops){
-   #ifdef SILABS
-	motors->aux.ports.dir_port    = AUX_MOTOR_DIR_PORT;
-	motors->aux.ports.en_port     = AUX_MOTOR_EN_PORT;
-	motors->aux.ports.ms0_port    = AUX_MOTOR_MS0_PORT;
-	motors->aux.ports.ms1_port    = AUX_MOTOR_MS1_PORT;
-	motors->aux.ports.max_es_port = (GPIO_Port_TypeDef) 0;
-	motors->aux.ports.min_es_port = (GPIO_Port_TypeDef) 0;
-	motors->aux.ports.step_port   = AUX_MOTOR_STEP_PORT;
-   #else
+	motors->motor[MOTOR_AUX].ports.dir_port   = AUX_MOTOR_DIR_PORT;
+	motors->motor[MOTOR_AUX].ports.en_port    = AUX_MOTOR_EN_PORT;
+	motors->motor[MOTOR_AUX].ports.ms0_port   = AUX_MOTOR_MS0_PORT;
+	motors->motor[MOTOR_AUX].ports.ms1_port   = AUX_MOTOR_MS1_PORT;
+	motors->motor[MOTOR_AUX].ports.step_port  = AUX_MOTOR_STEP_PORT;
 	motors->motor[MOTOR_AUX].pins.dir_pin     = AUX_MOTOR_DIR_PIN;
 	motors->motor[MOTOR_AUX].pins.en_pin      = AUX_MOTOR_EN_PIN;
 	motors->motor[MOTOR_AUX].pins.ms0_pin     = AUX_MOTOR_MS0_PIN;
@@ -32,17 +28,12 @@ void init_motors(struct cnc_motor_list_struct* motors, struct cnc_endstop_list_s
    motors->motor[MOTOR_AUX].float_error      = AUX_MM_PER_STEP;
    motors->motor[MOTOR_AUX].min_range_flag   = &endstops->empty_endstop;
    motors->motor[MOTOR_AUX].max_range_flag   = &endstops->empty_endstop;
-   #endif
 
-   #ifdef SILABS
-	motors->extruder_0.ports.dir_port    = EXTRUDER_0_MOTOR_DIR_PORT;
-	motors->extruder_0.ports.en_port     = EXTRUDER_0_MOTOR_EN_PORT;
-	motors->extruder_0.ports.ms0_port    = EXTRUDER_0_MOTOR_MS0_PORT;
-	motors->extruder_0.ports.ms1_port    = EXTRUDER_0_MOTOR_MS1_PORT;
-	motors->extruder_0.ports.max_es_port = (GPIO_Port_TypeDef) 0;
-	motors->extruder_0.ports.min_es_port = (GPIO_Port_TypeDef) 0;
-	motors->extruder_0.ports.step_port   = EXTRUDER_0_MOTOR_STEP_PORT;
-   #else
+	motors->motor[MOTOR_EXTRUDER_0].ports.dir_port   = EXTRUDER_0_MOTOR_DIR_PORT;
+	motors->motor[MOTOR_EXTRUDER_0].ports.en_port    = EXTRUDER_0_MOTOR_EN_PORT;
+	motors->motor[MOTOR_EXTRUDER_0].ports.ms0_port   = EXTRUDER_0_MOTOR_MS0_PORT;
+	motors->motor[MOTOR_EXTRUDER_0].ports.ms1_port   = EXTRUDER_0_MOTOR_MS1_PORT;
+	motors->motor[MOTOR_EXTRUDER_0].ports.step_port  = EXTRUDER_0_MOTOR_STEP_PORT;
 	motors->motor[MOTOR_EXTRUDER_0].pins.dir_pin     = EXTRUDER_0_MOTOR_DIR_PIN;
 	motors->motor[MOTOR_EXTRUDER_0].pins.en_pin      = EXTRUDER_0_MOTOR_EN_PIN;
 	motors->motor[MOTOR_EXTRUDER_0].pins.ms0_pin     = EXTRUDER_0_MOTOR_MS0_PIN;
@@ -53,17 +44,12 @@ void init_motors(struct cnc_motor_list_struct* motors, struct cnc_endstop_list_s
    motors->motor[MOTOR_EXTRUDER_0].float_error      = EXTRUDER_MM_PER_STEP;
    motors->motor[MOTOR_EXTRUDER_0].min_range_flag   = &endstops->empty_endstop;
    motors->motor[MOTOR_EXTRUDER_0].max_range_flag   = &endstops->empty_endstop;
-   #endif
 
-   #ifdef SILABS
-	motors->extruder_1.ports.dir_port    = EXTRUDER_1_MOTOR_DIR_PORT;
-	motors->extruder_1.ports.en_port     = EXTRUDER_1_MOTOR_EN_PORT;
-	motors->extruder_1.ports.ms0_port    = EXTRUDER_1_MOTOR_MS0_PORT;
-	motors->extruder_1.ports.ms1_port    = EXTRUDER_1_MOTOR_MS1_PORT;
-	motors->extruder_1.ports.max_es_port = (GPIO_Port_TypeDef) 0;
-	motors->extruder_1.ports.min_es_port = (GPIO_Port_TypeDef) 0;
-	motors->extruder_1.ports.step_port   = EXTRUDER_1_MOTOR_STEP_PORT;
-   #else
+	motors->motor[MOTOR_EXTRUDER_1].ports.dir_port   = EXTRUDER_1_MOTOR_DIR_PORT;
+	motors->motor[MOTOR_EXTRUDER_1].ports.en_port    = EXTRUDER_1_MOTOR_EN_PORT;
+	motors->motor[MOTOR_EXTRUDER_1].ports.ms0_port   = EXTRUDER_1_MOTOR_MS0_PORT;
+	motors->motor[MOTOR_EXTRUDER_1].ports.ms1_port   = EXTRUDER_1_MOTOR_MS1_PORT;
+	motors->motor[MOTOR_EXTRUDER_1].ports.step_port  = EXTRUDER_1_MOTOR_STEP_PORT;
 	motors->motor[MOTOR_EXTRUDER_1].pins.dir_pin     = EXTRUDER_1_MOTOR_DIR_PIN;
 	motors->motor[MOTOR_EXTRUDER_1].pins.en_pin      = EXTRUDER_1_MOTOR_EN_PIN;
 	motors->motor[MOTOR_EXTRUDER_1].pins.ms0_pin     = EXTRUDER_1_MOTOR_MS0_PIN;
@@ -74,17 +60,12 @@ void init_motors(struct cnc_motor_list_struct* motors, struct cnc_endstop_list_s
    motors->motor[MOTOR_EXTRUDER_1].float_error      = EXTRUDER_MM_PER_STEP;
    motors->motor[MOTOR_EXTRUDER_1].min_range_flag   = &endstops->empty_endstop;
    motors->motor[MOTOR_EXTRUDER_1].max_range_flag   = &endstops->empty_endstop;
-   #endif
 
-   #ifdef SILABS
-	motors->xl_axis.ports.dir_port    = XL_AXIS_MOTOR_DIR_PORT;
-	motors->xl_axis.ports.en_port     = XL_AXIS_MOTOR_EN_PORT;
-	motors->xl_axis.ports.ms0_port    = XL_AXIS_MOTOR_MS0_PORT;
-	motors->xl_axis.ports.ms1_port    = XL_AXIS_MOTOR_MS1_PORT;
-	motors->xl_axis.ports.max_es_port = ENDSTOP_R_PORT;
-	motors->xl_axis.ports.min_es_port = ENDSTOP_L_PORT;
-	motors->xl_axis.ports.step_port   = XL_AXIS_MOTOR_STEP_PORT;
-   #else
+	motors->motor[MOTOR_AXIS_XL].ports.dir_port   = XL_AXIS_MOTOR_DIR_PORT;
+	motors->motor[MOTOR_AXIS_XL].ports.en_port    = XL_AXIS_MOTOR_EN_PORT;
+	motors->motor[MOTOR_AXIS_XL].ports.ms0_port   = XL_AXIS_MOTOR_MS0_PORT;
+	motors->motor[MOTOR_AXIS_XL].ports.ms1_port   = XL_AXIS_MOTOR_MS1_PORT;
+	motors->motor[MOTOR_AXIS_XL].ports.step_port  = XL_AXIS_MOTOR_STEP_PORT;
 	motors->motor[MOTOR_AXIS_XL].pins.dir_pin     = XL_AXIS_MOTOR_DIR_PIN;
 	motors->motor[MOTOR_AXIS_XL].pins.en_pin      = XL_AXIS_MOTOR_EN_PIN;
 	motors->motor[MOTOR_AXIS_XL].pins.ms0_pin     = XL_AXIS_MOTOR_MS0_PIN;
@@ -95,17 +76,12 @@ void init_motors(struct cnc_motor_list_struct* motors, struct cnc_endstop_list_s
    motors->motor[MOTOR_AXIS_XL].float_error      = AXIS_MM_PER_STEP;
    motors->motor[MOTOR_AXIS_XL].min_range_flag   = &endstops->endstop[X_L_MIN].status;
    motors->motor[MOTOR_AXIS_XL].max_range_flag   = &endstops->endstop[X_R_MAX].status;
-   #endif
 
-   #ifdef SILABS
-	motors->yf_axis.ports.dir_port    = YF_AXIS_MOTOR_DIR_PORT;
-	motors->yf_axis.ports.en_port     = YF_AXIS_MOTOR_EN_PORT;
-	motors->yf_axis.ports.ms0_port    = YF_AXIS_MOTOR_MS0_PORT;
-	motors->yf_axis.ports.ms1_port    = YF_AXIS_MOTOR_MS1_PORT;
-	motors->yf_axis.ports.max_es_port = ENDSTOP_B_PORT;
-	motors->yf_axis.ports.min_es_port = ENDSTOP_F_PORT;
-	motors->yf_axis.ports.step_port   = YF_AXIS_MOTOR_STEP_PORT;
-   #else
+	motors->motor[MOTOR_AXIS_YF].ports.dir_port   = YF_AXIS_MOTOR_DIR_PORT;
+	motors->motor[MOTOR_AXIS_YF].ports.en_port    = YF_AXIS_MOTOR_EN_PORT;
+	motors->motor[MOTOR_AXIS_YF].ports.ms0_port   = YF_AXIS_MOTOR_MS0_PORT;
+	motors->motor[MOTOR_AXIS_YF].ports.ms1_port   = YF_AXIS_MOTOR_MS1_PORT;
+	motors->motor[MOTOR_AXIS_YF].ports.step_port  = YF_AXIS_MOTOR_STEP_PORT;
 	motors->motor[MOTOR_AXIS_YF].pins.dir_pin     = YF_AXIS_MOTOR_DIR_PIN;
 	motors->motor[MOTOR_AXIS_YF].pins.en_pin      = YF_AXIS_MOTOR_EN_PIN;
 	motors->motor[MOTOR_AXIS_YF].pins.ms0_pin     = YF_AXIS_MOTOR_MS0_PIN;
@@ -116,17 +92,12 @@ void init_motors(struct cnc_motor_list_struct* motors, struct cnc_endstop_list_s
    motors->motor[MOTOR_AXIS_YF].float_error      = AXIS_MM_PER_STEP;
    motors->motor[MOTOR_AXIS_YF].min_range_flag   = &endstops->endstop[Y_F_MIN].status;
    motors->motor[MOTOR_AXIS_YF].max_range_flag   = &endstops->endstop[Y_B_MAX].status;
-   #endif
 
-   #ifdef SILABS
-	motors->zl_axis.ports.dir_port    = ZL_AXIS_MOTOR_DIR_PORT;
-	motors->zl_axis.ports.en_port     = ZL_AXIS_MOTOR_EN_PORT;
-	motors->zl_axis.ports.ms0_port    = ZL_AXIS_MOTOR_MS0_PORT;
-	motors->zl_axis.ports.ms1_port    = ZL_AXIS_MOTOR_MS1_PORT;
-	motors->zl_axis.ports.max_es_port = ENDSTOP_TL_PORT;
-	motors->zl_axis.ports.min_es_port = ENDSTOP_BL_PORT;
-	motors->zl_axis.ports.step_port   = ZL_AXIS_MOTOR_STEP_PORT;
-   #else
+	motors->motor[MOTOR_AXIS_ZL].ports.dir_port   = ZL_AXIS_MOTOR_DIR_PORT;
+	motors->motor[MOTOR_AXIS_ZL].ports.en_port    = ZL_AXIS_MOTOR_EN_PORT;
+	motors->motor[MOTOR_AXIS_ZL].ports.ms0_port   = ZL_AXIS_MOTOR_MS0_PORT;
+	motors->motor[MOTOR_AXIS_ZL].ports.ms1_port   = ZL_AXIS_MOTOR_MS1_PORT;
+	motors->motor[MOTOR_AXIS_ZL].ports.step_port  = ZL_AXIS_MOTOR_STEP_PORT;
 	motors->motor[MOTOR_AXIS_ZL].pins.dir_pin     = ZL_AXIS_MOTOR_DIR_PIN;
 	motors->motor[MOTOR_AXIS_ZL].pins.en_pin      = ZL_AXIS_MOTOR_EN_PIN;
 	motors->motor[MOTOR_AXIS_ZL].pins.ms0_pin     = ZL_AXIS_MOTOR_MS0_PIN;
@@ -137,17 +108,12 @@ void init_motors(struct cnc_motor_list_struct* motors, struct cnc_endstop_list_s
    motors->motor[MOTOR_AXIS_ZL].float_error      = AXIS_MM_PER_STEP;
    motors->motor[MOTOR_AXIS_ZL].min_range_flag   = &endstops->endstop[Z_L_MIN].status;
    motors->motor[MOTOR_AXIS_ZL].max_range_flag   = &endstops->endstop[Z_L_MAX].status;
-   #endif
 
-   #ifdef SILABS
-	motors->zr_axis.ports.dir_port    = ZR_AXIS_MOTOR_DIR_PORT;
-	motors->zr_axis.ports.en_port     = ZR_AXIS_MOTOR_EN_PORT;
-	motors->zr_axis.ports.ms0_port    = ZR_AXIS_MOTOR_MS0_PORT;
-	motors->zr_axis.ports.ms1_port    = ZR_AXIS_MOTOR_MS1_PORT;
-	motors->zr_axis.ports.max_es_port = ENDSTOP_TR_PORT;
-	motors->zr_axis.ports.min_es_port = ENDSTOP_BR_PORT;
-	motors->zr_axis.ports.step_port   = ZR_AXIS_MOTOR_STEP_PORT;
-   #else
+	motors->motor[MOTOR_AXIS_ZR].ports.dir_port   = ZR_AXIS_MOTOR_DIR_PORT;
+	motors->motor[MOTOR_AXIS_ZR].ports.en_port    = ZR_AXIS_MOTOR_EN_PORT;
+	motors->motor[MOTOR_AXIS_ZR].ports.ms0_port   = ZR_AXIS_MOTOR_MS0_PORT;
+	motors->motor[MOTOR_AXIS_ZR].ports.ms1_port   = ZR_AXIS_MOTOR_MS1_PORT;
+	motors->motor[MOTOR_AXIS_ZR].ports.step_port  = ZR_AXIS_MOTOR_STEP_PORT;
 	motors->motor[MOTOR_AXIS_ZR].pins.dir_pin     = ZR_AXIS_MOTOR_DIR_PIN;
 	motors->motor[MOTOR_AXIS_ZR].pins.en_pin      = ZR_AXIS_MOTOR_EN_PIN;
 	motors->motor[MOTOR_AXIS_ZR].pins.ms0_pin     = ZR_AXIS_MOTOR_MS0_PIN;
@@ -158,7 +124,6 @@ void init_motors(struct cnc_motor_list_struct* motors, struct cnc_endstop_list_s
    motors->motor[MOTOR_AXIS_ZR].float_error      = AXIS_MM_PER_STEP;
    motors->motor[MOTOR_AXIS_ZR].min_range_flag   = &endstops->endstop[Z_R_MIN].status;
    motors->motor[MOTOR_AXIS_ZR].max_range_flag   = &endstops->endstop[Z_R_MAX].status;
-   #endif
 
    motors->motor_irq = 0;
    motors->next_timer_value = DEFAULT_TIMER_COUNT;
@@ -198,52 +163,52 @@ void init_motor(struct cnc_motor_struct* motor, const char* name){
 void init_endstops(struct cnc_endstop_list_struct* endstops){
    endstops->new_event = 0;
    endstops->endstop[0].enabled = 1;
-   endstops->endstop[0].pin = ENDSTOP_0_PIN;
-   endstops->endstop[0].port = 0;
+   endstops->endstop[0].pin = ENDSTOP_0_PINBIT;
+   endstops->endstop[0].port = ENDSTOP_0_PINPORT;
 
    endstops->endstop[1].enabled = 1;
-   endstops->endstop[1].pin = ENDSTOP_1_PIN;
-   endstops->endstop[1].port = 0;
+   endstops->endstop[1].pin = ENDSTOP_1_PINBIT;
+   endstops->endstop[1].port = ENDSTOP_1_PINPORT;
 
    endstops->endstop[2].enabled = 1;
-   endstops->endstop[2].pin = ENDSTOP_2_PIN;
-   endstops->endstop[2].port = 0;
+   endstops->endstop[2].pin = ENDSTOP_2_PINBIT;
+   endstops->endstop[2].port = ENDSTOP_2_PINPORT;
 
    endstops->endstop[3].enabled = 1;
-   endstops->endstop[3].pin = ENDSTOP_3_PIN;
-   endstops->endstop[3].port = 0;
+   endstops->endstop[3].pin = ENDSTOP_3_PINBIT;
+   endstops->endstop[3].port = ENDSTOP_3_PINPORT;
 
    endstops->endstop[4].enabled = 1;
-   endstops->endstop[4].pin = ENDSTOP_4_PIN;
-   endstops->endstop[4].port = 0;
+   endstops->endstop[4].pin = ENDSTOP_4_PINBIT;
+   endstops->endstop[4].port = ENDSTOP_4_PINPORT;
 
    endstops->endstop[5].enabled = 1;
-   endstops->endstop[5].pin = ENDSTOP_5_PIN;
-   endstops->endstop[5].port = 0;
+   endstops->endstop[5].pin = ENDSTOP_5_PINBIT;
+   endstops->endstop[5].port = ENDSTOP_5_PINPORT;
 
    endstops->endstop[6].enabled = 1;
-   endstops->endstop[6].pin = ENDSTOP_6_PIN;
-   endstops->endstop[6].port = 0;
+   endstops->endstop[6].pin = ENDSTOP_6_PINBIT;
+   endstops->endstop[6].port = ENDSTOP_6_PINPORT;
 
    endstops->endstop[7].enabled = 1;
-   endstops->endstop[7].pin = ENDSTOP_7_PIN;
-   endstops->endstop[7].port = 0;
+   endstops->endstop[7].pin = ENDSTOP_7_PINBIT;
+   endstops->endstop[7].port = ENDSTOP_7_PINPORT;
 
    endstops->endstop[8].enabled = 1;
-   endstops->endstop[8].pin = ENDSTOP_8_PIN;
-   endstops->endstop[8].port = 0;
+   endstops->endstop[8].pin = ENDSTOP_8_PINBIT;
+   endstops->endstop[8].port = ENDSTOP_8_PINPORT;
 
    endstops->endstop[9].enabled = 1;
-   endstops->endstop[9].pin = ENDSTOP_9_PIN;
-   endstops->endstop[9].port = 0;
+   endstops->endstop[9].pin = ENDSTOP_9_PINBIT;
+   endstops->endstop[9].port = ENDSTOP_9_PINPORT;
 
    endstops->endstop[10].enabled = 1;
-   endstops->endstop[10].pin = ENDSTOP_10_PIN;
-   endstops->endstop[10].port = 0;
+   endstops->endstop[10].pin = ENDSTOP_10_PINBIT;
+   endstops->endstop[10].port = ENDSTOP_10_PINPORT;
 
    endstops->endstop[11].enabled = 1;
-   endstops->endstop[11].pin = ENDSTOP_11_PIN;
-   endstops->endstop[11].port = 0;
+   endstops->endstop[11].pin = ENDSTOP_11_PINBIT;
+   endstops->endstop[11].port = ENDSTOP_11_PINPORT;
 
    endstops->empty_endstop = 0;
 
@@ -271,20 +236,6 @@ void set_motor_direction(struct cnc_motor_struct* motor, int8_t direction){
       cnc_gpio_write(motor->pins.dir_pin, motor->ports.dir_port, 1);
       motor->direction = direction;
    }
-}
-
-void enable_axis_motors(struct cnc_motor_list_struct* motors){
-	enable_motor(&motors->motor[MOTOR_AXIS_XL]);
-	enable_motor(&motors->motor[MOTOR_AXIS_YF]);
-	enable_motor(&motors->motor[MOTOR_AXIS_ZL]);
-	enable_motor(&motors->motor[MOTOR_AXIS_ZR]);
-}
-
-void disable_axis_motors(struct cnc_motor_list_struct* motors){
-	disable_motor(&motors->motor[MOTOR_AXIS_XL]);
-	disable_motor(&motors->motor[MOTOR_AXIS_YF]);
-	disable_motor(&motors->motor[MOTOR_AXIS_ZL]);
-	disable_motor(&motors->motor[MOTOR_AXIS_ZR]);
 }
 
 void handle_motors(struct cnc_state_struct* cnc){
@@ -461,9 +412,9 @@ void process_motors(struct cnc_motor_list_struct* motors){
 }
 
 void step_motor_set_step(struct cnc_motor_struct* motor){
-   cnc_gpio_write(motor->pins.step_pin, motor->ports.step_port, 0);
+   cnc_gpio_write(motor->pins.step_pin, motor->ports.step_port, 1);
 }
 
 void step_motor_clear_step(struct cnc_motor_struct* motor){
-   cnc_gpio_write(motor->pins.step_pin, motor->ports.step_port, 1);
+   cnc_gpio_write(motor->pins.step_pin, motor->ports.step_port, 0);
 }

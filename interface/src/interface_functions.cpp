@@ -10,13 +10,13 @@ uint8_t print_set = 0;
 enum CNC_CONFIG_STATE configure_stage = CONFIG_ENABLE_POWER;
 uint8_t configure_processing = 0;
 
-#define DEFAULT_SPEED ((cnc_double) 10.0)
-#define DEFAULT_DISTANCE ((cnc_double) 20.0)
+#define DEFAULT_SPEED ((cnc_double) 15.0)
+#define DEFAULT_DISTANCE ((cnc_double) 15.0)
 
 #define SLOW_SPEED ((cnc_double) 1.0)
-#define FAST_SPEED ((cnc_double) 15.0)
+#define FAST_SPEED ((cnc_double) 20.0)
 
-cnc_double move_speed = FAST_SPEED;
+cnc_double move_speed = DEFAULT_SPEED;
 cnc_double move_distance = DEFAULT_DISTANCE;
 cnc_double z_move_distance = DEFAULT_DISTANCE;
 cnc_double new_position = 0.0;
@@ -447,15 +447,6 @@ void process_request(struct interface_struct* interface){
 			printf("CNC ZL Pos: %lf\n", interface->machine_status.position[MOTOR_AXIS_ZL]);
 			printf("CNC ZR Pos: %lf\n", interface->machine_status.position[MOTOR_AXIS_ZR]);
          printf("Program Length: %lld, Current Instruction: %lld\n", interface->program.program_length, interface->program.instruction_rp);
-         
-         #define IN_VOLT ((cnc_double) 3.3)
-         #define BETA_VALUE ((cnc_double) 3950.0)
-         #define BASE_RESISTANCE ((cnc_double) 22000.0)
-         #define THERMISTOR_RESISTANCE ((cnc_double) 100000.0)
-         #define KELVIN_CONV ((cnc_double) 273.15)
-         #define BASE_TEMP ((cnc_double) 25.0) // degrees celsius
-         #define BASE_TEMP_KELVIN (BASE_TEMP + KELVIN_CONV)
-         #define ADC_MAX ((cnc_double) ((1<<10)-1))
 
          cnc_double current_voltage;
          cnc_double current_resistance;
@@ -689,6 +680,14 @@ void process_instruction(struct interface_struct* interface){
          if(interface->user_command[2] == 'e'){
             sscanf(&interface->user_command[3], "%fC", &temp);
             if(temp > 1.0){
+               double target_resistance;
+               double beta_temp;
+               double exp_val;
+               uint32_t adc_val;
+               beta_temp = ((BETA_VALUE/(temp+KELVIN_CONV)) - (BETA_VALUE/BASE_TEMP_KELVIN));
+               exp_val = exp(beta_temp);
+               target_resistance = exp_val*THERMISTOR_RESISTANCE;
+               adc_val = (uint32_t) (((double) (ADC_MAX*BASE_RESISTANCE)/(BASE_RESISTANCE + target_resistance)) + 0.5);
                interface->user_instruction.instant_instruction = 1;
                interface->user_instruction.instruction_valid = 1;
                interface->user_instruction.instruction_type = HEATER_INSTRUCTION;
@@ -696,8 +695,8 @@ void process_instruction(struct interface_struct* interface){
                interface->user_instruction.instruction.heaters.heater[0].enable_heater = 1;
                interface->user_instruction.instruction.heaters.heater[0].fan_duty = 100;
                interface->user_instruction.instruction.heaters.heater[0].enable_fan = 1;
-               interface->user_instruction.instruction.heaters.heater[0].wait_for_temp = 1;
-               interface->user_instruction.instruction.heaters.heater[0].target_temp = temp;
+               interface->user_instruction.instruction.heaters.heater[0].wait_for_temp = 0;
+               interface->user_instruction.instruction.heaters.heater[0].target_temp = adc_val;
                valid_instruction = 1;
             } else {
             }

@@ -95,77 +95,77 @@ motor: L2: ms1, L1: ms0, C: EN, R1: Dir, R2: Step
 ES: L is 1, R is 12
 
 
-a0  - heater 0 adc
-a1  - heater 1 adc
-a2  - heater 2 adc
-a3  - heater 3 adc
-a4  - es0
-a5  - es1
-a6  - es2
-a7  - es3
-a8  - es4
-a9  - es5
-a10 - es6
-a11 - es7
-a12 - es8
-a13 - es9
-a14 - es10
-a15 - es11
+a0  - PF0 - heater 0 adc
+a1  - PF1 - heater 1 adc
+a2  - PF2 - heater 2 adc
+a3  - PF3 - heater 3 adc
+a4  - PF4 - es0
+a5  - PF5 - es1
+a6  - PF6 - es2
+a7  - PF7 - es3
+a8  - PK0 - es4
+a9  - PK1 - es5
+a10 - PK2 - es6
+a11 - PK3 - es7
+a12 - PK4 - es8
+a13 - PK5 - es9
+a14 - PK6 - es10
+a15 - PK7 - es11
 
-d0  - serial rx
-d1  - serial tx
-d2  - es interrupt - (interrupt) / (pwm)
-d3  - other interrupt - (interrupt) / (pwm)
-d4  - m_0_step - (pwm)
-d5  - m_1_step - (pwm)
-d6  - m_2_step - (pwm)
-d7  - m_3_step - (pwm)
-d8  - m_4_step - (pwm)
-d9  - m_5_step - (pwm)
-d10 - m_6_step - (pwm)
-d11 - sreq - reserved - (pwm)
-d12 - sack - reserved - (pwm)
-d13 - nc - (pwm) / (led)
-d14 - heater on 0
-d15 - heater on 1
-d16 - heater on 2
-d17 - heater on 3
-d18 - fan on 0 - (interrupt)
-d19 - fan on 1 - (interrupt)
-d20 - fan on 2 - (interrupt)
-d21 - fan on 3 - (interrupt)
-d22 - en0
-d23 - dir0
-d24 - ms00
-d25 - ms10
-d26 - en1
-d27 - dir1
-d28 - ms01
-d29 - ms11
-d30 - en2
-d31 - dir2
-d32 - ms02
-d33 - ms12
-d34 - en3
-d35 - dir3
-d36 - ms03
-d37 - ms13
-d38 - en4
-d39 - dir4
-d40 - ms04
-d41 - ms14
-d42 - en5
-d43 - dir5
-d44 - ms05 - (pwm)
-d45 - ms15 - (pwm)
-d46 - en6 - (pwm)
-d47 - dir6
-d48 - ms06
-d49 - ms16
-d50 - mosi - reserved - (spi)
-d51 - miso - reserved - (spi)
-d52 - sck - reserved - (spi)
-d53 - ss - reserved - (spi)
+d0  -  - serial rx
+d1  -  - serial tx
+d2  -  - es interrupt - (interrupt) / (pwm)
+d3  -  - other interrupt - (interrupt) / (pwm)
+d4  -  - m_0_step - (pwm)
+d5  -  - m_1_step - (pwm)
+d6  -  - m_2_step - (pwm)
+d7  -  - m_3_step - (pwm)
+d8  -  - m_4_step - (pwm)
+d9  -  - m_5_step - (pwm)
+d10 -  - m_6_step - (pwm)
+d11 -  - sreq - reserved - (pwm)
+d12 -  - sack - reserved - (pwm)
+d13 -  - nc - (pwm) / (led)
+d14 -  - heater on 0
+d15 -  - heater on 1
+d16 -  - heater on 2
+d17 -  - heater on 3
+d18 -  - fan on 0 - (interrupt)
+d19 -  - fan on 1 - (interrupt)
+d20 -  - fan on 2 - (interrupt)
+d21 -  - fan on 3 - (interrupt)
+d22 -  - en0
+d23 -  - dir0
+d24 -  - ms00
+d25 -  - ms10
+d26 -  - en1
+d27 -  - dir1
+d28 -  - ms01
+d29 -  - ms11
+d30 -  - en2
+d31 -  - dir2
+d32 -  - ms02
+d33 -  - ms12
+d34 -  - en3
+d35 -  - dir3
+d36 -  - ms03
+d37 -  - ms13
+d38 -  - en4
+d39 -  - dir4
+d40 -  - ms04
+d41 -  - ms14
+d42 -  - en5
+d43 -  - dir5
+d44 -  - ms05 - (pwm)
+d45 -  - ms15 - (pwm)
+d46 -  - en6 - (pwm)
+d47 -  - dir6
+d48 -  - ms06
+d49 -  - ms16
+d50 -  - mosi - reserved - (spi)
+d51 -  - miso - reserved - (spi)
+d52 -  - sck - reserved - (spi)
+d53 -  - ss - reserved - (spi)
 
 1 comm, 4 heaters, 12 endstops, 7 motors?
 	rx

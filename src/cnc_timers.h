@@ -10,8 +10,6 @@
 
 #include "stdint.h"
 
-
-
 #define TIMER_BASE_HZ ((cnc_double) 16000000.0)
 #define TIMER_PRESCALE_DIVIDE ((cnc_double) 1.0)
 #define TIMER_HZ (TIMER_BASE_HZ/TIMER_PRESCALE_DIVIDE)
@@ -19,7 +17,7 @@
 #define IRQ_TIME_US ((cnc_double) 16.0)
 #define DEFAULT_TIMER_COUNT ((uint32_t) 1000)
 #define DEFAULT_HEATER_TIMER_COUNT ((uint32_t) 62500)
-#define MIN_TIMER_COUNT ((uint32_t) 100) //(uint32_t) (IRQ_TIME_US/TIMER_PERIOD_US)
+#define MIN_TIMER_COUNT ((uint32_t) 100)
 #define MAX_TIMER_COUNT ((uint32_t) 65535)
 
 #define MOTOR_TIMER_PERIOD_US ((cnc_double) TIMER_PERIOD_US)

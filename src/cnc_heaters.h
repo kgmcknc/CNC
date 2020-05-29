@@ -12,20 +12,6 @@
 #include "cnc_gpio.h"
 #include "common_cnc.h"
 
-#define IN_VOLT ((cnc_double) 3.3)
-#define BETA_VALUE ((cnc_double) 3950.0)
-#define BASE_RESISTANCE ((cnc_double) 22000.0)
-#define THERMISTOR_RESISTANCE ((cnc_double) 100000.0)
-#define KELVIN_CONV ((cnc_double) 273.15)
-#define BASE_TEMP ((cnc_double) 25.0) // degrees celsius
-#define BASE_TEMP_KELVIN (BASE_TEMP + KELVIN_CONV)
-#define ADC_MAX ((cnc_double) ((1<<10)-1))
-
-#define SHUTOFF_TEMP_C ((cnc_double) 38)
-#define SHUTOFF_BETA ((BETA_VALUE/(SHUTOFF_TEMP_C+KELVIN_CONV))-(BETA_VALUE/BASE_TEMP_KELVIN))
-#define SHUTOFF_RESISTANCE (exp(SHUTOFF_BETA)*THERMISTOR_RESISTANCE)
-#define SHUTOFF_ADC (uint32_t) ((ADC_MAX*BASE_RESISTANCE)/(BASE_RESISTANCE+SHUTOFF_RESISTANCE))
-
 #define UPDATE_INTERVAL 200
 #define AVERAGE_COUNT 32
 #define WINDUP_COUNT 32
@@ -43,7 +29,8 @@ struct cnc_heater_struct {
 	uint8_t heater_pin;
    GPIO_Port_TypeDef fan_port;
 	uint8_t fan_pin;
-   GPIO_Port_TypeDef adc_port;
+   GPIO_Port_TypeDef adc_pinport;
+   uint8_t adc_pinbit;
 	uint8_t adc_pin;
    uint32_t adc_value;
    uint32_t target_adc;
@@ -52,14 +39,14 @@ struct cnc_heater_struct {
    int16_t pid_average[AVERAGE_COUNT];
    uint8_t average_pointer;
    int16_t last_p_error;
-   cnc_double last_adj;
-   int64_t i_error;
+   int32_t last_adj;
+   int32_t i_error;
    int8_t d_sign;
    uint8_t anti_windup;
    uint16_t windup_rounds;
    int16_t adj_count;
-	cnc_double target_temp;
-	cnc_double current_temp;
+	uint32_t target_temp;
+	uint32_t current_temp;
 };
 
 struct cnc_heater_list_struct {

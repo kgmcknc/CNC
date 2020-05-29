@@ -224,10 +224,6 @@ void set_motor_instruction(struct cnc_state_struct* cnc, struct cnc_motor_instru
 }
 
 void set_heater_instruction(struct cnc_heater_instruction_struct* current_instruction, struct cnc_heater_struct* heater){
-	cnc_double target_resistance;
-   cnc_double beta_temp;
-   cnc_double exp_val;
-   
    if(current_instruction->instruction_valid){
 		heater->reset_heater = 1;
       if(current_instruction->enable_heater){
@@ -243,16 +239,10 @@ void set_heater_instruction(struct cnc_heater_instruction_struct* current_instru
          heater->fan_active = 0;
       }
 
-      heater->target_temp = current_instruction->target_temp;
+      heater->target_adc = current_instruction->target_temp;
       heater->wait_for_temp = current_instruction->wait_for_temp;
 		heater->fan_duty = current_instruction->fan_duty;
       heater->pid_reset = 1;
-
-      beta_temp = ((BETA_VALUE/(heater->target_temp+KELVIN_CONV)) - (BETA_VALUE/BASE_TEMP_KELVIN));
-      exp_val = exp(beta_temp);
-      target_resistance = exp_val*THERMISTOR_RESISTANCE;
-      heater->target_adc = (uint32_t) ((cnc_double) (ADC_MAX*BASE_RESISTANCE)/(BASE_RESISTANCE + target_resistance));
-
 	}
 }
 

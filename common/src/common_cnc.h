@@ -58,6 +58,25 @@
 
 #define RAPID_MOVE_SPEED 600.0
 
+#define IN_VOLT ((double) 3.3)
+#define BETA_VALUE ((double) 3950.0)
+#define BASE_RESISTANCE ((double) 22000.0)
+#define THERMISTOR_RESISTANCE ((double) 100000.0)
+#define KELVIN_CONV ((double) 273.15)
+#define BASE_TEMP ((double) 25.0) // degrees celsius
+#define BASE_TEMP_KELVIN (BASE_TEMP + KELVIN_CONV)
+
+#define SHUTOFF_TEMP_C (38)
+#define SHUTOFF_BETA ((BETA_VALUE/(SHUTOFF_TEMP_C+KELVIN_CONV))-(BETA_VALUE/BASE_TEMP_KELVIN))
+#define SHUTOFF_RESISTANCE (exp(SHUTOFF_BETA)*THERMISTOR_RESISTANCE)
+#define SHUTOFF_ADC (uint32_t) ((ADC_MAX*BASE_RESISTANCE)/(BASE_RESISTANCE+SHUTOFF_RESISTANCE))
+
+#define ADC_MAX ((1<<10)-1)
+
+#define CLR(x,y) (x=x&(~(1<<y)))
+#define SET(x,y) (x=x|(1<<y))
+#define GET(x,y) ((x>>y)&1)
+
 #define NUM_MOTORS 7
 enum MOTOR_NUMBERS {
    MOTOR_AUX,
@@ -221,7 +240,7 @@ struct cnc_heater_instruction_struct {
    uint8_t disable_heater;
    uint8_t enable_fan;
    uint8_t disable_fan;
-   cnc_double target_temp;
+   uint32_t target_temp;
 };
 
 struct cnc_heater_instructions {
