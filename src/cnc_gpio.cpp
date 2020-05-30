@@ -179,7 +179,7 @@ void cnc_gpio_write(uint8_t pin, uint8_t* port, uint8_t value){
 }
 
 uint8_t cnc_gpio_read(uint8_t pin, uint8_t* port){
-   uint8_t ret_data; 
+   uint8_t ret_data;
    #ifdef SILABS
    ret_data = (uint8_t) GPIO_PinInGet((cast to port) port, (cast to pin) pin);
    #else

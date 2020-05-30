@@ -196,18 +196,18 @@
    #define ENDSTOP_9_PINBIT       5
    #define ENDSTOP_10_PINBIT      6
    #define ENDSTOP_11_PINBIT      7
-   #define ENDSTOP_0_PINPORT      (uint8_t*) &PORTF
-   #define ENDSTOP_1_PINPORT      (uint8_t*) &PORTF
-   #define ENDSTOP_2_PINPORT      (uint8_t*) &PORTF
-   #define ENDSTOP_3_PINPORT      (uint8_t*) &PORTF
-   #define ENDSTOP_4_PINPORT      (uint8_t*) &PORTK
-   #define ENDSTOP_5_PINPORT      (uint8_t*) &PORTK
-   #define ENDSTOP_6_PINPORT      (uint8_t*) &PORTK
-   #define ENDSTOP_7_PINPORT      (uint8_t*) &PORTK
-   #define ENDSTOP_8_PINPORT      (uint8_t*) &PORTK
-   #define ENDSTOP_9_PINPORT      (uint8_t*) &PORTK
-   #define ENDSTOP_10_PINPORT     (uint8_t*) &PORTK
-   #define ENDSTOP_11_PINPORT     (uint8_t*) &PORTK
+   #define ENDSTOP_0_PINPORT      (uint8_t*) &PINF
+   #define ENDSTOP_1_PINPORT      (uint8_t*) &PINF
+   #define ENDSTOP_2_PINPORT      (uint8_t*) &PINF
+   #define ENDSTOP_3_PINPORT      (uint8_t*) &PINF
+   #define ENDSTOP_4_PINPORT      (uint8_t*) &PINK
+   #define ENDSTOP_5_PINPORT      (uint8_t*) &PINK
+   #define ENDSTOP_6_PINPORT      (uint8_t*) &PINK
+   #define ENDSTOP_7_PINPORT      (uint8_t*) &PINK
+   #define ENDSTOP_8_PINPORT      (uint8_t*) &PINK
+   #define ENDSTOP_9_PINPORT      (uint8_t*) &PINK
+   #define ENDSTOP_10_PINPORT     (uint8_t*) &PINK
+   #define ENDSTOP_11_PINPORT     (uint8_t*) &PINK
 
    #define TEMP_ADC_0_PIN     A0
    #define TEMP_ADC_1_PIN     A1
@@ -217,10 +217,10 @@
    #define TEMP_ADC_1_PINBIT  1
    #define TEMP_ADC_2_PINBIT  2
    #define TEMP_ADC_3_PINBIT  3
-   #define TEMP_ADC_0_PINPORT (uint8_t*) &PORTF
-   #define TEMP_ADC_1_PINPORT (uint8_t*) &PORTF
-   #define TEMP_ADC_2_PINPORT (uint8_t*) &PORTF
-   #define TEMP_ADC_3_PINPORT (uint8_t*) &PORTF
+   #define TEMP_ADC_0_PINPORT (uint8_t*) &PINF
+   #define TEMP_ADC_1_PINPORT (uint8_t*) &PINF
+   #define TEMP_ADC_2_PINPORT (uint8_t*) &PINF
+   #define TEMP_ADC_3_PINPORT (uint8_t*) &PINF
 
    #define FANS_0_PIN     18
    #define FANS_1_PIN     19
