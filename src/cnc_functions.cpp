@@ -51,7 +51,6 @@ void handle_state(struct cnc_state_struct* cnc){
 				if(cnc->endstops->new_event){
 					cnc->state = SEND_ENDPOINT_EVENT;
 				}
-
 			}
 			break;
 		}
@@ -159,7 +158,7 @@ void update_status(struct cnc_state_struct* cnc){
       cnc->status.endstop_status[i] = cnc->endstops->endstop[i].status;
    }
    for(int i=0;i<NUM_HEATERS;i++){
-      cnc->status.temp[i] = cnc->heaters->heater[i].current_temp;
+      cnc->status.temp[i] = cnc->heaters->heater[i].adc_value;
       cnc->status.temp_locked[i] = cnc->heaters->heater[i].temp_locked;
    }
 }

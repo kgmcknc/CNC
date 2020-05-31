@@ -92,6 +92,13 @@ ISR(TIMER1_COMPA_vect){ // timer compare interrupt service routine
 
 ISR(TIMER3_COMPA_vect){ // timer compare interrupt service routine
    // set next overflow count valued
+   if(toggle){
+      toggle = 0;
+      CLR(*AUX_MOTOR_DIR_PORT, AUX_MOTOR_DIR_PIN);
+   } else {
+      toggle = 1;
+      SET(*AUX_MOTOR_DIR_PORT, AUX_MOTOR_DIR_PIN);
+   }
    cnc.motors->valid_irq = cnc.motors->next_valid_irq;
    if(cnc.motors->next_timer_value_loaded){
       cnc.motors->next_valid_irq = 1;
@@ -103,4 +110,11 @@ ISR(TIMER3_COMPA_vect){ // timer compare interrupt service routine
    // clear current count to reset
    TCNT3 = 0;
    cnc.motors->motor_irq = 1;
+   if(toggle){
+      toggle = 0;
+      CLR(*AUX_MOTOR_DIR_PORT, AUX_MOTOR_DIR_PIN);
+   } else {
+      toggle = 1;
+      SET(*AUX_MOTOR_DIR_PORT, AUX_MOTOR_DIR_PIN);
+   }
 }

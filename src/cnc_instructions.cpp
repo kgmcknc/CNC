@@ -14,6 +14,8 @@
 #include "cnc_functions.h"
 #include "cnc_serial.h"
 #include "cnc_instructions.h"
+#include "cnc_motors.h"
+#include "cnc_timers.h"
 #include "common_cnc.h"
 
 void init_instructions(struct cnc_state_struct* cnc){
@@ -190,13 +192,14 @@ void set_instruction(struct cnc_state_struct* cnc){
 	if(cnc->program.current_instruction->instruction_valid){
       if(cnc->program.current_instruction->instruction_type == MOTOR_INSTRUCTION){
          cnc->motors->motor_speed = cnc->program.current_instruction->instruction.motors.speed;
-         cnc->motors->max_distance = 0.0;
+         cnc->motors->max_distance = 0;
          for(int i=0;i<NUM_MOTORS;i++){
             set_motor_instruction(cnc, &cnc->program.current_instruction->instruction.motors.motor[i], &cnc->motors->motor[i]);
             if(cnc->motors->max_distance < cnc->motors->motor[i].distance){
                cnc->motors->max_distance = cnc->motors->motor[i].distance;
             }
          }
+         get_motor_speed(cnc->motors);
       }
       if(cnc->program.current_instruction->instruction_type == HEATER_INSTRUCTION){
          for(int i=0;i<NUM_HEATERS;i++){
@@ -300,6 +303,7 @@ void set_aux_instruction(struct cnc_state_struct* cnc, struct cnc_aux_instructio
          for(int i=0;i<NUM_MOTORS;i++){
             cnc->program.current_instruction->instruction.motors.motor[i].instruction_valid = (cnc->motors->motor[i].find_zero || cnc->motors->motor[i].find_max);
          }
+         get_motor_speed(cnc->motors);
          break;
       }
       case SET_POSITION : {
@@ -417,7 +421,8 @@ void abort_motor_instruction(struct cnc_motor_instruction_struct* current_instru
 
 void abort_heater_instruction(struct cnc_heater_instruction_struct* current_instruction, struct cnc_heater_struct* heater){
 	if(current_instruction->instruction_valid){
-		heater->target_temp = 0;
+		heater->target_adc = 0;
+      heater->heater_active = 0;
 		heater->wait_for_temp = 0;
 	}
 }

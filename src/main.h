@@ -20,4 +20,6 @@ void variable_init(struct cnc_state_struct* cnc);
 void init_config(cnc_config_struct* config);
 void init_clocks(void);
 
+extern uint8_t toggle;
+
 #endif /* SRC_MAIN_H_ */

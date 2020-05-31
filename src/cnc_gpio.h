@@ -172,6 +172,8 @@
    void enable_route_pins(void);
    void disable_route_pins(void);
 #else
+   #define ENDSTOP_L_PORT         PINF
+   #define ENDSTOP_U_PORT         PINK
    #define ENDSTOP_0_PIN          A4
    #define ENDSTOP_1_PIN          A5
    #define ENDSTOP_2_PIN          A6

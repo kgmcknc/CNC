@@ -69,13 +69,13 @@
 #define SHUTOFF_TEMP_C (38)
 #define SHUTOFF_BETA ((BETA_VALUE/(SHUTOFF_TEMP_C+KELVIN_CONV))-(BETA_VALUE/BASE_TEMP_KELVIN))
 #define SHUTOFF_RESISTANCE (exp(SHUTOFF_BETA)*THERMISTOR_RESISTANCE)
-#define SHUTOFF_ADC (uint32_t) ((ADC_MAX*BASE_RESISTANCE)/(BASE_RESISTANCE+SHUTOFF_RESISTANCE))
+#define SHUTOFF_ADC ((ADC_MAX*BASE_RESISTANCE)/(BASE_RESISTANCE+SHUTOFF_RESISTANCE))
 
 #define ADC_MAX ((1<<10)-1)
 
-#define CLR(x,y) (x=x&(~(1<<y)))
-#define SET(x,y) (x=x|(1<<y))
-#define GET(x,y) ((x>>y)&1)
+#define CLR(port,pin) (port=port&(~(1<<pin)))
+#define SET(port,pin) (port=port|(1<<pin))
+#define GET(port,pin) ((port>>pin)&1)
 
 #define NUM_MOTORS 7
 enum MOTOR_NUMBERS {

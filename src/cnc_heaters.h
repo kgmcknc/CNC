@@ -32,21 +32,17 @@ struct cnc_heater_struct {
    GPIO_Port_TypeDef adc_pinport;
    uint8_t adc_pinbit;
 	uint8_t adc_pin;
-   uint32_t adc_value;
-   uint32_t target_adc;
+   int16_t adc_value;
+   int16_t target_adc;
    uint8_t cooldown_active;
    uint8_t pid_reset;
    int16_t pid_average[AVERAGE_COUNT];
    uint8_t average_pointer;
    int16_t last_p_error;
-   int32_t last_adj;
-   int32_t i_error;
-   int8_t d_sign;
+   int16_t last_adj;
+   int16_t i_error;
    uint8_t anti_windup;
-   uint16_t windup_rounds;
-   int16_t adj_count;
-	uint32_t target_temp;
-	uint32_t current_temp;
+   uint8_t windup_rounds;
 };
 
 struct cnc_heater_list_struct {
@@ -58,8 +54,6 @@ struct cnc_heater_list_struct {
 void handle_heaters(struct cnc_state_struct* cnc);
 void init_heaters(struct cnc_heater_list_struct* heaters);
 void init_heater(struct cnc_heater_struct* heater);
-void enable_heater_fans(void);
-void disable_heater_fans(void);
 void read_heater_adc(struct cnc_heater_struct* heater);
 void reset_heater_pid(struct cnc_heater_struct* heater);
 void update_heater_pid(struct cnc_heater_struct* heater);

@@ -10,8 +10,8 @@ uint8_t print_set = 0;
 enum CNC_CONFIG_STATE configure_stage = CONFIG_ENABLE_POWER;
 uint8_t configure_processing = 0;
 
-#define DEFAULT_SPEED ((cnc_double) 15.0)
-#define DEFAULT_DISTANCE ((cnc_double) 15.0)
+#define DEFAULT_SPEED ((cnc_double) 25.0)
+#define DEFAULT_DISTANCE ((cnc_double) 25.0)
 
 #define SLOW_SPEED ((cnc_double) 1.0)
 #define FAST_SPEED ((cnc_double) 20.0)

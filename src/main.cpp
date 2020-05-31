@@ -33,6 +33,8 @@ struct cnc_endstop_list_struct cnc_endstops;
 
 serial_class cnc_serial(0);
 
+uint8_t toggle = 0;
+
 int cnc_main(void)
 {
 	
@@ -56,15 +58,27 @@ int cnc_main(void)
    }
    
    cnc_printf(&cnc, "Micro Controller Here!");
-
    /* Infinite loop */
 	while (1) {
+      if(toggle){
+         toggle = 0;
+         CLR(*AUX_MOTOR_DIR_PORT, AUX_MOTOR_DIR_PIN);
+      } else {
+         toggle = 1;
+         SET(*AUX_MOTOR_DIR_PORT, AUX_MOTOR_DIR_PIN);
+      }
+      SET(*AUX_MOTOR_STEP_PORT, AUX_MOTOR_STEP_PIN);
       cnc_serial.process();
+      CLR(*AUX_MOTOR_STEP_PORT, AUX_MOTOR_STEP_PIN);
       handle_state(&cnc);
-      handle_instructions(&cnc);
-      handle_motors(&cnc);
+      SET(*AUX_MOTOR_STEP_PORT, AUX_MOTOR_STEP_PIN);
+      check_instruction(&cnc);
+      CLR(*AUX_MOTOR_STEP_PORT, AUX_MOTOR_STEP_PIN);
+      check_instruction_fifo(&cnc);
+      SET(*AUX_MOTOR_STEP_PORT, AUX_MOTOR_STEP_PIN);
       handle_heaters(&cnc);
-      //handle_fans(&cnc);
+      CLR(*AUX_MOTOR_STEP_PORT, AUX_MOTOR_STEP_PIN);
+      handle_motors(&cnc);
    }
    
    return 0;

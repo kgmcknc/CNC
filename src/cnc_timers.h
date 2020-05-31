@@ -17,7 +17,7 @@
 #define IRQ_TIME_US ((cnc_double) 16.0)
 #define DEFAULT_TIMER_COUNT ((uint32_t) 1000)
 #define DEFAULT_HEATER_TIMER_COUNT ((uint32_t) 62500)
-#define MIN_TIMER_COUNT ((uint32_t) 100)
+#define MIN_TIMER_COUNT ((uint32_t) 200)
 #define MAX_TIMER_COUNT ((uint32_t) 65535)
 
 #define MOTOR_TIMER_PERIOD_US ((cnc_double) TIMER_PERIOD_US)
