@@ -145,8 +145,8 @@ void heater_instruction_to_string(struct cnc_heater_instruction_struct* instruct
    local_offset++;
    string[local_offset] = instruction->instruction_valid;
    local_offset++;
-   memcpy(&string[local_offset], &instruction->target_temp, sizeof(instruction->target_temp));
-   local_offset = local_offset + sizeof(instruction->target_temp);
+   memcpy(&string[local_offset], &instruction->target_adc, sizeof(instruction->target_adc));
+   local_offset = local_offset + sizeof(instruction->target_adc);
    string[local_offset] = instruction->wait_for_temp;
    local_offset++;
 
@@ -188,8 +188,8 @@ void string_to_heater_instruction(struct cnc_heater_instruction_struct* instruct
    local_offset++;
    instruction->instruction_valid = string[local_offset];
    local_offset++;
-   memcpy(&instruction->target_temp, &string[local_offset], sizeof(instruction->target_temp));
-   local_offset = local_offset + sizeof(instruction->target_temp);
+   memcpy(&instruction->target_adc, &string[local_offset], sizeof(instruction->target_adc));
+   local_offset = local_offset + sizeof(instruction->target_adc);
    instruction->wait_for_temp = string[local_offset];
    local_offset++;
 
@@ -263,6 +263,10 @@ uint16_t status_to_string(struct cnc_status_struct* status, uint8_t* string){
       memcpy(&string[offset], &status->position[i], sizeof(status->position[0]));
       offset = offset + sizeof(status->position[0]);
    }
+   for(int i=0;i<NUM_MOTORS;i++){
+      memcpy(&string[offset], &status->target[i], sizeof(status->target[0]));
+      offset = offset + sizeof(status->target[0]);
+   }
    for(int i=0;i<NUM_HEATERS;i++){
       memcpy(&string[offset], &status->temp[i], sizeof(status->temp[0]));
       offset = offset + sizeof(status->temp[0]);
@@ -271,6 +275,8 @@ uint16_t status_to_string(struct cnc_status_struct* status, uint8_t* string){
       string[offset] = status->temp_locked[i];
       offset = offset + 1;
    }
+   string[offset] = status->instruction_active;
+   offset = offset + 1;
    
    return offset;
 }
@@ -284,6 +290,10 @@ void string_to_status(struct cnc_status_struct* status, uint8_t* string){
       memcpy(&status->position[i], &string[offset], sizeof(status->position[0]));
       offset = offset + sizeof(status->position[0]);
    }
+   for(int i=0;i<NUM_MOTORS;i++){
+      memcpy(&status->target[i], &string[offset], sizeof(status->target[0]));
+      offset = offset + sizeof(status->target[0]);
+   }
    for(int i=0;i<NUM_HEATERS;i++){
       memcpy(&status->temp[i], &string[offset], sizeof(status->temp[0]));
       offset = offset + sizeof(status->temp[0]);
@@ -292,6 +302,8 @@ void string_to_status(struct cnc_status_struct* status, uint8_t* string){
       status->temp_locked[i] = string[offset];
       offset = offset + 1;
    }
+   status->instruction_active = string[offset];
+   offset = offset + 1;
 }
 
 void clear_instruction(struct cnc_instruction_struct* instruction){
@@ -312,7 +324,7 @@ void clear_motor_instruction(struct cnc_motor_instruction_struct* instruction){
 void clear_heater_instruction(struct cnc_heater_instruction_struct* instruction){
    instruction->fan_duty = 0;
    instruction->instruction_valid = 0;
-   instruction->target_temp = 0;
+   instruction->target_adc = 0;
    instruction->wait_for_temp = 0;
 }
 

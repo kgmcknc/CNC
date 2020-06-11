@@ -16,7 +16,7 @@
 #include "main.h"
 #include "stdint.h"
 
-void init_gpio(struct cnc_state_struct* cnc){
+void init_gpio(void){
    #ifdef SILABS
       //GPIO_PinModeSet(SPI_REQUEST_PORT, SPI_REQUEST_PIN, gpioModePushPull, 0);
       //GPIO_PinModeSet(SPI_RESET_PORT, SPI_RESET_PIN, gpioModeInputPull, 1);

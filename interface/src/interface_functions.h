@@ -42,5 +42,6 @@ int open_gcode(struct interface_struct* interface);
 void load_config_file(struct cnc_config_struct* config);
 void save_config_file(struct cnc_config_struct* config);
 void process_instruction(struct interface_struct* interface);
+void display_cnc_print(uint8_t* print_string, uint32_t length);
 
 #endif /* SRC_INTERFACE_FUNCTIONS_H_ */

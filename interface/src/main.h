@@ -10,7 +10,6 @@
 #include "interface_serial.h"
 #include "interface_gpio.h"
 #include "interface_functions.h"
-#include "instructions.h"
 
 #define MAX_USER_COMMAND 4096
 

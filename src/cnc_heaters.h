@@ -51,8 +51,8 @@ struct cnc_heater_list_struct {
 	struct cnc_heater_struct heater[NUM_HEATERS];
 };
 
-void handle_heaters(struct cnc_state_struct* cnc);
-void init_heaters(struct cnc_heater_list_struct* heaters);
+void handle_heaters(void);
+void init_heaters(void);
 void init_heater(struct cnc_heater_struct* heater);
 void read_heater_adc(struct cnc_heater_struct* heater);
 void reset_heater_pid(struct cnc_heater_struct* heater);

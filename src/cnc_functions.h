@@ -41,18 +41,14 @@ struct cnc_program_struct {
 struct cnc_state_struct {
 	cnc_state state = CNC_IDLE;
 	struct cnc_status_struct status;
-	struct cnc_motor_list_struct* motors;
-	struct cnc_heater_list_struct* heaters;
-   struct cnc_fan_list_struct* fans;
-   struct cnc_endstop_list_struct* endstops;
    struct cnc_program_struct program;
 	// cnc_spi variables
 	uint8_t cnc_read_data[MAX_COMM_TRANSFER];
-	int32_t cnc_read_length;
+	int16_t cnc_read_length;
 	uint8_t read_in_progress;
 	uint8_t read_complete;
 	uint8_t cnc_write_data[MAX_COMM_TRANSFER];
-	int32_t cnc_write_length;
+	int16_t cnc_write_length;
 	uint8_t write_in_progress;
 	uint8_t write_complete;
    uint8_t instant_instruction_done;
@@ -63,14 +59,12 @@ struct cnc_state_struct {
 	uint8_t print_fullness;
 };
 
-extern struct cnc_state_struct cnc;
-
-void process_request(struct cnc_state_struct* cnc);
-void init_cnc(struct cnc_state_struct* cnc);
-void handle_state(struct cnc_state_struct* cnc);
-void cnc_printf(struct cnc_state_struct* cnc, const char* print_string, ...);
-void update_status(struct cnc_state_struct* cnc);
-void parse_print(struct cnc_state_struct* cnc);
-void parse_version(struct cnc_state_struct* cnc);
+void process_request(void);
+void init_cnc(void);
+void handle_state(void);
+void cnc_printf(const char* print_string, ...);
+void update_status(void);
+void parse_print(void);
+void parse_version(void);
 
 #endif /* SRC_CNC_FUNCTIONS_H_ */

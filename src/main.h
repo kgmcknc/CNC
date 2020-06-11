@@ -14,12 +14,14 @@
 #include "cnc_motors.h"
 #include "cnc_heaters.h"
 
-
-void system_init(struct cnc_state_struct* cnc);
-void variable_init(struct cnc_state_struct* cnc);
+void system_init(void);
+void variable_init(void);
 void init_config(cnc_config_struct* config);
 void init_clocks(void);
 
-extern uint8_t toggle;
+extern struct cnc_state_struct cnc;
+extern struct cnc_heater_list_struct cnc_heaters;
+extern struct cnc_motor_list_struct cnc_motors;
+extern struct cnc_endstop_list_struct cnc_endstops;
 
 #endif /* SRC_MAIN_H_ */

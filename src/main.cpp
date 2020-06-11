@@ -23,17 +23,14 @@
 #include "math.h"
 
 struct cnc_state_struct cnc;
-struct cnc_instruction_struct cnc_instruction, cnc_instruction_next;
-struct cnc_instruction_struct instruction_array[INSTRUCTION_FIFO_DEPTH];
-uint32_t instruction_array_fullness = 0, instruction_array_wp = 0, instruction_array_rp = 0;
+//struct cnc_instruction_struct cnc_instruction, cnc_instruction_next;
+//struct cnc_instruction_struct instruction_array[INSTRUCTION_FIFO_DEPTH];
 
 struct cnc_heater_list_struct cnc_heaters;
 struct cnc_motor_list_struct cnc_motors;
 struct cnc_endstop_list_struct cnc_endstops;
 
 serial_class cnc_serial(0);
-
-uint8_t toggle = 0;
 
 int cnc_main(void)
 {
@@ -45,48 +42,31 @@ int cnc_main(void)
 
    #endif
 
-	cnc.motors = &cnc_motors;
-	cnc.heaters = &cnc_heaters;
-   cnc.endstops = &cnc_endstops;
-   
-	variable_init(&cnc);
-	system_init(&cnc);
+	variable_init();
+	system_init();
 
    Serial.begin(115200);
    while (!Serial) {
       ; // wait for serial port to connect. Needed for native USB port only
    }
    
-   cnc_printf(&cnc, "Micro Controller Here!");
+   cnc_printf("Micro Controller Here!");
    /* Infinite loop */
 	while (1) {
-      if(toggle){
-         toggle = 0;
-         CLR(*AUX_MOTOR_DIR_PORT, AUX_MOTOR_DIR_PIN);
-      } else {
-         toggle = 1;
-         SET(*AUX_MOTOR_DIR_PORT, AUX_MOTOR_DIR_PIN);
-      }
-      SET(*AUX_MOTOR_STEP_PORT, AUX_MOTOR_STEP_PIN);
       cnc_serial.process();
-      CLR(*AUX_MOTOR_STEP_PORT, AUX_MOTOR_STEP_PIN);
-      handle_state(&cnc);
-      SET(*AUX_MOTOR_STEP_PORT, AUX_MOTOR_STEP_PIN);
-      check_instruction(&cnc);
-      CLR(*AUX_MOTOR_STEP_PORT, AUX_MOTOR_STEP_PIN);
-      check_instruction_fifo(&cnc);
-      SET(*AUX_MOTOR_STEP_PORT, AUX_MOTOR_STEP_PIN);
-      handle_heaters(&cnc);
-      CLR(*AUX_MOTOR_STEP_PORT, AUX_MOTOR_STEP_PIN);
-      handle_motors(&cnc);
+      handle_state();
+      check_instruction();
+      check_instruction_fifo();
+      handle_heaters();
+      handle_motors();
    }
    
    return 0;
 }
 
-void system_init(struct cnc_state_struct* cnc){
+void system_init(void){
 	init_clocks();
-	init_gpio(cnc);
+	init_gpio();
 	init_timers();
 }
 
@@ -103,10 +83,10 @@ void init_clocks(void){
    #endif
 }
 
-void variable_init(struct cnc_state_struct* cnc){
-   init_heaters(cnc->heaters);
-   init_endstops(cnc->endstops);
-	init_motors(cnc->motors, cnc->endstops);
-	init_instructions(cnc);
-	init_cnc(cnc);
+void variable_init(void){
+   init_heaters();
+   init_endstops();
+	init_motors();
+	init_instructions();
+	init_cnc();
 }

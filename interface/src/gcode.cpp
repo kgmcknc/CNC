@@ -42,6 +42,7 @@ int parse_gcode_file(FILE* gcode_fp, struct gcode_program_struct* program){
         file_counter++;
         data = getc(gcode_fp);
     }
+    file_counter = file_counter + 1; // add one for eof that we will make end of line
     
     file_size = file_counter;
     fseek(gcode_fp, 0, SEEK_SET);
@@ -61,7 +62,9 @@ int parse_gcode_file(FILE* gcode_fp, struct gcode_program_struct* program){
         file_data[file_counter] = data;
         file_counter++;
     }
-    
+    // make eof character end of line
+    file_data[file_counter-1] = 10;
+
     line_counter = 0;
     line_count = 0;
     printf("file size: %lld\n", file_size);
@@ -125,11 +128,12 @@ int parse_gcode_file(FILE* gcode_fp, struct gcode_program_struct* program){
                     // don't copy initial space to line data
                 } else {
                     line[line_counter] = file_data[file_counter];
+                    line_counter++;
                 }
             } else {
                 line[line_counter] = file_data[file_counter];
+                line_counter++;
             }
-            line_counter++;
         }
     }
     // set start of program instruction
@@ -396,6 +400,7 @@ int parse_number(char* line, uint16_t* line_count, cnc_double* value){
                             if(number_set){
                                 number_state = GET_DECIMAL;
                             } else {
+                                printf("number error\n");
                                 error = 1;
                                 number_state = SAVE_NUMBER;
                             }
@@ -572,7 +577,7 @@ int check_gcode_extruder_instruction(struct cnc_motor_instruction_struct* instru
 }
 
 int check_gcode_heater_instruction(struct cnc_heater_instruction_struct* instruction){
-   if(instruction->target_temp){
+   if(instruction->target_adc){
       instruction->instruction_valid = 1;
    } else {
       instruction->instruction_valid = 0;
@@ -1195,12 +1200,12 @@ int parse_gcode_word(char* line, uint16_t* line_count, struct gcode_program_stru
                                  double target_resistance;
                                 double beta_temp;
                                 double exp_val;
-                                uint32_t adc_val;
+                                uint16_t adc_val;
                                 beta_temp = ((BETA_VALUE/(temp_val+KELVIN_CONV)) - (BETA_VALUE/BASE_TEMP_KELVIN));
                                 exp_val = exp(beta_temp);
                                 target_resistance = exp_val*THERMISTOR_RESISTANCE;
-                                adc_val = (uint32_t) (((double) (ADC_MAX*BASE_RESISTANCE)/(BASE_RESISTANCE + target_resistance)) + 0.5);
-                                program->instruction[program->instruction_wp].heaters.heater[program->extruder_select].target_temp = adc_val;
+                                adc_val = (uint16_t) (((double) (ADC_MAX*BASE_RESISTANCE)/(BASE_RESISTANCE + target_resistance)) + 0.5);
+                                program->instruction[program->instruction_wp].heaters.heater[program->extruder_select].target_adc = adc_val;
                                 program->instruction[program->instruction_wp].heaters.heater[program->extruder_select].wait_for_temp = 0;
                                 } else {
                                    program->instruction[program->instruction_wp].heaters.heater[program->extruder_select].disable_heater = 1;
@@ -1258,12 +1263,12 @@ int parse_gcode_word(char* line, uint16_t* line_count, struct gcode_program_stru
                                 double target_resistance;
                                 double beta_temp;
                                 double exp_val;
-                                uint32_t adc_val;
+                                uint16_t adc_val;
                                 beta_temp = ((BETA_VALUE/(temp_val+KELVIN_CONV)) - (BETA_VALUE/BASE_TEMP_KELVIN));
                                 exp_val = exp(beta_temp);
                                 target_resistance = exp_val*THERMISTOR_RESISTANCE;
-                                adc_val = (uint32_t) (((double) (ADC_MAX*BASE_RESISTANCE)/(BASE_RESISTANCE + target_resistance)) + 0.5);
-                                program->instruction[program->instruction_wp].heaters.heater[program->extruder_select].target_temp = adc_val;
+                                adc_val = (uint16_t) (((double) (ADC_MAX*BASE_RESISTANCE)/(BASE_RESISTANCE + target_resistance)) + 0.5);
+                                program->instruction[program->instruction_wp].heaters.heater[program->extruder_select].target_adc = adc_val;
                                 program->instruction[program->instruction_wp].heaters.heater[program->extruder_select].wait_for_temp = 1;
                               } else {
                                  program->instruction[program->instruction_wp].heaters.heater[program->extruder_select].disable_heater = 1;
@@ -1634,6 +1639,7 @@ int parse_gcode_word(char* line, uint16_t* line_count, struct gcode_program_stru
         }
         default : {
             error = 1;
+            printf("gcode error\n");
             break;
         }
     }

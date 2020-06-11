@@ -6,6 +6,7 @@
  */
 
 #include "Arduino.h"
+#include "main.h"
 #include "stdint.h"
 #include "cnc_heaters.h"
 #include "cnc_gpio.h"
@@ -24,58 +25,58 @@ uint8_t duty_count = 0;
 #define I_ERROR_LOCK ((int64_t) 10)
 
 //#define CALC_TEMP
-void handle_heaters(struct cnc_state_struct* cnc){
-   if(cnc->heaters->heater_irq){// && !cnc->motors->motor_irq){
-      cnc->heaters->heater_irq = 0;
+void handle_heaters(void){
+   if(cnc_heaters.heater_irq){// && !motors.motor_irq){
+      cnc_heaters.heater_irq = 0;
 
       // handle heaters
       for(int i=0;i<NUM_HEATERS;i++){
          // update fan adc value
-         //read_heater_adc(&cnc->heaters->heater[i]);
-         cnc->heaters->heater[i].adc_value = analogRead(cnc->heaters->heater[i].adc_pin);
+         //read_heater_adc(&cnc_heaters.heater[i]);
+         cnc_heaters.heater[i].adc_value = analogRead(cnc_heaters.heater[i].adc_pin);
       }
 
       for(int i=0;i<NUM_HEATERS;i++){
-         if(cnc->heaters->heater[i].pid_reset){
-            reset_heater_pid(&cnc->heaters->heater[i]);
+         if(cnc_heaters.heater[i].pid_reset){
+            reset_heater_pid(&cnc_heaters.heater[i]);
          }
       }
 
       for(int i=0;i<NUM_HEATERS;i++){
-         if(cnc->heaters->heater[i].heater_active){
-            update_heater_pid(&cnc->heaters->heater[i]);
+         if(cnc_heaters.heater[i].heater_active){
+            update_heater_pid(&cnc_heaters.heater[i]);
          } else {
-            if(cnc->heaters->heater[i].heater_on){
-               CLR(*cnc->heaters->heater[i].heater_port, cnc->heaters->heater[i].heater_pin);
-               cnc->heaters->heater[i].heater_on = 0;
+            if(cnc_heaters.heater[i].heater_on){
+               CLR(*cnc_heaters.heater[i].heater_port, cnc_heaters.heater[i].heater_pin);
+               cnc_heaters.heater[i].heater_on = 0;
             }
          }
       }
       
       // handle fans
       for(int i=0;i<NUM_HEATERS;i++){
-         if(cnc->heaters->heater[i].fan_active){
-            if(cnc->heaters->heater[i].fan_on){
-               if(duty_count >= cnc->heaters->heater[i].fan_duty){
-                  cnc->heaters->heater[i].fan_on = 0;
-                  CLR(*cnc->heaters->heater[i].fan_port, cnc->heaters->heater[i].fan_pin);
+         if(cnc_heaters.heater[i].fan_active){
+            if(cnc_heaters.heater[i].fan_on){
+               if(duty_count >= cnc_heaters.heater[i].fan_duty){
+                  cnc_heaters.heater[i].fan_on = 0;
+                  CLR(*cnc_heaters.heater[i].fan_port, cnc_heaters.heater[i].fan_pin);
                }
             } else {
                if(duty_count == 0){
-                  SET(*cnc->heaters->heater[i].fan_port, cnc->heaters->heater[i].fan_pin);
-                  cnc->heaters->heater[i].fan_on = 1;
+                  SET(*cnc_heaters.heater[i].fan_port, cnc_heaters.heater[i].fan_pin);
+                  cnc_heaters.heater[i].fan_on = 1;
                }
             }
          } else {
-            if(cnc->heaters->heater[i].adc_value > SHUTOFF_ADC){
-               if(cnc->heaters->heater[i].fan_on == 0){
-                  cnc->heaters->heater[i].fan_on = 1;
-                  SET(*cnc->heaters->heater[i].fan_port, cnc->heaters->heater[i].fan_pin);
+            if(cnc_heaters.heater[i].adc_value > SHUTOFF_ADC){
+               if(cnc_heaters.heater[i].fan_on == 0){
+                  cnc_heaters.heater[i].fan_on = 1;
+                  SET(*cnc_heaters.heater[i].fan_port, cnc_heaters.heater[i].fan_pin);
                }
             } else {
-               if(cnc->heaters->heater[i].fan_on){
-                  cnc->heaters->heater[i].fan_on = 0;
-                  CLR(*cnc->heaters->heater[i].fan_port, cnc->heaters->heater[i].fan_pin);
+               if(cnc_heaters.heater[i].fan_on){
+                  cnc_heaters.heater[i].fan_on = 0;
+                  CLR(*cnc_heaters.heater[i].fan_port, cnc_heaters.heater[i].fan_pin);
                }
             }
          }
@@ -87,42 +88,42 @@ void handle_heaters(struct cnc_state_struct* cnc){
    }
 }
 
-void init_heaters(struct cnc_heater_list_struct* heaters){
-   heaters->heater[0].heater_pin     = HEAT_0_PINBIT;
-   heaters->heater[1].heater_pin     = HEAT_1_PINBIT;
-   heaters->heater[2].heater_pin     = HEAT_2_PINBIT;
-   heaters->heater[3].heater_pin     = HEAT_3_PINBIT;
-   heaters->heater[0].heater_port    = HEAT_0_PINPORT;
-   heaters->heater[1].heater_port    = HEAT_1_PINPORT;
-   heaters->heater[2].heater_port    = HEAT_2_PINPORT;
-   heaters->heater[3].heater_port    = HEAT_3_PINPORT;
+void init_heaters(void){
+   cnc_heaters.heater[0].heater_pin     = HEAT_0_PINBIT;
+   cnc_heaters.heater[1].heater_pin     = HEAT_1_PINBIT;
+   cnc_heaters.heater[2].heater_pin     = HEAT_2_PINBIT;
+   cnc_heaters.heater[3].heater_pin     = HEAT_3_PINBIT;
+   cnc_heaters.heater[0].heater_port    = HEAT_0_PINPORT;
+   cnc_heaters.heater[1].heater_port    = HEAT_1_PINPORT;
+   cnc_heaters.heater[2].heater_port    = HEAT_2_PINPORT;
+   cnc_heaters.heater[3].heater_port    = HEAT_3_PINPORT;
    
-   heaters->heater[0].fan_pin        = FANS_0_PINBIT;
-   heaters->heater[1].fan_pin        = FANS_1_PINBIT;
-   heaters->heater[2].fan_pin        = FANS_2_PINBIT;
-   heaters->heater[3].fan_pin        = FANS_3_PINBIT;
-   heaters->heater[0].fan_port       = FANS_0_PINPORT;
-   heaters->heater[1].fan_port       = FANS_1_PINPORT;
-   heaters->heater[2].fan_port       = FANS_2_PINPORT;
-   heaters->heater[3].fan_port       = FANS_3_PINPORT;
+   cnc_heaters.heater[0].fan_pin        = FANS_0_PINBIT;
+   cnc_heaters.heater[1].fan_pin        = FANS_1_PINBIT;
+   cnc_heaters.heater[2].fan_pin        = FANS_2_PINBIT;
+   cnc_heaters.heater[3].fan_pin        = FANS_3_PINBIT;
+   cnc_heaters.heater[0].fan_port       = FANS_0_PINPORT;
+   cnc_heaters.heater[1].fan_port       = FANS_1_PINPORT;
+   cnc_heaters.heater[2].fan_port       = FANS_2_PINPORT;
+   cnc_heaters.heater[3].fan_port       = FANS_3_PINPORT;
 
-   heaters->heater[0].adc_pin        = TEMP_ADC_0_PIN;
-   heaters->heater[1].adc_pin        = TEMP_ADC_1_PIN;
-   heaters->heater[2].adc_pin        = TEMP_ADC_2_PIN;
-   heaters->heater[3].adc_pin        = TEMP_ADC_3_PIN;
-   heaters->heater[0].adc_pinbit     = TEMP_ADC_0_PINBIT;
-   heaters->heater[1].adc_pinbit     = TEMP_ADC_1_PINBIT;
-   heaters->heater[2].adc_pinbit     = TEMP_ADC_2_PINBIT;
-   heaters->heater[3].adc_pinbit     = TEMP_ADC_3_PINBIT;
-   heaters->heater[0].adc_pinport    = TEMP_ADC_0_PINPORT;
-   heaters->heater[1].adc_pinport    = TEMP_ADC_1_PINPORT;
-   heaters->heater[2].adc_pinport    = TEMP_ADC_2_PINPORT;
-   heaters->heater[3].adc_pinport    = TEMP_ADC_3_PINPORT;
+   cnc_heaters.heater[0].adc_pin        = TEMP_ADC_0_PIN;
+   cnc_heaters.heater[1].adc_pin        = TEMP_ADC_1_PIN;
+   cnc_heaters.heater[2].adc_pin        = TEMP_ADC_2_PIN;
+   cnc_heaters.heater[3].adc_pin        = TEMP_ADC_3_PIN;
+   cnc_heaters.heater[0].adc_pinbit     = TEMP_ADC_0_PINBIT;
+   cnc_heaters.heater[1].adc_pinbit     = TEMP_ADC_1_PINBIT;
+   cnc_heaters.heater[2].adc_pinbit     = TEMP_ADC_2_PINBIT;
+   cnc_heaters.heater[3].adc_pinbit     = TEMP_ADC_3_PINBIT;
+   cnc_heaters.heater[0].adc_pinport    = TEMP_ADC_0_PINPORT;
+   cnc_heaters.heater[1].adc_pinport    = TEMP_ADC_1_PINPORT;
+   cnc_heaters.heater[2].adc_pinport    = TEMP_ADC_2_PINPORT;
+   cnc_heaters.heater[3].adc_pinport    = TEMP_ADC_3_PINPORT;
 
-   heaters->heater_irq = 0;
-   heaters->update_counter = 0;
+   cnc_heaters.heater_irq = 0;
+   cnc_heaters.update_counter = 0;
    for(int i=0;i<NUM_HEATERS;i++){
-      init_heater(&heaters->heater[i]);
+      init_heater(&cnc_heaters.heater[i]);
    }
 }
 
@@ -162,12 +163,12 @@ void reset_heater_pid(struct cnc_heater_struct* heater){
    memset(heater->pid_average, 255, (AVERAGE_COUNT*sizeof(heater->pid_average[0])));
 }
 
+int16_t p_average;
+int16_t p_error;
+int16_t d_error;
+int16_t adj;
 void update_heater_pid(struct cnc_heater_struct* heater){
-   int16_t p_average;
-   int16_t p_error;
-   int16_t d_error;
-   int16_t adj;
-
+   
    p_error = heater->adc_value - heater->target_adc;
    d_error = p_error - heater->last_p_error;
 
@@ -203,12 +204,12 @@ void update_heater_pid(struct cnc_heater_struct* heater){
       if(heater->anti_windup){
          if(heater->last_p_error > 0){
             if(p_error < 0){
-               cnc_printf(&cnc, "done anti windup now neg");
+               //cnc_printf("done anti windup now neg");
                heater->anti_windup = 0;
             }
          } else {
             if(p_error > 0){
-               cnc_printf(&cnc, "done anti windup now pos");
+               //cnc_printf("done anti windup now pos");
                heater->anti_windup = 0;
             }
          }
@@ -222,7 +223,7 @@ void update_heater_pid(struct cnc_heater_struct* heater){
    }
 
    #ifdef PID_PRINTS
-      cnc_printf(&cnc, "PID:%d,%d,%d,%d,%d,%d", p_error,(int16_t) heater->i_error,d_error,,heater->anti_windup,heater->temp_locked);
+      cnc_printf("PID:%d,%d,%d,%d,%d,%d", p_error,(int16_t) heater->i_error,d_error,,heater->anti_windup,heater->temp_locked);
    #endif
 
    heater->last_p_error = p_error;

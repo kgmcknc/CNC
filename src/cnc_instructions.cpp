@@ -11,6 +11,7 @@
 // process instruction
 
 #include "Arduino.h"
+#include "main.h"
 #include "cnc_functions.h"
 #include "cnc_serial.h"
 #include "cnc_instructions.h"
@@ -18,115 +19,115 @@
 #include "cnc_timers.h"
 #include "common_cnc.h"
 
-void init_instructions(struct cnc_state_struct* cnc){
-	clear_program(cnc);
-	clear_instruction(cnc->program.current_instruction);
-	clear_instruction(&cnc->program.new_instruction);
-	clear_instruction(&cnc->program.instant_instruction);
-   clear_instruction(&cnc->program.empty_instruction);
+void init_instructions(){
+	clear_program();
+	clear_instruction(cnc.program.current_instruction);
+	clear_instruction(&cnc.program.new_instruction);
+	clear_instruction(&cnc.program.instant_instruction);
+   clear_instruction(&cnc.program.empty_instruction);
 }
 
-void receive_instruction(struct cnc_state_struct* cnc){
-	parse_instruction(cnc);
-	if(cnc->program.new_instruction.instruction_valid){
-      //cnc_printf(cnc, "New Instruction Valid");
-		if(cnc->program.new_instruction.instant_instruction){
-         //cnc_printf(cnc, "Instant Instruction");
-         if(cnc->program.instant_instruction.instruction_valid){
+void receive_instruction(void){
+	parse_instruction();
+	if(cnc.program.new_instruction.instruction_valid){
+      //cnc_printf("New Instruction Valid");
+		if(cnc.program.new_instruction.instant_instruction){
+         //cnc_printf("Instant Instruction");
+         if(cnc.program.instant_instruction.instruction_valid){
             // instant instruction already set... can't overwrite...
             // but we can check to see if this is an abort...
-            if(cnc->program.new_instruction.instruction_type == AUX_INSTRUCTION){
-               if(cnc->program.new_instruction.instruction.aux.opcode == ABORT_INSTRUCTION){
-                  cnc_printf(cnc, "Received Abort");
+            if(cnc.program.new_instruction.instruction_type == AUX_INSTRUCTION){
+               if(cnc.program.new_instruction.instruction.aux.opcode == ABORT_INSTRUCTION){
+                  //cnc_printf("Received Abort");
                   // we just received an abort from an instant instruction... STOP!
-                  cnc->program.instant_instruction.instruction_type = AUX_INSTRUCTION;
-                  cnc->program.instant_instruction.instruction.aux.opcode = ABORT_INSTRUCTION;
+                  cnc.program.instant_instruction.instruction_type = AUX_INSTRUCTION;
+                  cnc.program.instant_instruction.instruction.aux.opcode = ABORT_INSTRUCTION;
                }
             } else {
-               //cnc_printf(cnc, "Already Processing Instant Instruction...");
+               //cnc_printf("Already Processing Instant Instruction...");
             }
          } else {
-            copy_instruction(&cnc->program.new_instruction, &cnc->program.instant_instruction);
+            copy_instruction(&cnc.program.new_instruction, &cnc.program.instant_instruction);
          }
 		} else {
-         //cnc_printf(cnc, "Not Instant Instruction");
-			cnc->program.instruction_request_sent = 0;
-			if(cnc->program.program_running){
-				//cnc_printf(cnc, "Received Program Instruction!");
+         //cnc_printf("Not Instant Instruction");
+			cnc.program.instruction_request_sent = 0;
+			if(cnc.program.program_running){
+				//cnc_printf("Received Program Instruction!");
 				// add to running program
-				copy_instruction(&cnc->program.new_instruction, &cnc->program.instruction_array[cnc->program.instruction_wp]);
-				cnc->program.instruction_wp = (cnc->program.instruction_wp<(INSTRUCTION_FIFO_DEPTH-1)) ? cnc->program.instruction_wp + 1 : 0;
-				cnc->program.instruction_fullness++;
-				cnc->program.new_instruction.instruction_valid = 0;
-            if(cnc->program.new_instruction.instruction_type == AUX_INSTRUCTION){
-               if(cnc->program.new_instruction.instruction.aux.opcode == PROGRAM_END){
-                  //cnc_printf(cnc, "Received Program End!");
-                  cnc->program.program_received = 1;
-                  cnc->program.program_running = 0;
-                  //copy_instruction(&cnc->program.new_instruction, &cnc->program.instruction_array[cnc->program.instruction_wp]);
-                  //cnc->program.instruction_wp = (cnc->program.instruction_wp<(INSTRUCTION_FIFO_DEPTH-1)) ? cnc->program.instruction_wp + 1 : 0;
-                  //cnc->program.instruction_fullness++;
-                  //cnc->program.new_instruction.instruction_valid = 0;
+				copy_instruction(&cnc.program.new_instruction, &cnc.program.instruction_array[cnc.program.instruction_wp]);
+				cnc.program.instruction_wp = (cnc.program.instruction_wp<(INSTRUCTION_FIFO_DEPTH-1)) ? cnc.program.instruction_wp + 1 : 0;
+				cnc.program.instruction_fullness++;
+				cnc.program.new_instruction.instruction_valid = 0;
+            if(cnc.program.new_instruction.instruction_type == AUX_INSTRUCTION){
+               if(cnc.program.new_instruction.instruction.aux.opcode == PROGRAM_END){
+                  //cnc_printf("Received Program End!");
+                  cnc.program.program_received = 1;
+                  cnc.program.program_running = 0;
+                  //copy_instruction(&cnc.program.new_instruction, &cnc.program.instruction_array[cnc.program.instruction_wp]);
+                  //cnc.program.instruction_wp = (cnc.program.instruction_wp<(INSTRUCTION_FIFO_DEPTH-1)) ? cnc.program.instruction_wp + 1 : 0;
+                  //cnc.program.instruction_fullness++;
+                  //cnc.program.new_instruction.instruction_valid = 0;
                }
             }
 			} else {
-            if(cnc->program.new_instruction.instruction_type == AUX_INSTRUCTION){
-               if(cnc->program.new_instruction.instruction.aux.opcode == PROGRAM_START){
-                  //cnc_printf(cnc, "Received Program Start!");
-                  clear_program(cnc);
-                  cnc->program.program_received = 0;
-                  cnc->program.program_running = 1;
-                  cnc->program.new_instruction.instruction_valid = 0;
+            if(cnc.program.new_instruction.instruction_type == AUX_INSTRUCTION){
+               if(cnc.program.new_instruction.instruction.aux.opcode == PROGRAM_START){
+                  //cnc_printf("Received Program Start!");
+                  clear_program();
+                  cnc.program.program_received = 0;
+                  cnc.program.program_running = 1;
+                  cnc.program.new_instruction.instruction_valid = 0;
                } else {
                   // program isn't running and it's not an immediate instruction  or start of program... so ignore...
-                  //cnc_printf(cnc, "Ignoring Instruction");
+                  //cnc_printf("Ignoring Instruction");
                }
             } else {
-               //cnc_printf(cnc, "Program Not Running and Not Aux");
+               //cnc_printf("Program Not Running and Not Aux");
             }
 			}
 		}
-		cnc->program.new_instruction.instruction_valid = 0;
+		cnc.program.new_instruction.instruction_valid = 0;
 	} else {
 		// not valid instruction
 	}
 }
 
-void clear_program(struct cnc_state_struct* cnc){
-	//cnc_printf(cnc, "resetting program information");
-	cnc->program.program_running = 0;
-	cnc->program.program_received = 0;
-	cnc->program.program_length = 0;
-	cnc->program.instruction_fullness = 0;
-	cnc->program.instruction_wp = 0;
-	cnc->program.instruction_rp = 0;
+void clear_program(void){
+	//cnc_printf("resetting program information");
+	cnc.program.program_running = 0;
+	cnc.program.program_received = 0;
+	cnc.program.program_length = 0;
+	cnc.program.instruction_fullness = 0;
+	cnc.program.instruction_wp = 0;
+	cnc.program.instruction_rp = 0;
    for(int i=0;i<INSTRUCTION_FIFO_DEPTH;i++){
-      clear_instruction(&cnc->program.instruction_array[i]);
+      clear_instruction(&cnc.program.instruction_array[i]);
    }
-   cnc->program.current_instruction = &cnc->program.empty_instruction;
-	cnc->program.instruction_request_sent = 0;
-	cnc->program.request_instruction = 0;
+   cnc.program.current_instruction = &cnc.program.empty_instruction;
+	cnc.program.instruction_request_sent = 0;
+	cnc.program.request_instruction = 0;
 }
 
-void parse_instruction(struct cnc_state_struct* cnc){
+void parse_instruction(void){
 	// convert received spi data to cnc instruction
-	string_to_instruction(&cnc->program.new_instruction, &cnc->cnc_read_data[1]);
+	string_to_instruction(&cnc.program.new_instruction, &cnc.cnc_read_data[1]);
 }
 
-void get_next_instruction(struct cnc_state_struct* cnc){
-	if(cnc->program.instant_instruction.instruction_valid){
+void get_next_instruction(void){
+	if(cnc.program.instant_instruction.instruction_valid){
 		// instant instruction ready
 		// copy to current
-      cnc->program.current_instruction = &cnc->program.instant_instruction;
-		//copy_instruction(&cnc->instant_instruction, &);
-		//clear_instruction(&cnc->instant_instruction);
+      cnc.program.current_instruction = &cnc.program.instant_instruction;
+		//copy_instruction(&cnc.instant_instruction, &);
+		//clear_instruction(&cnc.instant_instruction);
 	} else {
-		if(cnc->program.instruction_fullness > 0){
+		if(cnc.program.instruction_fullness > 0){
 			// we have an instruction ready to copy over
-         cnc->program.current_instruction = &cnc->program.instruction_array[cnc->program.instruction_rp];
-			//copy_instruction(&cnc->instruction_array[cnc->instruction_rp], &cnc->current_instruction);
-			//cnc->instruction_array[cnc->instruction_rp].instruction_valid = 0;
-			cnc->program.instruction_rp = (cnc->program.instruction_rp<(INSTRUCTION_FIFO_DEPTH-1)) ? cnc->program.instruction_rp + 1 : 0;
+         cnc.program.current_instruction = &cnc.program.instruction_array[cnc.program.instruction_rp];
+			//copy_instruction(&cnc.instruction_array[cnc.instruction_rp], &cnc.current_instruction);
+			//cnc.instruction_array[cnc.instruction_rp].instruction_valid = 0;
+			cnc.program.instruction_rp = (cnc.program.instruction_rp<(INSTRUCTION_FIFO_DEPTH-1)) ? cnc.program.instruction_rp + 1 : 0;
 		} else {
 			// shouldn't ever hit this when program is running!
 			// means instruction request underflowed!!!
@@ -134,53 +135,41 @@ void get_next_instruction(struct cnc_state_struct* cnc){
 	}
 }
 
-void check_instruction_fifo(struct cnc_state_struct* cnc){
+void check_instruction_fifo(void){
 	// check to see if instruction threshold is too low and not finished reading full program
 	// if so, check if already writing spi
 	// if not, write to request instruction
-	if(cnc->program.program_running && !cnc->program.program_received){
-		if(cnc->program.request_instruction){
-			if(cnc->program.instruction_fullness >= INSTRUCTION_FIFO_DEPTH){
-				cnc->program.request_instruction = 0;
+	if(cnc.program.program_running && !cnc.program.program_received){
+		if(cnc.program.request_instruction){
+			if(cnc.program.instruction_fullness >= INSTRUCTION_FIFO_DEPTH){
+				cnc.program.request_instruction = 0;
 			} else {
-				if(!cnc->program.instruction_request_sent && (cnc->state == CNC_IDLE)){
-               cnc->cnc_write_data[0] = (char) NEW_CNC_INSTRUCTION;
-               cnc->cnc_write_length = 1;
-               if(cnc_serial.send(cnc->cnc_write_length, cnc->cnc_write_data) > 0){
-                  cnc->program.instruction_request_sent = 1;
+				if(!cnc.program.instruction_request_sent && (cnc.state == CNC_IDLE)){
+               cnc.cnc_write_data[0] = (char) NEW_CNC_INSTRUCTION;
+               cnc.cnc_write_length = 1;
+               if(cnc_serial.send(cnc.cnc_write_length, cnc.cnc_write_data) > 0){
+                  cnc.program.instruction_request_sent = 1;
                }
 				}
 			}
 		} else {
-			if(cnc->program.instruction_fullness <= (INSTRUCTION_FIFO_DEPTH/2)){
-				cnc->program.request_instruction = 1;
-				//cnc_printf(cnc, "setting instruction read request high");
+			if(cnc.program.instruction_fullness <= (INSTRUCTION_FIFO_DEPTH/2)){
+				cnc.program.request_instruction = 1;
+				//cnc_printf("setting instruction read request high");
 			} else {
 				// we have enough instructions, so do nothing
 			}
 		}
 	} else {
 		// don't need to do anything if not running a program
-		cnc->program.request_instruction = 0;
+		cnc.program.request_instruction = 0;
 	}
 }
 
 void process_instruction(struct cnc_state_struct* cnc){
-	//handle_instruction_opcodes(cnc, cnc->program.current_instruction);
+	//handle_instruction_opcodes(cnc, cnc.program.current_instruction);
 	//handle_motors(cnc);
 	//handle_heaters(cnc);
-}
-
-void handle_instructions(struct cnc_state_struct* cnc){
-	// check instruction type
-   // if heater instruction, see if we are waiting for temp
-   // if waiting for temp, see if temp reached for all active heaters... if so, then instruction is done
-   // if motor instruction, for each active motor:
-   // if finding min or max see if endstop has been hit
-   // if not finding min or max see if end position has been reached
-   check_instruction(cnc); // check various instructions
-	check_instruction_fifo(cnc);
-	//process_instruction(cnc);
 }
 
 void check_errors(struct cnc_state_struct* cnc){
@@ -188,42 +177,63 @@ void check_errors(struct cnc_state_struct* cnc){
 	// others...
 }
 
-void set_instruction(struct cnc_state_struct* cnc){
-	if(cnc->program.current_instruction->instruction_valid){
-      if(cnc->program.current_instruction->instruction_type == MOTOR_INSTRUCTION){
-         cnc->motors->motor_speed = cnc->program.current_instruction->instruction.motors.speed;
-         cnc->motors->max_distance = 0;
+cnc_double steps_per_sec;
+cnc_double temp;
+uint8_t valid_motor_instruction;
+void set_instruction(void){
+	if(cnc.program.current_instruction->instruction_valid){
+      if(cnc.program.current_instruction->instruction_type == MOTOR_INSTRUCTION){
+         valid_motor_instruction = 0;
+         cnc_motors.motor_speed = cnc.program.current_instruction->instruction.motors.speed;
+         cnc_motors.max_distance = 0;
          for(int i=0;i<NUM_MOTORS;i++){
-            set_motor_instruction(cnc, &cnc->program.current_instruction->instruction.motors.motor[i], &cnc->motors->motor[i]);
-            if(cnc->motors->max_distance < cnc->motors->motor[i].distance){
-               cnc->motors->max_distance = cnc->motors->motor[i].distance;
+            set_motor_instruction(&cnc.program.current_instruction->instruction.motors.motor[i], &cnc_motors.motor[i]);
+            if(cnc_motors.max_distance < cnc_motors.motor[i].distance){
+               cnc_motors.max_distance = cnc_motors.motor[i].distance;
             }
          }
-         get_motor_speed(cnc->motors);
+         //get_motor_speed(cnc_motors);
+         for(int i=0;i<NUM_MOTORS;i++){
+            if(cnc.program.current_instruction->instruction.motors.motor[i].instruction_valid){
+               if(cnc_motors.motor[i].find_max || cnc_motors.motor[i].find_zero){
+                  cnc_motors.motor[i].speed = cnc_motors.motor_speed;
+               } else {
+                  cnc_motors.motor[i].speed = cnc_motors.motor_speed * cnc_motors.motor[i].distance;
+                  cnc_motors.motor[i].speed = cnc_motors.motor[i].speed / cnc_motors.max_distance;
+               }
+               
+               steps_per_sec = cnc_motors.motor[i].steps_per_mm * cnc_motors.motor[i].speed; // steps per sec
+               temp = USEC_PER_SEC / steps_per_sec; // usec per step
+               cnc_motors.motor[i].total_timer_count = (uint32_t) ((cnc_double) (temp / MOTOR_TIMER_PERIOD_US));
+               cnc_motors.motor[i].active = 1;
+               valid_motor_instruction = 1;
+            }
+         }
+         cnc_motors.motors_active = valid_motor_instruction;
       }
-      if(cnc->program.current_instruction->instruction_type == HEATER_INSTRUCTION){
+      if(cnc.program.current_instruction->instruction_type == HEATER_INSTRUCTION){
          for(int i=0;i<NUM_HEATERS;i++){
-            set_heater_instruction(&cnc->program.current_instruction->instruction.heaters.heater[i], &cnc->heaters->heater[i]);
+            set_heater_instruction(&cnc.program.current_instruction->instruction.heaters.heater[i], &cnc_heaters.heater[i]);
          }
       }
-      if(cnc->program.current_instruction->instruction_type == AUX_INSTRUCTION){
-         set_aux_instruction(cnc, &cnc->program.current_instruction->instruction.aux);
+      if(cnc.program.current_instruction->instruction_type == AUX_INSTRUCTION){
+         set_aux_instruction(&cnc.program.current_instruction->instruction.aux);
       }
 	}
 }
 
-void set_motor_instruction(struct cnc_state_struct* cnc, struct cnc_motor_instruction_struct* current_instruction, struct cnc_motor_struct* motor){
+void set_motor_instruction(struct cnc_motor_instruction_struct* current_instruction, struct cnc_motor_struct* motor){
 	if(current_instruction->instruction_valid){
 		if(current_instruction->relative_move){
          motor->distance = fabs(current_instruction->end_position);
          motor->target = motor->position + current_instruction->end_position;
-         motor->active = 1;
       } else {
-         motor->distance = fabs(motor->position - current_instruction->end_position);
+         motor->distance = fabs(current_instruction->end_position - motor->position);
          motor->target = current_instruction->end_position;
-         motor->active = 1;
       }
-	}
+	} else {
+      motor->distance = 0.0;
+   }
 }
 
 void set_heater_instruction(struct cnc_heater_instruction_struct* current_instruction, struct cnc_heater_struct* heater){
@@ -242,75 +252,90 @@ void set_heater_instruction(struct cnc_heater_instruction_struct* current_instru
          heater->fan_active = 0;
       }
 
-      heater->target_adc = current_instruction->target_temp;
+      heater->target_adc = current_instruction->target_adc;
       heater->wait_for_temp = current_instruction->wait_for_temp;
 		heater->fan_duty = current_instruction->fan_duty;
       heater->pid_reset = 1;
 	}
 }
 
-void set_aux_instruction(struct cnc_state_struct* cnc, struct cnc_aux_instruction_struct* current_instruction){
+void set_aux_instruction(struct cnc_aux_instruction_struct* current_instruction){
    switch(current_instruction->opcode){
       case EMPTY_OPCODE : {
          // nothing to do
          break;
       }
       case PROGRAM_START : {
-         clear_program(cnc);
-         cnc->program.program_received = 0;
-         cnc->program.program_running = 1;
+         clear_program();
+         cnc.program.program_received = 0;
+         cnc.program.program_running = 1;
          break;
       }
       case PROGRAM_END : {
-         cnc->program.program_received = 1;
-         cnc->program.program_running = 0;
+         cnc.program.program_received = 1;
+         cnc.program.program_running = 0;
          break;
       }
       case ENABLE_MOTORS : {
          for(int i=0;i<NUM_MOTORS;i++){
-            if(cnc->program.current_instruction->instruction.aux.enable_motor[i]){
-               enable_motor(&cnc->motors->motor[i]);
+            if(cnc.program.current_instruction->instruction.aux.enable_motor[i]){
+               enable_motor(&cnc_motors.motor[i]);
             }
          }
          break;
       }
       case DISABLE_MOTORS : {
          for(int i=0;i<NUM_MOTORS;i++){
-            if(cnc->program.current_instruction->instruction.aux.disable_motor[i]){
-               disable_motor(&cnc->motors->motor[i]);
+            if(cnc.program.current_instruction->instruction.aux.disable_motor[i]){
+               disable_motor(&cnc_motors.motor[i]);
             }
          }
          break;
       }
       case MOVE_TO_ENDSTOP : {
-         cnc->motors->motor_speed = cnc->program.current_instruction->instruction.aux.motor_speed;
+         cnc_motors.motor_speed = cnc.program.current_instruction->instruction.aux.motor_speed;
          for(int i=0;i<NUM_MOTORS;i++){
-            if(cnc->program.current_instruction->instruction.aux.min_motor[i]){
-               cnc->motors->motor[i].speed = cnc->program.current_instruction->instruction.aux.motor_speed;
-               cnc->motors->motor[i].find_zero = 1;
-               cnc->motors->motor[i].find_max = 0;
-               cnc->motors->motor[i].active = 1;
+            if(cnc.program.current_instruction->instruction.aux.min_motor[i]){
+               cnc_motors.motor[i].speed = cnc.program.current_instruction->instruction.aux.motor_speed;
+               cnc_motors.motor[i].find_zero = 1;
+               cnc_motors.motor[i].find_max = 0;
+               cnc_motors.motor[i].active = 1;
             } else {
-               if(cnc->program.current_instruction->instruction.aux.max_motor[i]){
-                  cnc->motors->motor[i].speed = cnc->program.current_instruction->instruction.aux.motor_speed;
-                  cnc->motors->motor[i].find_max = 1;
-                  cnc->motors->motor[i].find_zero = 0;
-                  cnc->motors->motor[i].active = 1;
+               if(cnc.program.current_instruction->instruction.aux.max_motor[i]){
+                  cnc_motors.motor[i].speed = cnc.program.current_instruction->instruction.aux.motor_speed;
+                  cnc_motors.motor[i].find_max = 1;
+                  cnc_motors.motor[i].find_zero = 0;
+                  cnc_motors.motor[i].active = 1;
                }
             }
          }
-         cnc->program.current_instruction->instruction_type = MOTOR_INSTRUCTION;
+         cnc.program.current_instruction->instruction_type = MOTOR_INSTRUCTION;
          for(int i=0;i<NUM_MOTORS;i++){
-            cnc->program.current_instruction->instruction.motors.motor[i].instruction_valid = (cnc->motors->motor[i].find_zero || cnc->motors->motor[i].find_max);
+            cnc.program.current_instruction->instruction.motors.motor[i].instruction_valid = (cnc_motors.motor[i].find_zero || cnc_motors.motor[i].find_max);
          }
-         get_motor_speed(cnc->motors);
+         //get_motor_speed();
+         for(int i=0;i<NUM_MOTORS;i++){
+            if(cnc.program.current_instruction->instruction.motors.motor[i].instruction_valid){
+               if(cnc_motors.motor[i].find_max || cnc_motors.motor[i].find_zero){
+                  cnc_motors.motor[i].speed = cnc_motors.motor_speed;
+               } else {
+                  cnc_motors.motor[i].speed = cnc_motors.motor_speed * cnc_motors.motor[i].distance;
+                  cnc_motors.motor[i].speed = cnc_motors.motor[i].speed / cnc_motors.max_distance;
+               }
+               
+               steps_per_sec = cnc_motors.motor[i].steps_per_mm * cnc_motors.motor[i].speed; // steps per sec
+               temp = USEC_PER_SEC / steps_per_sec; // usec per step
+               cnc_motors.motor[i].total_timer_count = (uint32_t) ((cnc_double) (temp / MOTOR_TIMER_PERIOD_US));
+               cnc_motors.motor[i].active = 1;
+            }
+         }
          break;
       }
       case SET_POSITION : {
          for(int i=0;i<NUM_MOTORS;i++){
-            if(cnc->program.current_instruction->instruction.aux.set_position[i]){
-               cnc->motors->motor[i].position = cnc->program.current_instruction->instruction.aux.motor_position[i];
-               cnc->motors->motor[i].target = cnc->motors->motor[i].position;
+            if(cnc.program.current_instruction->instruction.aux.set_position[i]){
+               cnc_motors.motor[i].position = cnc.program.current_instruction->instruction.aux.motor_position[i];
+               cnc_motors.motor[i].target = cnc_motors.motor[i].position;
             }
          }
          break;
@@ -323,37 +348,7 @@ void set_aux_instruction(struct cnc_state_struct* cnc, struct cnc_aux_instructio
 
 uint8_t check_motor_instruction(struct cnc_motor_instruction_struct* current_instruction, struct cnc_motor_struct* motor){
 	if(current_instruction->instruction_valid){
-      if(motor->find_max || motor->find_zero){
-         if(motor->find_max && *motor->max_range_flag){
-            //cnc_printf(&cnc, "Inst Hit Max %s", motor->name);
-            motor->find_max = 0;
-            motor->active = 0;
-            current_instruction->instruction_valid = 0;
-         }
-         if(motor->find_zero && *motor->min_range_flag){
-            //cnc_printf(&cnc, "Inst Hit Min %s", motor->name);
-            motor->find_zero = 0;
-            motor->active = 0;
-            current_instruction->instruction_valid = 0;
-         }
-      } else {
-         if(fabs(motor->position - motor->target) < motor->float_error){
-            current_instruction->instruction_valid = 0;
-            //motor->position = motor->target;
-            motor->active = 0;
-         } else {
-            if((motor->position < motor->target) && (*motor->max_range_flag)){
-               current_instruction->instruction_valid = 0;
-               motor->target = motor->position;
-               motor->active = 0;
-            }
-            if((motor->position > motor->target) && (*motor->min_range_flag)){
-               current_instruction->instruction_valid = 0;
-               motor->target = motor->position;
-               motor->active = 0;
-            }
-         }
-      }
+      current_instruction->instruction_valid = motor->active;
 	}
    return current_instruction->instruction_valid;
 }
@@ -378,27 +373,27 @@ uint8_t check_aux_instruction(struct cnc_aux_instruction_struct* current_instruc
          break;
       }
       case RETURN_STATUS : {
-         cnc->cnc_write_data[0] = (char) GET_CNC_STATUS;
+         cnc.cnc_write_data[0] = (char) GET_CNC_STATUS;
          update_status(cnc);
-         cnc->cnc_write_length = status_to_string(&cnc->status, &cnc->cnc_write_data[1]);
-         cnc->cnc_write_length = cnc->cnc_write_length + 1;
-         if(cnc_serial.send(cnc->cnc_write_length, cnc->cnc_write_data) > 0){
+         cnc.cnc_write_length = status_to_string(&cnc.status, &cnc.cnc_write_data[1]);
+         cnc.cnc_write_length = cnc.cnc_write_length + 1;
+         if(cnc_serial.send(cnc.cnc_write_length, cnc.cnc_write_data) > 0){
             current_instruction.opcode = EMPTY_OPCODE;
          }
          break;
       }
       case ABORT_INSTRUCTION : {
-         if(cnc->program.current_instruction->instruction_type == MOTOR_INSTRUCTION){
+         if(cnc.program.current_instruction->instruction_type == MOTOR_INSTRUCTION){
             for(int i=0;i<NUM_MOTORS;i++){
-               abort_motor_instruction(&cnc->program.current_instruction->instruction.motors.motor[i], &cnc->motors->motor[i]);
+               abort_motor_instruction(&cnc.program.current_instruction->instruction.motors.motor[i], &cnc_motors.motor[i]);
             }
          }
-         if(cnc->program.current_instruction->instruction_type == HEATER_INSTRUCTION){
+         if(cnc.program.current_instruction->instruction_type == HEATER_INSTRUCTION){
             for(int i=0;i<NUM_HEATERS;i++){
-               abort_heater_instruction(&cnc->program.current_instruction->instruction.heaters.heater[i], &cnc->heaters->heater[i]);
+               abort_heater_instruction(&cnc.program.current_instruction->instruction.heaters.heater[i], &cnc_heaters.heater[i]);
             }
          }
-         if(cnc->program.current_instruction->instruction_type == AUX_INSTRUCTION){
+         if(cnc.program.current_instruction->instruction_type == AUX_INSTRUCTION){
             clear_instruction(current_instruction);
          }
          break;
@@ -427,61 +422,65 @@ void abort_heater_instruction(struct cnc_heater_instruction_struct* current_inst
 	}
 }
 
-void check_instruction(struct cnc_state_struct* cnc){
-	if(cnc->program.current_instruction->instruction_valid){
+uint8_t valid_instruction = 0;
+uint8_t valid;
+void check_instruction(void){
+	if(cnc.program.current_instruction->instruction_valid){
 		// if so, check all the various things to see if instruction is done
 		// if so, mark instruction as inactive
 		// also, if it was last instruction, clear program loaded and program running
       
-      uint8_t valid_instruction = 0;
-      uint8_t valid;
-      if(cnc->program.current_instruction->instruction_type == MOTOR_INSTRUCTION){
+      valid_instruction = 0;
+      valid = 0;
+      if(cnc.program.current_instruction->instruction_type == MOTOR_INSTRUCTION){
          for(int i=0;i<NUM_MOTORS;i++){
-             valid = check_motor_instruction(&cnc->program.current_instruction->instruction.motors.motor[i], &cnc->motors->motor[i]);
-             valid_instruction = valid_instruction | valid;
+             cnc.program.current_instruction->instruction.motors.motor[i].instruction_valid = cnc_motors.motor[i].active;
+             //valid = check_motor_instruction(&cnc.program.current_instruction->instruction.motors.motor[i], &cnc_motors.motor[i]);
+             valid_instruction = valid_instruction | cnc_motors.motor[i].active;//valid;
          }
+         cnc_motors.motors_active = valid_instruction;
       }
-      if(cnc->program.current_instruction->instruction_type == HEATER_INSTRUCTION){
+      if(cnc.program.current_instruction->instruction_type == HEATER_INSTRUCTION){
          for(int i=0;i<NUM_HEATERS;i++){
-            valid = check_heater_instruction(&cnc->program.current_instruction->instruction.heaters.heater[i], &cnc->heaters->heater[i]);
+            valid = check_heater_instruction(&cnc.program.current_instruction->instruction.heaters.heater[i], &cnc_heaters.heater[i]);
             valid_instruction = valid_instruction | valid;
          }
       }
-      if(cnc->program.current_instruction->instruction_type == AUX_INSTRUCTION){
-         valid = check_aux_instruction(&cnc->program.current_instruction->instruction.aux);
+      if(cnc.program.current_instruction->instruction_type == AUX_INSTRUCTION){
+         valid = check_aux_instruction(&cnc.program.current_instruction->instruction.aux);
          valid_instruction = valid_instruction | valid;
       }
 		
-		/*valid_instruction |= (cnc->program.current_instruction.opcode != EMPTY_OPCODE);
-		valid_instruction |= cnc->program.current_instruction.aux.instruction_valid;
-		valid_instruction |= cnc->program.current_instruction.extruder_0.instruction_valid;
-		valid_instruction |= cnc->program.current_instruction.extruder_1.instruction_valid;
-		valid_instruction |= cnc->program.current_instruction.xl_axis.instruction_valid;
-		valid_instruction |= cnc->program.current_instruction.yf_axis.instruction_valid;
-		valid_instruction |= cnc->program.current_instruction.zl_axis.instruction_valid;
-		valid_instruction |= cnc->program.current_instruction.zr_axis.instruction_valid;
-		valid_instruction |= cnc->program.current_instruction.heater_0.instruction_valid;
-		valid_instruction |= cnc->program.current_instruction.heater_1.instruction_valid;
-		valid_instruction |= cnc->program.current_instruction.heater_2.instruction_valid;
-		valid_instruction |= cnc->program.current_instruction.heater_3.instruction_valid;
+		/*valid_instruction |= (cnc.program.current_instruction.opcode != EMPTY_OPCODE);
+		valid_instruction |= cnc.program.current_instruction.aux.instruction_valid;
+		valid_instruction |= cnc.program.current_instruction.extruder_0.instruction_valid;
+		valid_instruction |= cnc.program.current_instruction.extruder_1.instruction_valid;
+		valid_instruction |= cnc.program.current_instruction.xl_axis.instruction_valid;
+		valid_instruction |= cnc.program.current_instruction.yf_axis.instruction_valid;
+		valid_instruction |= cnc.program.current_instruction.zl_axis.instruction_valid;
+		valid_instruction |= cnc.program.current_instruction.zr_axis.instruction_valid;
+		valid_instruction |= cnc.program.current_instruction.heater_0.instruction_valid;
+		valid_instruction |= cnc.program.current_instruction.heater_1.instruction_valid;
+		valid_instruction |= cnc.program.current_instruction.heater_2.instruction_valid;
+		valid_instruction |= cnc.program.current_instruction.heater_3.instruction_valid;
       */
 		if(valid_instruction){
 			// instruction isn't done
 		} else {
-         //cnc_printf(cnc, "instruction done: %d", cnc->program.current_instruction->instruction_type);
-         cnc->program.current_instruction->instruction_valid = 0;
-			if(cnc->program.current_instruction->instant_instruction){
-			 	cnc->instant_instruction_done = 1;
+         //cnc_printf("instruction done: %d", cnc.program.current_instruction->instruction_type);
+         cnc.program.current_instruction->instruction_valid = 0;
+			if(cnc.program.current_instruction->instant_instruction){
+			 	cnc.instant_instruction_done = 1;
 			} else {
-            cnc->program.instruction_fullness--;
+            cnc.program.instruction_fullness--;
          }
-			clear_instruction(cnc->program.current_instruction);
-         cnc->program.current_instruction = &cnc->program.empty_instruction;
+			clear_instruction(cnc.program.current_instruction);
+         cnc.program.current_instruction = &cnc.program.empty_instruction;
 		}
 	} else {
       // instruction finished, so get new instruction
-		get_next_instruction(cnc);
-      set_instruction(cnc);
+		get_next_instruction();
+      set_instruction();
    }
 }
 
@@ -510,7 +509,7 @@ void copy_instruction(struct cnc_instruction_struct* new_instruction, struct cnc
          current_instruction->instruction.heaters.heater[i].enable_heater = new_instruction->instruction.heaters.heater[i].enable_heater;
          current_instruction->instruction.heaters.heater[i].fan_duty = new_instruction->instruction.heaters.heater[i].fan_duty;
          current_instruction->instruction.heaters.heater[i].instruction_valid = new_instruction->instruction.heaters.heater[i].instruction_valid;
-         current_instruction->instruction.heaters.heater[i].target_temp = new_instruction->instruction.heaters.heater[i].target_temp;
+         current_instruction->instruction.heaters.heater[i].target_adc = new_instruction->instruction.heaters.heater[i].target_adc;
          current_instruction->instruction.heaters.heater[i].wait_for_temp = new_instruction->instruction.heaters.heater[i].wait_for_temp;
       }
    }

@@ -367,7 +367,7 @@
    #define MOTOR_6_DIR_PINPORT (uint8_t*) &PORTL
 #endif
 
-void init_gpio(struct cnc_state_struct* cnc);
+void init_gpio(void);
 void cnc_gpio_write(uint8_t pin, uint8_t* port, uint8_t value);
 uint8_t cnc_gpio_read(uint8_t pin, uint8_t* port);
 

@@ -26,6 +26,7 @@ void handle_cnc_state(struct interface_struct* interface){
    if(cnc_serial.rx_queue_fullness > 0){
       // received spi transaction
       // process that instead of user input
+      //printf("cnc sent request, %d\n", interface->machine_state);
       interface->cnc_read_length = cnc_serial.receive(interface->cnc_read_data);
       process_request(interface);
    }
@@ -79,19 +80,23 @@ void handle_cnc_state(struct interface_struct* interface){
 		case GET_STATUS : {
          interface->cnc_write_data[0] = (uint8_t) GET_CNC_STATUS;
          if(cnc_serial.send(1, interface->cnc_write_data) > 0){
-            interface->machine_state = MACHINE_IDLE;
+            // sent
          } else {
-            interface->machine_state = GET_STATUS;
+            //interface->machine_state = GET_STATUS;
+            printf("couldn't get motor status!\n");
          }
+         interface->machine_state = MACHINE_IDLE;
 			break;
 		}
 		case GET_VERSION : {
          interface->cnc_write_data[0] = (uint8_t) GET_CNC_VERSION;
          if(cnc_serial.send(1, interface->cnc_write_data) > 0){
-            interface->machine_state = MACHINE_IDLE;
+            // sent
          } else {
-            interface->machine_state = GET_VERSION;
+            //interface->machine_state = GET_VERSION;
+            printf("Couldn't request version!\n");
          }
+         interface->machine_state = MACHINE_IDLE;
 			break;
 		}
 		/*case SEND_CONFIG : {
@@ -109,7 +114,7 @@ void handle_cnc_state(struct interface_struct* interface){
 			break;
 		}*/
 		case USER_CONTROL : {
-         if(interface->user_instruction.instruction_valid){
+         /*if(interface->user_instruction.instruction_valid){
             interface->cnc_write_data[0] = (uint8_t) NEW_CNC_INSTRUCTION;
             interface->cnc_write_length = instruction_to_string(&interface->user_instruction, &interface->cnc_write_data[1]);
             interface->cnc_write_length = interface->cnc_write_length + 1;
@@ -119,7 +124,7 @@ void handle_cnc_state(struct interface_struct* interface){
             } else {
                //printf("still can't send\n");
             }
-         } else {
+         } else {*/
             clear_instruction(&interface->user_instruction);
             interface->user_instruction.instruction_valid = 0;
             socket_handler(&interface->user_command_set, interface->user_input);
@@ -140,13 +145,13 @@ void handle_cnc_state(struct interface_struct* interface){
                interface->cnc_write_length = instruction_to_string(&interface->user_instruction, &interface->cnc_write_data[1]);
                interface->cnc_write_length = interface->cnc_write_length + 1;
                if(cnc_serial.send(interface->cnc_write_length, interface->cnc_write_data) > 0){
-                  interface->user_instruction.instruction_valid = 0;
                   //printf("Sent first time\n");
                } else {
-                  printf("couldn't send first time\n");
+                  printf("couldn't send\n");
                }
+               interface->user_instruction.instruction_valid = 0;
             }
-         }
+         //}
 			break;
 		}
 		case CONFIGURE_INTERFACE : {
@@ -185,11 +190,12 @@ void handle_cnc_state(struct interface_struct* interface){
          interface->cnc_write_length = interface->cnc_write_length + 1; // add one for 0 opcode
          if(cnc_serial.send(interface->cnc_write_length, interface->cnc_write_data) > 0){
             //printf("Sent user instruction!\n");
-            clear_instruction(&interface->user_instruction);
-            interface->machine_state = MACHINE_IDLE;
          } else {
-            interface->machine_state = SEND_INSTANT_INSTRUCTION;
+            //interface->machine_state = SEND_INSTANT_INSTRUCTION;
+            printf("Couldn't send instant instruction!\n");
          }
+         interface->machine_state = MACHINE_IDLE;
+         clear_instruction(&interface->user_instruction);
          break;
       }
 		case SEND_INSTRUCTION : {
@@ -201,10 +207,11 @@ void handle_cnc_state(struct interface_struct* interface){
                interface->cnc_write_length = interface->cnc_write_length + 1; // add one for 0 opcode
                if(cnc_serial.send(interface->cnc_write_length, interface->cnc_write_data) > 0){
                   interface->program.instruction_rp++;
-                  //printf("Sent instruction!\n");
+                  printf("Sent instruction!\n");
                   interface->instruction_requested = 0;
                   interface->machine_state = MACHINE_IDLE;
                } else {
+                  printf("couldn't send program instruction!\n");
                   interface->machine_state = SEND_INSTRUCTION;
                }
             } else {
@@ -443,10 +450,12 @@ void process_request(struct interface_struct* interface){
 			printf("CNC EX1 Pos: %lf\n", interface->machine_status.position[MOTOR_EXTRUDER_0]);
 			printf("CNC AUX Pos: %lf\n", interface->machine_status.position[MOTOR_EXTRUDER_1]);
 			printf("CNC XL Pos: %lf\n", interface->machine_status.position[MOTOR_AXIS_XL]);
+         printf("CNC XL Tar: %lf\n", interface->machine_status.target[MOTOR_AXIS_XL]);
 			printf("CNC YF Pos: %lf\n", interface->machine_status.position[MOTOR_AXIS_YF]);
 			printf("CNC ZL Pos: %lf\n", interface->machine_status.position[MOTOR_AXIS_ZL]);
 			printf("CNC ZR Pos: %lf\n", interface->machine_status.position[MOTOR_AXIS_ZR]);
          printf("Program Length: %lld, Current Instruction: %lld\n", interface->program.program_length, interface->program.instruction_rp);
+         printf("Current Instruction Active: %d\n", interface->machine_status.instruction_active);
 
          cnc_double current_voltage;
          cnc_double current_resistance;
@@ -533,7 +542,7 @@ void process_request(struct interface_struct* interface){
 			break;
 		}
       case INSTANT_DONE : {
-			//printf("instant instruction done!\n");
+			printf("instant instruction done!\n");
 			interface->instant_done = 1;
 			break;
 		}
@@ -683,11 +692,11 @@ void process_instruction(struct interface_struct* interface){
                double target_resistance;
                double beta_temp;
                double exp_val;
-               uint32_t adc_val;
+               uint16_t adc_val;
                beta_temp = ((BETA_VALUE/(temp+KELVIN_CONV)) - (BETA_VALUE/BASE_TEMP_KELVIN));
                exp_val = exp(beta_temp);
                target_resistance = exp_val*THERMISTOR_RESISTANCE;
-               adc_val = (uint32_t) (((double) (ADC_MAX*BASE_RESISTANCE)/(BASE_RESISTANCE + target_resistance)) + 0.5);
+               adc_val = (uint16_t) (((double) (ADC_MAX*BASE_RESISTANCE)/(BASE_RESISTANCE + target_resistance)) + 0.5);
                interface->user_instruction.instant_instruction = 1;
                interface->user_instruction.instruction_valid = 1;
                interface->user_instruction.instruction_type = HEATER_INSTRUCTION;
@@ -696,7 +705,7 @@ void process_instruction(struct interface_struct* interface){
                interface->user_instruction.instruction.heaters.heater[0].fan_duty = 100;
                interface->user_instruction.instruction.heaters.heater[0].enable_fan = 1;
                interface->user_instruction.instruction.heaters.heater[0].wait_for_temp = 0;
-               interface->user_instruction.instruction.heaters.heater[0].target_temp = adc_val;
+               interface->user_instruction.instruction.heaters.heater[0].target_adc = adc_val;
                valid_instruction = 1;
             } else {
             }
@@ -1386,4 +1395,11 @@ int open_gcode(struct interface_struct* interface){
 	}
 }
 
+void display_cnc_print(uint8_t* print_string, uint32_t length){
+	char read_string[MAX_PRINT_LENGTH];
+	if(length > (MAX_PRINT_LENGTH-1)) length = MAX_PRINT_LENGTH;
+	strncpy(read_string, (const char*) print_string, length);
+	read_string[length] = '\0';
+	printf("CNC Print: %s\n", read_string);
+}
 

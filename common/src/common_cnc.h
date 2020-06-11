@@ -208,8 +208,11 @@ struct cnc_config_struct {
 struct cnc_status_struct {
    uint8_t endstop_status[NUM_ENDSTOPS];
    cnc_double position[NUM_MOTORS];
+   cnc_double target[NUM_MOTORS];
    cnc_double temp[NUM_HEATERS];
    uint8_t temp_locked[NUM_HEATERS];
+   uint8_t instruction_active;
+   uint16_t compare;
 };
 
 struct cnc_motor_instruction_struct {
@@ -240,7 +243,7 @@ struct cnc_heater_instruction_struct {
    uint8_t disable_heater;
    uint8_t enable_fan;
    uint8_t disable_fan;
-   uint32_t target_temp;
+   uint16_t target_adc;
 };
 
 struct cnc_heater_instructions {

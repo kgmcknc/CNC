@@ -49,10 +49,9 @@ struct cnc_motor_struct {
    cnc_double speed;
    cnc_double steps_per_mm;
    cnc_double mm_per_step;
-   cnc_double float_error;
    uint8_t step_count_set;
 	uint32_t next_step_count;
-   uint32_t last_timer_error;
+   uint16_t last_timer_error;
    uint32_t total_timer_count;
 	char name[MAX_MOTOR_NAME_LENGTH] = {};
 	struct cnc_motor_pin_struct pins;
@@ -64,7 +63,8 @@ struct cnc_motor_list_struct {
    uint8_t next_valid_irq;
    uint8_t valid_irq;
    uint8_t next_timer_value_loaded;
-   uint32_t next_timer_value;
+   uint16_t next_timer_value;
+   uint8_t motors_active;
    cnc_double motor_speed;
    cnc_double max_distance;
    struct cnc_motor_struct motor[NUM_MOTORS];
@@ -177,21 +177,20 @@ struct cnc_endstop_list_struct {
 
 extern cnc_double next_period;
 
-void process_motors(struct cnc_motor_list_struct* motors);
-void get_motor_speed(struct cnc_motor_list_struct* motors);
-void get_next_timer_value(struct cnc_motor_list_struct* motors);
+void process_motors(void);
+void get_next_timer_value(void);
 void enable_motor(struct cnc_motor_struct* motor);
 void disable_motor(struct cnc_motor_struct* motor);
 void set_motor_direction(struct cnc_motor_struct* motor, int8_t direction);
-void check_endstops(struct cnc_state_struct* cnc);
+void check_endstops(void);
 void check_endstop(struct cnc_endstop_struct* endstop);
-void init_motors(struct cnc_motor_list_struct* motors, struct cnc_endstop_list_struct* endstops);
+void init_motors(void);
 void init_motor(struct cnc_motor_struct* motor, const char* name);
-void handle_motors(struct cnc_state_struct* cnc);
-void init_endstops(struct cnc_endstop_list_struct* endstops);
+void handle_motors(void);
+void init_endstops(void);
 void init_endstop(struct cnc_endstop_struct* endstop);
 void handle_step(struct cnc_motor_struct* motor);
-void set_step(struct cnc_motor_list_struct* motors);
+void set_step(void);
 //void check_periods(struct cnc_state_struct* cnc, struct cnc_motor_list_struct* motors);
 //void check_period(struct cnc_state_struct* cnc, struct cnc_motor_struct* motors);
 void step_motor_set_step(struct cnc_motor_struct* motor);
